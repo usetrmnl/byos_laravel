@@ -43,6 +43,48 @@ test('device can fetch display data with valid credentials', function () {
         ->last_firmware_version->toBe('1.0.0');
 });
 
+test('display endpoint includes image_url_timeout when configured', function () {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+    ]);
+
+    config(['services.trmnl.image_url_timeout' => 300]);
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk()
+        ->assertJson([
+            'image_url_timeout' => 300,
+        ]);
+});
+
+test('display endpoint omits image_url_timeout when not configured', function () {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+    ]);
+
+    config(['services.trmnl.image_url_timeout' => null]);
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk()
+        ->assertJsonMissing(['image_url_timeout']);
+});
+
 test('new device is auto-assigned to user with auto-assign enabled', function () {
     $user = User::factory()->create(['assign_new_devices' => true]);
 

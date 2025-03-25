@@ -77,7 +77,7 @@ Route::get('/display', function (Request $request) {
         $filename = basename($image_path);
     }
 
-    return response()->json([
+    $response = [
         'status' => 0,
         'image_url' => url('storage/'.$image_path),
         'filename' => $filename,
@@ -86,7 +86,13 @@ Route::get('/display', function (Request $request) {
         'update_firmware' => $device->update_firmware,
         'firmware_url' => $device->firmware_url,
         'special_function' => 'sleep',
-    ]);
+    ];
+
+    if (config('services.trmnl.image_url_timeout')) {
+        $response['image_url_timeout'] = config('services.trmnl.image_url_timeout');
+    }
+
+    return response()->json($response);
 });
 
 Route::get('/setup', function (Request $request) {
