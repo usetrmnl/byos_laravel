@@ -1,4 +1,8 @@
+/.devcontainer
+/.github
 /.phpunit.cache
+/database/*.sqlite
+/bootstrap/cache/*
 /node_modules
 /public/build
 /public/hot
@@ -6,6 +10,7 @@
 /storage/*.key
 /storage/pail
 /vendor
+.editorconfig
 .env
 .env.backup
 .env.production
@@ -20,5 +25,3 @@ yarn-error.log
 /.idea
 /.vscode
 /.zed
-/bootstrap/cache/*
-/database/database.sqlite
