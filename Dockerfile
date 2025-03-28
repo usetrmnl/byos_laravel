@@ -16,7 +16,7 @@ COPY --chown=www-data:www-data . /var/www/html
 COPY --chown=www-data:www-data .env.example .env
 
 # Install the composer dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
 ########################
 # Assets Image
