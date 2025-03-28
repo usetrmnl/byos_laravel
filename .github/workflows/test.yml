@@ -12,7 +12,7 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: Testing
 
     steps:
@@ -22,8 +22,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
-          tools: composer:v2
+          php-version: 8.3
           coverage: xdebug
 
       - name: Setup Node
@@ -31,9 +30,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install Node Dependencies
-        run: npm i
 
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -45,7 +41,9 @@ jobs:
         run: php artisan key:generate
 
       - name: Build Assets
-        run: npm run build
+        run: |
+          npm ci --no-audit
+          run build
 
       - name: Run Tests
         run: ./vendor/bin/pest --ci --coverage
