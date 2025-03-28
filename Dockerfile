@@ -43,6 +43,3 @@ COPY --chown=www-data:www-data --from=assets /app/public/build /var/www/html/pub
 
 # Drop back to the www-data user
 USER www-data
-
-# Create the sqlite database
-RUN php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
