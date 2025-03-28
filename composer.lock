@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "745994b30a60597808cac7e5e21a2a5a",
+    "content-hash": "0511a36a7943d2b2cac63ca735d1e03d",
     "packages": [
         {
             "name": "bnussbau/laravel-trmnl",
@@ -4047,71 +4047,6 @@
                 }
             ],
             "time": "2025-03-21T09:50:49+00:00"
-        },
-        {
-            "name": "spatie/pest-expectations",
-            "version": "1.10.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/spatie/pest-expectations.git",
-                "reference": "e498ebd92a1a9fb786656edf77fa569e9b39210e"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/spatie/pest-expectations/zipball/e498ebd92a1a9fb786656edf77fa569e9b39210e",
-                "reference": "e498ebd92a1a9fb786656edf77fa569e9b39210e",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/database": "^10.7|^11.0|^12.0",
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "illuminate/contracts": "^10.0|^11.0|^12.0",
-                "laravel/pint": "^1.2",
-                "orchestra/testbench": "^8.3|^9.0|^10.0",
-                "pestphp/pest": "^3.0",
-                "spatie/laravel-json-api-paginate": "^1.14",
-                "spatie/ray": "^1.28"
-            },
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "src/PestExpectations.php",
-                    "src/Helpers.php"
-                ],
-                "psr-4": {
-                    "Spatie\\PestExpectations\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Freek Van der Herten",
-                    "email": "freek@spatie.be",
-                    "role": "Developer"
-                }
-            ],
-            "description": "A collection of handy custom Pest customisations",
-            "homepage": "https://github.com/spatie/pest-expectations",
-            "keywords": [
-                "pest-expectations",
-                "spatie"
-            ],
-            "support": {
-                "issues": "https://github.com/spatie/pest-expectations/issues",
-                "source": "https://github.com/spatie/pest-expectations/tree/1.10.1"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/spatie",
-                    "type": "github"
-                }
-            ],
-            "time": "2025-03-12T19:34:55+00:00"
         },
         {
             "name": "spatie/temporary-directory",
@@ -9880,6 +9815,71 @@
                 }
             ],
             "time": "2024-10-09T05:16:32+00:00"
+        },
+        {
+            "name": "spatie/pest-expectations",
+            "version": "1.10.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/spatie/pest-expectations.git",
+                "reference": "e498ebd92a1a9fb786656edf77fa569e9b39210e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/spatie/pest-expectations/zipball/e498ebd92a1a9fb786656edf77fa569e9b39210e",
+                "reference": "e498ebd92a1a9fb786656edf77fa569e9b39210e",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/database": "^10.7|^11.0|^12.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "illuminate/contracts": "^10.0|^11.0|^12.0",
+                "laravel/pint": "^1.2",
+                "orchestra/testbench": "^8.3|^9.0|^10.0",
+                "pestphp/pest": "^3.0",
+                "spatie/laravel-json-api-paginate": "^1.14",
+                "spatie/ray": "^1.28"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/PestExpectations.php",
+                    "src/Helpers.php"
+                ],
+                "psr-4": {
+                    "Spatie\\PestExpectations\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Freek Van der Herten",
+                    "email": "freek@spatie.be",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A collection of handy custom Pest customisations",
+            "homepage": "https://github.com/spatie/pest-expectations",
+            "keywords": [
+                "pest-expectations",
+                "spatie"
+            ],
+            "support": {
+                "issues": "https://github.com/spatie/pest-expectations/issues",
+                "source": "https://github.com/spatie/pest-expectations/tree/1.10.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/spatie",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-03-12T19:34:55+00:00"
         },
         {
             "name": "staabm/side-effects-detector",
