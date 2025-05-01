@@ -15,6 +15,7 @@ class PlaylistItem extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'last_displayed_at' => 'datetime',
+        'current_image' => 'string',
     ];
 
     public function playlist(): BelongsTo
