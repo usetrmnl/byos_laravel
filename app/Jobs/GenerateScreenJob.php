@@ -11,6 +11,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Ramsey\Uuid\Uuid;
 use Spatie\Browsershot\Browsershot;
+use Wnx\SidecarBrowsershot\BrowsershotLambda;
 
 class GenerateScreenJob implements ShouldQueue
 {
@@ -35,13 +36,23 @@ class GenerateScreenJob implements ShouldQueue
         $bmpPath = Storage::disk('public')->path('/images/generated/'.$uuid.'.bmp');
 
         // Generate PNG
-        try {
-            Browsershot::html($this->markup)
-                ->setOption('args', config('app.puppeteer_docker') ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'] : [])
-                ->windowSize($device->width ?? 800, $device->height ?? 480)
-                ->save($pngPath);
-        } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
+        if (config('app.puppeteer_mode') === 'sidecar-aws') {
+            try {
+                BrowsershotLambda::html($this->markup)
+                    ->windowSize($device->width ?? 800, $device->height ?? 480)
+                    ->save($pngPath);
+            } catch (\Exception $e) {
+                throw new \RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
+            }
+        } else {
+            try {
+                Browsershot::html($this->markup)
+                    ->setOption('args', config('app.puppeteer_docker') ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'] : [])
+                    ->windowSize($device->width ?? 800, $device->height ?? 480)
+                    ->save($pngPath);
+            } catch (\Exception $e) {
+                throw new \RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
+            }
         }
 
         try {

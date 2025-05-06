@@ -129,7 +129,8 @@ return [
 
     'force_https' => env('FORCE_HTTPS', false),
     'puppeteer_docker' => env('PUPPETEER_DOCKER', false),
-
+    'puppeteer_mode' => env('PUPPETEER_MODE', 'local'),
+    
     /*
     |--------------------------------------------------------------------------
     | Application Version
