@@ -105,6 +105,45 @@ test('new device is auto-assigned to user with auto-assign enabled', function ()
         ->api_key->toBe('new-device-key');
 });
 
+test('new device is auto-assigned and mirrors specified device', function () {
+    // Create a source device that will be mirrored
+    $sourceDevice = Device::factory()->create([
+        'mac_address' => 'AA:BB:CC:DD:EE:FF',
+        'api_key' => 'source-api-key',
+        'current_screen_image' => 'source-image',
+    ]);
+
+    // Create user with auto-assign enabled and mirror device set
+    $user = User::factory()->create([
+        'assign_new_devices' => true,
+        'assign_new_device_id' => $sourceDevice->id,
+    ]);
+
+    // Make request from new device
+    $response = $this->withHeaders([
+        'id' => '00:11:22:33:44:55',
+        'access-token' => 'new-device-key',
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk();
+
+    // Verify the new device was created and mirrors the source device
+    $newDevice = Device::where('mac_address', '00:11:22:33:44:55')->first();
+    expect($newDevice)
+        ->not->toBeNull()
+        ->user_id->toBe($user->id)
+        ->api_key->toBe('new-device-key')
+        ->mirror_device_id->toBe($sourceDevice->id);
+
+    // Verify the response contains the source device's image
+    $response->assertJson([
+        'filename' => 'source-image.bmp',
+    ]);
+});
+
 test('device setup endpoint returns correct data', function () {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',

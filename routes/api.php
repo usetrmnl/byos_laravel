@@ -28,6 +28,7 @@ Route::get('/display', function (Request $request) {
                 'name' => "{$auto_assign_user->name}'s TRMNL",
                 'friendly_id' => Str::random(6),
                 'default_refresh_interval' => 900,
+                'mirror_device_id' => $auto_assign_user->assign_new_device_id,
             ]);
         } else {
             return response()->json([
@@ -135,6 +136,7 @@ Route::get('/setup', function (Request $request) {
                 'name' => "{$auto_assign_user->name}'s TRMNL",
                 'friendly_id' => Str::random(6),
                 'default_refresh_interval' => 900,
+                'mirror_device_id' => $auto_assign_user->assign_new_device_id,
             ]);
         } else {
             return response()->json([

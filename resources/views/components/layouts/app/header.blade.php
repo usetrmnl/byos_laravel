@@ -66,7 +66,7 @@
             <flux:menu.separator/>
 
             <flux:menu.radio.group>
-                <flux:menu.item href="/settings/profile" wire:navigate icon="cog">Settings</flux:menu.item>
+                <flux:menu.item href="/settings/preferences" wire:navigate icon="cog">Settings</flux:menu.item>
             </flux:menu.radio.group>
 
             <flux:menu.separator/>
