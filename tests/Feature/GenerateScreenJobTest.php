@@ -23,7 +23,6 @@ test('it generates screen images and updates device', function () {
     // Assert both PNG and BMP files were created
     $uuid = $device->current_screen_image;
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-    Storage::disk('public')->assertExists("/images/generated/{$uuid}.bmp");
 })->skipOnGitHubActions();
 
 test('it cleans up unused images', function () {

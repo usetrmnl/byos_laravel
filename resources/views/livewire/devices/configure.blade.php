@@ -15,6 +15,7 @@ new class extends Component {
     public $default_refresh_interval;
     public $width;
     public $height;
+    public $rotate;
 
     // Playlist properties
     public $playlists;
@@ -39,6 +40,7 @@ new class extends Component {
         $this->default_refresh_interval = $device->default_refresh_interval;
         $this->width = $device->width;
         $this->height = $device->height;
+        $this->rotate = $device->rotate;
         $this->playlists = $device->playlists()->with('items.plugin')->orderBy('created_at')->get();
 
         return view('livewire.devices.configure', [
@@ -65,6 +67,7 @@ new class extends Component {
             'default_refresh_interval' => 'required|integer|min:1',
             'width' => 'required|integer|min:1',
             'height' => 'required|integer|min:1',
+            'rotate' => 'required|integer|min:0|max:359',
         ]);
 
         $this->device->update([
@@ -74,6 +77,7 @@ new class extends Component {
             'default_refresh_interval' => $this->default_refresh_interval,
             'width' => $this->width,
             'height' => $this->height,
+            'rotate' => $this->rotate,
         ]);
 
         Flux::modal('edit-device')->close();
@@ -215,7 +219,7 @@ new class extends Component {
     <div class="flex flex-col gap-6">
         <div
             class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
-            <div class="px-10 py-8 min-w-lg">
+            <div class="px-10 py-8">
                 @php
                     $current_image_uuid =$device->current_screen_image;
                     if($current_image_uuid) {
@@ -226,7 +230,7 @@ new class extends Component {
                     }
                 @endphp
 
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between gap-4">
                     <flux:tooltip content="Friendly ID: {{$device->friendly_id}}" position="bottom">
                         <h1 class="text-xl font-medium dark:text-zinc-200">{{ $device->name }}</h1>
                     </flux:tooltip>
@@ -282,6 +286,7 @@ new class extends Component {
                         <div class="flex gap-4">
                             <flux:input label="Width (px)" wire:model="width" type="number" />
                             <flux:input label="Height (px)" wire:model="height" type="number"/>
+                            <flux:input label="Rotate °" wire:model="rotate" type="number"/>
                         </div>
                         <flux:input label="Default Refresh Interval (seconds)" wire:model="default_refresh_interval"
                                     type="number"/>
@@ -315,7 +320,7 @@ new class extends Component {
                 @if(!$device->mirror_device_id)
                     @if($current_image_path)
                         <flux:separator class="mt-6 mb-6" text="Next Screen"/>
-                        <img src="{{ asset($current_image_path) }}" alt="Next Image"/>
+                        <img src="{{ asset($current_image_path) }}" class="max-h-[480px]" alt="Next Image"/>
                     @endif
 
                     <flux:separator class="mt-6 mb-6" text="Playlists"/>

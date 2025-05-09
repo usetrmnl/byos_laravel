@@ -448,9 +448,9 @@ test('authenticated user can fetch their devices', function () {
                     'friendly_id',
                     'mac_address',
                     'battery_voltage',
-                    'rssi'
-                ]
-            ]
+                    'rssi',
+                ],
+            ],
         ])
         ->assertJsonCount(2, 'data');
 
@@ -463,9 +463,9 @@ test('authenticated user can fetch their devices', function () {
                 'friendly_id' => $devices[0]->friendly_id,
                 'mac_address' => $devices[0]->mac_address,
                 'battery_voltage' => 3.72,
-                'rssi' => -63
-            ]
-        ]
+                'rssi' => -63,
+            ],
+        ],
     ]);
 });
 

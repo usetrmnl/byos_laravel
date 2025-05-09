@@ -82,9 +82,11 @@ Route::get('/display', function (Request $request) {
         $image_path = 'images/setup-logo.bmp';
         $filename = 'setup-logo.bmp';
     } else {
-        if (file_exists(storage_path('app/public/images/generated/'.$image_uuid.'.bmp'))) {
+        if (isset($device->last_firmware_version)
+            && version_compare($device->last_firmware_version, '1.5.2', '<')
+            && Storage::disk('public')->exists('images/generated/'.$image_uuid.'.bmp')) {
             $image_path = 'images/generated/'.$image_uuid.'.bmp';
-        } elseif (file_exists(storage_path('app/public/images/generated/'.$image_uuid.'.png'))) {
+        } elseif (Storage::disk('public')->exists('images/generated/'.$image_uuid.'.png')) {
             $image_path = 'images/generated/'.$image_uuid.'.png';
         } else {
             $image_path = 'images/generated/'.$image_uuid.'.bmp';
@@ -106,7 +108,6 @@ Route::get('/display', function (Request $request) {
     if (config('services.trmnl.image_url_timeout')) {
         $response['image_url_timeout'] = config('services.trmnl.image_url_timeout');
     }
-
     // If update_firmware is true, reset it after returning it, to avoid upgrade loop
     if ($device->update_firmware) {
         $device->resetUpdateFirmwareFlag();
@@ -271,9 +272,11 @@ Route::get('/current_screen', function (Request $request) {
         $image_path = 'images/setup-logo.bmp';
         $filename = 'setup-logo.bmp';
     } else {
-        if (file_exists(storage_path('app/public/images/generated/'.$image_uuid.'.bmp'))) {
+        if (isset($device->last_firmware_version)
+            && version_compare($device->last_firmware_version, '1.5.2', '<')
+            && Storage::disk('public')->exists('images/generated/'.$image_uuid.'.bmp')) {
             $image_path = 'images/generated/'.$image_uuid.'.bmp';
-        } elseif (file_exists(storage_path('app/public/images/generated/'.$image_uuid.'.png'))) {
+        } elseif (Storage::disk('public')->exists('images/generated/'.$image_uuid.'.png')) {
             $image_path = 'images/generated/'.$image_uuid.'.png';
         } else {
             $image_path = 'images/generated/'.$image_uuid.'.bmp';

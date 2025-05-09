@@ -17,6 +17,9 @@ class Device extends Model
         'proxy_cloud' => 'boolean',
         'last_log_request' => 'json',
         'proxy_cloud_response' => 'json',
+        'width' => 'integer',
+        'height' => 'integer',
+        'rotate' => 'integer',
     ];
 
     public function getBatteryPercentAttribute()

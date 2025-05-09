@@ -59,7 +59,7 @@ new class extends Component {
                                 </flux:callout>
                             @elseif($current_image_path)
                                 <flux:separator class="mt-2 mb-4"/>
-                                <img src="{{ asset($current_image_path) }}" alt="Current Image"/>
+                                <img src="{{ asset($current_image_path) }}" class="max-h-[480px]" alt="Current Image"/>
                             @endif
                         </div>
                     </div>

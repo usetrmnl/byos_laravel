@@ -5,13 +5,16 @@ namespace App\Services;
 use App\Models\Device;
 use App\Models\Plugin;
 use Illuminate\Support\Facades\Storage;
+use ImagickPixel;
 use Ramsey\Uuid\Uuid;
 use Spatie\Browsershot\Browsershot;
 use Wnx\SidecarBrowsershot\BrowsershotLambda;
 
 class ImageGenerationService
 {
-    public static function generateImage(string $markup): string {
+    public static function generateImage(string $markup, $deviceId): string
+    {
+        $device = Device::find($deviceId);
         $uuid = Uuid::uuid4()->toString();
         $pngPath = Storage::disk('public')->path('/images/generated/'.$uuid.'.png');
         $bmpPath = Storage::disk('public')->path('/images/generated/'.$uuid.'.bmp');
@@ -20,7 +23,7 @@ class ImageGenerationService
         if (config('app.puppeteer_mode') === 'sidecar-aws') {
             try {
                 BrowsershotLambda::html($markup)
-                    ->windowSize($device->width ?? 800, $device->height ?? 480)
+                    ->windowSize(800, 480)
                     ->save($pngPath);
             } catch (\Exception $e) {
                 throw new \RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
@@ -29,18 +32,30 @@ class ImageGenerationService
             try {
                 Browsershot::html($markup)
                     ->setOption('args', config('app.puppeteer_docker') ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'] : [])
-                    ->windowSize($device->width ?? 800, $device->height ?? 480)
+                    ->windowSize(800, 480)
                     ->save($pngPath);
             } catch (\Exception $e) {
                 throw new \RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
             }
         }
 
-        try {
-            ImageGenerationService::convertToBmpImageMagick($pngPath, $bmpPath);
-        } catch (\ImagickException $e) {
-            throw new \RuntimeException('Failed to convert image to BMP: '.$e->getMessage(), 0, $e);
+        if (isset($device->last_firmware_version)
+            && version_compare($device->last_firmware_version, '1.5.2', '<')) {
+            try {
+                ImageGenerationService::convertToBmpImageMagick($pngPath, $bmpPath);
+            } catch (\ImagickException $e) {
+                throw new \RuntimeException('Failed to convert image to BMP: '.$e->getMessage(), 0, $e);
+            }
+        } else {
+            try {
+                ImageGenerationService::convertToPngImageMagick($pngPath, $device->width, $device->height, $device->rotate);
+            } catch (\ImagickException $e) {
+                throw new \RuntimeException('Failed to convert image to PNG: '.$e->getMessage(), 0, $e);
+            }
         }
+        $device->update(['current_screen_image' => $uuid]);
+        \Log::info("Device $device->id: updated with new image: $uuid");
+
         return $uuid;
     }
 
@@ -56,6 +71,28 @@ class ImageGenerationService
         $imagick->stripImage();
         $imagick->setFormat('BMP3');
         $imagick->writeImage($bmpPath);
+        $imagick->clear();
+    }
+
+    /**
+     * @throws \ImagickException
+     */
+    private static function convertToPngImageMagick(string $pngPath, ?int $width, ?int $height, ?int $rotate): void
+    {
+        $imagick = new \Imagick($pngPath);
+        if ($width !== 800 || $height !== 480) {
+            $imagick->resizeImage($width, $height, \Imagick::FILTER_LANCZOS, 1, true);
+        }
+        if ($rotate !== null && $rotate !== 0) {
+            $imagick->rotateImage(new ImagickPixel('black'), $rotate);
+        }
+        $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALE);
+        $imagick->quantizeImage(2, \Imagick::COLORSPACE_GRAY, 0, true, false);
+        $imagick->setImageDepth(8);
+        $imagick->stripImage();
+
+        $imagick->setFormat('png');
+        $imagick->writeImage($pngPath);
         $imagick->clear();
     }
 
