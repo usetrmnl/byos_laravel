@@ -2,14 +2,14 @@
 
 namespace App\Jobs;
 
-use App\Models\PlaylistItem;
+use App\Models\Plugin;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class GeneratePlaylistItemJob implements ShouldQueue
+class GeneratePluginJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -17,7 +17,7 @@ class GeneratePlaylistItemJob implements ShouldQueue
      * Create a new job instance.
      */
     public function __construct(
-        private readonly int $playlistItemId,
+        private readonly int $pluginId,
         private readonly string $markup
     ) {}
 
@@ -28,8 +28,8 @@ class GeneratePlaylistItemJob implements ShouldQueue
     {
         $newImageUuid = CommonFunctions::generateImage($this->markup);
 
-        PlaylistItem::find($this->playlistItemId)->update(['current_image' => $newImageUuid]);
-        \Log::info("Playlist item $this->playlistItemId: updated with new image: $newImageUuid");
+        Plugin::find($this->pluginId)->update(['current_image' => $newImageUuid]);
+        \Log::info("Plugin $this->pluginId: updated with new image: $newImageUuid");
 
         CommonFunctions::cleanupFolder();
     }

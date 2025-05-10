@@ -1,7 +1,7 @@
 <?php
 
 use App\Jobs\GenerateScreenJob;
-use App\Jobs\GeneratePlaylistItemJob;
+use App\Jobs\GeneratePluginJob;
 use App\Models\Device;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -55,7 +55,7 @@ Route::get('/display', function (Request $request) {
                 $plugin = $nextPlaylistItem->plugin;
 
                 // Check and update stale data if needed
-                if ($plugin->isDataStale() || $nextPlaylistItem->last_displayed_at == null) {
+                if ($plugin->isDataStale() || $plugin->current_image == null) {
                     $plugin->updateDataPayload();
 
                     if ($plugin->render_markup) {
@@ -64,16 +64,16 @@ Route::get('/display', function (Request $request) {
                         $markup = view($plugin->render_markup_view, ['data' => $plugin->data_payload])->render();
                     }
 
-                    GeneratePlaylistItemJob::dispatchSync($nextPlaylistItem->id, $markup);
+                    GeneratePluginJob::dispatchSync($plugin->id, $markup);
                 }
             }
 
-            $nextPlaylistItem->refresh();
+            $plugin->refresh();
 
-            if ($nextPlaylistItem->current_image != null)
+            if ($plugin->current_image != null)
             {
                 $nextPlaylistItem->update(['last_displayed_at' => now()]);
-                $device->update(['current_screen_image' => $nextPlaylistItem->current_image]);
+                $device->update(['current_screen_image' => $plugin->current_image]);
             }
         }
 

@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Device;
-use App\Models\PlaylistItem;
+use App\Models\Plugin;
 use Illuminate\Support\Facades\Storage;
 use Ramsey\Uuid\Uuid;
 use Spatie\Browsershot\Browsershot;
@@ -62,8 +62,8 @@ class CommonFunctions
     public static function cleanupFolder(): void
     {
         $activeDeviceImageUuids = Device::pluck('current_screen_image')->filter()->toArray();
-        $activePlaylistImageUuids = PlaylistItem::pluck('current_image')->filter()->toArray();
-        $activeImageUuids = array_merge($activeDeviceImageUuids, $activePlaylistImageUuids);
+        $activePluginImageUuids = Plugin::pluck('current_image')->filter()->toArray();
+        $activeImageUuids = array_merge($activeDeviceImageUuids, $activePluginImageUuids);
 
         $files = Storage::disk('public')->files('/images/generated/');
         foreach ($files as $file) {

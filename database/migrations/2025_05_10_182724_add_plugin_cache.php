@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('playlist_items', function (Blueprint $table) {
-            $table->string('current_image')->nullable()->after('is_active');
+        Schema::table('plugins', function (Blueprint $table) {
+            $table->string('current_image')->nullable()->after('data_payload_updated_at');
         });
     }
 
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('playlist_items', function (Blueprint $table) {
+        Schema::table('plugins', function (Blueprint $table) {
             $table->dropColumn('current_image');
         });
     }
