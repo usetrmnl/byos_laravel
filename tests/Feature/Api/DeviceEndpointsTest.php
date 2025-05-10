@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\Device;
+use App\Models\Playlist;
+use App\Models\PlaylistItem;
+use App\Models\Plugin;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -9,6 +12,7 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
     Storage::fake('public');
+    Storage::disk('public')->makeDirectory('/images/generated');
 });
 
 test('device can fetch display data with valid credentials', function () {
@@ -463,4 +467,79 @@ test('authenticated user can fetch their devices', function () {
             ]
         ]
     ]);
+});
+
+test('plugin doesn\'t update image unless required', function () {
+    // Create source device with a playlist
+    $device = Device::factory()->create([
+        'mac_address' => '55:11:22:33:44:55',
+        'api_key' => 'source-api-key',
+        'proxy_cloud' => false,
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'name' => 'Zen Quotes',
+        'polling_url' => 'https://zenquotes.io/api/today',
+        'data_stale_minutes' => 1,
+        'data_strategy' => 'polling',
+        'polling_verb' => 'get',
+        'render_markup_view' => 'recipes.zen',
+        'is_native' => false,
+        'data_payload_updated_at' => null,
+    ]);
+
+    $playlist = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => 'update_test',
+        'is_active' => true,
+        'weekdays' => null,
+        'active_from' => null,
+        'active_until' => null,
+    ]);
+
+    PlaylistItem::factory()->create([
+        'playlist_id' => $playlist->id,
+        'plugin_id' => $plugin->id,
+        'order' => 1,
+        'is_active' => true,
+        'last_displayed_at' => null,
+    ]);
+
+    // initial request, generates the image
+    $firstResponse = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $firstResponse->assertOk();
+    expect($firstResponse['filename'])->not->toBe('setup-logo.bmp');
+
+    // second request after 15 seconds, shouldn't generate a new image
+    $plugin->update(['data_payload_updated_at' => now()->addSeconds(-15)]);
+    $secondResponse = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    expect($secondResponse['filename'])
+        ->toBe($firstResponse['filename']);
+
+    // third request after 75 seconds, should generate a new image
+    $plugin->update(['data_payload_updated_at' => now()->addSeconds(-75)]);
+    $thirdResponse = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    expect($thirdResponse['filename'])
+        ->not->toBe($firstResponse['filename']);
 });
