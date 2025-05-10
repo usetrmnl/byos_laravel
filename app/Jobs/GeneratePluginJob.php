@@ -2,14 +2,14 @@
 
 namespace App\Jobs;
 
-use App\Models\Device;
+use App\Models\Plugin;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class GenerateScreenJob implements ShouldQueue
+class GeneratePluginJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -17,7 +17,7 @@ class GenerateScreenJob implements ShouldQueue
      * Create a new job instance.
      */
     public function __construct(
-        private readonly int $deviceId,
+        private readonly int $pluginId,
         private readonly string $markup
     ) {}
 
@@ -28,9 +28,10 @@ class GenerateScreenJob implements ShouldQueue
     {
         $newImageUuid = CommonFunctions::generateImage($this->markup);
 
-        Device::find($this->deviceId)->update(['current_screen_image' => $newImageUuid]);
-        \Log::info("Device $this->deviceId: updated with new image: $newImageUuid");
+        Plugin::find($this->pluginId)->update(['current_image' => $newImageUuid]);
+        \Log::info("Plugin $this->pluginId: updated with new image: $newImageUuid");
 
         CommonFunctions::cleanupFolder();
     }
 }
+
