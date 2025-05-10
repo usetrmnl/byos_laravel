@@ -10,8 +10,8 @@ services:
             - PHP_OPCACHE_ENABLE=1
             - TRMNL_PROXY_REFRESH_MINUTES=15
         volumes:
-           - database:/var/www/html/database/
-           - storage:/var/www/html/storage
+           - database:/var/www/html/database/storage
+           - storage:/var/www/html/storage/app/public/images/generated
         restart: unless-stopped
         #platform: "linux/arm64/v8"
 volumes:
