@@ -49,23 +49,21 @@ Route::get('/display', function (Request $request) {
         $refreshTimeOverride = null;
         $nextPlaylistItem = $device->getNextPlaylistItem();
         // Skip if cloud proxy is enabled for the device
-        if (! $device->proxy_cloud || $nextPlaylistItem) {
-            if ($nextPlaylistItem) {
-                $refreshTimeOverride = $nextPlaylistItem->playlist()->first()->refresh_time;
-                $plugin = $nextPlaylistItem->plugin;
+        if (! $device->proxy_cloud && $nextPlaylistItem) {
+            $refreshTimeOverride = $nextPlaylistItem->playlist()->first()->refresh_time;
+            $plugin = $nextPlaylistItem->plugin;
 
-                // Check and update stale data if needed
-                if ($plugin->isDataStale() || $plugin->current_image == null) {
-                    $plugin->updateDataPayload();
+            // Check and update stale data if needed
+            if ($plugin->isDataStale() || $plugin->current_image == null) {
+                $plugin->updateDataPayload();
 
-                    if ($plugin->render_markup) {
-                        $markup = Blade::render($plugin->render_markup, ['data' => $plugin->data_payload]);
-                    } elseif ($plugin->render_markup_view) {
-                        $markup = view($plugin->render_markup_view, ['data' => $plugin->data_payload])->render();
-                    }
-
-                    GeneratePluginJob::dispatchSync($plugin->id, $markup);
+                if ($plugin->render_markup) {
+                    $markup = Blade::render($plugin->render_markup, ['data' => $plugin->data_payload]);
+                } elseif ($plugin->render_markup_view) {
+                    $markup = view($plugin->render_markup_view, ['data' => $plugin->data_payload])->render();
                 }
+
+                GeneratePluginJob::dispatchSync($plugin->id, $markup);
             }
 
             $plugin->refresh();
