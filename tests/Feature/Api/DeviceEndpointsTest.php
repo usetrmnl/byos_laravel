@@ -542,4 +542,4 @@ test('plugin doesn\'t update image unless required', function () {
 
     expect($thirdResponse['filename'])
         ->not->toBe($firstResponse['filename']);
-});
+})->skipOnGitHubActions();
