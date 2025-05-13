@@ -115,4 +115,21 @@ class ImageGenerationService
             }
         }
     }
+
+    public static function resetIfNotCacheable(?Plugin $plugin): void
+    {
+        if ($plugin?->id) {
+            if (
+                Device::query()
+                    ->where('width', '!=', 800)
+                    ->orWhere('height', '!=', 480)
+                    ->orWhere('rotate', '!=', 0)
+                    ->exists()
+            ) {
+                // TODO cache image per device
+                $plugin->update(['current_image' => null]);
+                \Log::debug('Skip cache as devices with other dimensions exist');
+            }
+        }
+    }
 }

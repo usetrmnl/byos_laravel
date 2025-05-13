@@ -3,6 +3,7 @@
 use App\Jobs\GenerateScreenJob;
 use App\Models\Device;
 use App\Models\User;
+use App\Services\ImageGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +53,9 @@ Route::get('/display', function (Request $request) {
             if ($playlistItem) {
                 $refreshTimeOverride = $playlistItem->playlist()->first()->refresh_time;
                 $plugin = $playlistItem->plugin;
+
+                // Reset cache if Devices with different dimensions exist
+                ImageGenerationService::resetIfNotCacheable($plugin);
 
                 // Check and update stale data if needed
                 if ($plugin->isDataStale() || $plugin->current_image == null) {
