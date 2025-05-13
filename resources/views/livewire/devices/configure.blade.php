@@ -16,6 +16,7 @@ new class extends Component {
     public $width;
     public $height;
     public $rotate;
+    public $image_format;
 
     // Playlist properties
     public $playlists;
@@ -41,6 +42,7 @@ new class extends Component {
         $this->width = $device->width;
         $this->height = $device->height;
         $this->rotate = $device->rotate;
+        $this->image_format = $device->image_format;
         $this->playlists = $device->playlists()->with('items.plugin')->orderBy('created_at')->get();
 
         return view('livewire.devices.configure', [
@@ -68,6 +70,7 @@ new class extends Component {
             'width' => 'required|integer|min:1',
             'height' => 'required|integer|min:1',
             'rotate' => 'required|integer|min:0|max:359',
+            'image_format' => 'required|string',
         ]);
 
         $this->device->update([
@@ -78,6 +81,7 @@ new class extends Component {
             'width' => $this->width,
             'height' => $this->height,
             'rotate' => $this->rotate,
+            'image_format' => $this->image_format,
         ]);
 
         Flux::modal('edit-device')->close();
@@ -288,6 +292,11 @@ new class extends Component {
                             <flux:input label="Height (px)" wire:model="height" type="number"/>
                             <flux:input label="Rotate °" wire:model="rotate" type="number"/>
                         </div>
+                        <flux:select label="Image Format" wire:model="image_format">
+                            @foreach(\App\Enums\ImageFormat::cases() as $format)
+                                <flux:select.option value="{{ $format->value }}">{{$format->label()}}</flux:select.option>
+                            @endforeach
+                        </flux:select>
                         <flux:input label="Default Refresh Interval (seconds)" wire:model="default_refresh_interval"
                                     type="number"/>
 

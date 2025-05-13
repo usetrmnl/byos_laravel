@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ImageFormat;
 use App\Models\Device;
 use App\Models\Plugin;
 use Illuminate\Support\Facades\Storage;
@@ -38,21 +39,40 @@ class ImageGenerationService
                 throw new \RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
             }
         }
-
-        if (isset($device->last_firmware_version)
-            && version_compare($device->last_firmware_version, '1.5.2', '<')) {
-            try {
-                ImageGenerationService::convertToBmpImageMagick($pngPath, $bmpPath);
-            } catch (\ImagickException $e) {
-                throw new \RuntimeException('Failed to convert image to BMP: '.$e->getMessage(), 0, $e);
-            }
-        } else {
-            try {
-                ImageGenerationService::convertToPngImageMagick($pngPath, $device->width, $device->height, $device->rotate);
-            } catch (\ImagickException $e) {
-                throw new \RuntimeException('Failed to convert image to PNG: '.$e->getMessage(), 0, $e);
-            }
+        switch ($device->image_format) {
+            case ImageFormat::BMP3_1BIT_SRGB->value:
+                try {
+                    ImageGenerationService::convertToBmpImageMagick($pngPath, $bmpPath);
+                } catch (\ImagickException $e) {
+                    throw new \RuntimeException('Failed to convert image to BMP: '.$e->getMessage(), 0, $e);
+                }
+                break;
+            case ImageFormat::PNG_8BIT_GRAYSCALE->value:
+            case ImageFormat::PNG_8BIT_256C->value:
+                try {
+                    ImageGenerationService::convertToPngImageMagick($pngPath, $device->width, $device->height, $device->rotate, quantize: $device->image_format === ImageFormat::PNG_8BIT_GRAYSCALE);
+                } catch (\ImagickException $e) {
+                    throw new \RuntimeException('Failed to convert image to PNG: '.$e->getMessage(), 0, $e);
+                }
+                break;
+            case ImageFormat::AUTO->value:
+            default:
+                if (isset($device->last_firmware_version)
+                    && version_compare($device->last_firmware_version, '1.5.2', '<')) {
+                    try {
+                        ImageGenerationService::convertToBmpImageMagick($pngPath, $bmpPath);
+                    } catch (\ImagickException $e) {
+                        throw new \RuntimeException('Failed to convert image to BMP: '.$e->getMessage(), 0, $e);
+                    }
+                } else {
+                    try {
+                        ImageGenerationService::convertToPngImageMagick($pngPath, $device->width, $device->height, $device->rotate);
+                    } catch (\ImagickException $e) {
+                        throw new \RuntimeException('Failed to convert image to PNG: '.$e->getMessage(), 0, $e);
+                    }
+                }
         }
+
         $device->update(['current_screen_image' => $uuid]);
         \Log::info("Device $device->id: updated with new image: $uuid");
 
@@ -77,7 +97,7 @@ class ImageGenerationService
     /**
      * @throws \ImagickException
      */
-    private static function convertToPngImageMagick(string $pngPath, ?int $width, ?int $height, ?int $rotate): void
+    private static function convertToPngImageMagick(string $pngPath, ?int $width, ?int $height, ?int $rotate, $quantize = true): void
     {
         $imagick = new \Imagick($pngPath);
         if ($width !== 800 || $height !== 480) {
@@ -87,7 +107,9 @@ class ImageGenerationService
             $imagick->rotateImage(new ImagickPixel('black'), $rotate);
         }
         $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALE);
-        $imagick->quantizeImage(2, \Imagick::COLORSPACE_GRAY, 0, true, false);
+        if ($quantize) {
+            $imagick->quantizeImage(2, \Imagick::COLORSPACE_GRAY, 0, true, false);
+        }
         $imagick->setImageDepth(8);
         $imagick->stripImage();
 
