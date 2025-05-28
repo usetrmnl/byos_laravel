@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Device extends Model
 {
@@ -63,6 +64,10 @@ class Device extends Model
             return true;
         }
 
+        if ($this->update_firmware_id) {
+            return true;
+        }
+
         return false;
     }
 
@@ -72,6 +77,17 @@ class Device extends Model
             return $this->proxy_cloud_response['firmware_url'];
         }
 
+        if ($this->update_firmware_id) {
+            $firmware = Firmware::find($this->update_firmware_id);
+            if ($firmware) {
+                if ($firmware->storage_location) {
+                    return Storage::disk('public')->url($firmware->storage_location);
+                }
+
+                return $firmware->url;
+            }
+        }
+
         return null;
     }
 
@@ -79,6 +95,10 @@ class Device extends Model
     {
         if ($this->proxy_cloud_response) {
             $this->proxy_cloud_response = array_merge($this->proxy_cloud_response, ['update_firmware' => false]);
+            $this->save();
+        }
+        if ($this->update_firmware_id) {
+            $this->update_firmware_id = null;
             $this->save();
         }
     }
@@ -116,5 +136,10 @@ class Device extends Model
     public function mirrorDevice(): BelongsTo
     {
         return $this->belongsTo(Device::class, 'mirror_device_id');
+    }
+
+    public function updateFirmware(): BelongsTo
+    {
+        return $this->belongsTo(Firmware::class, 'update_firmware_id');
     }
 }
