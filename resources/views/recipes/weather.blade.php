@@ -3,7 +3,7 @@
     <x-trmnl::layout class="layout--col gap--space-between">
         <div class="grid" style="gap: 9px;">
             <div class="row row--center col--span-3 col--end">
-                <img class="weather-image" style="max-height: 150px; margin:auto;" src="https://usetrmnl.com/images/weather/wi-thermometer.svg">
+                <img class="weather-image" style="max-height: 150px; margin:auto;" src="https://usetrmnl.com/images/plugins/weather/wi-thermometer.svg">
             </div>
             <div class="col col--span-3 col--end">
                 <div class="item h--full">
