@@ -2,6 +2,7 @@
 
 use App\Jobs\GenerateScreenJob;
 use App\Models\Device;
+use App\Models\DeviceLog;
 use App\Models\User;
 use App\Services\ImageGenerationService;
 use Illuminate\Http\Request;
@@ -185,6 +186,11 @@ Route::post('/log', function (Request $request) {
     $logs = $request->json('log.logs_array', []);
     foreach ($logs as $log) {
         \Log::info('Device Log', $log);
+        DeviceLog::create([
+            'device_id' => $device->id,
+            'device_timestamp' => $log['creation_timestamp'] ?? now(),
+            'log_entry' => $log,
+        ]);
     }
 
     return response()->json([

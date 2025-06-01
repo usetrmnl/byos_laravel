@@ -302,6 +302,7 @@ new class extends Component {
                                 <flux:modal.trigger name="update-firmware">
                                     <flux:menu.item icon="arrow-up-circle">Update Firmware</flux:menu.item>
                                 </flux:modal.trigger>
+                                <flux:menu.item icon="bars-3" href="{{ route('devices.logs', $device) }}" wire:navigate>Show Logs</flux:menu.item>
                                 <flux:modal.trigger name="delete-device">
                                     <flux:menu.item icon="trash" variant="danger">Delete Device</flux:menu.item>
                                 </flux:modal.trigger>

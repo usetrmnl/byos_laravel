@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\CleanupDeviceLogsJob;
 use App\Jobs\FetchProxyCloudResponses;
 use App\Jobs\FirmwarePollJob;
+use Illuminate\Support\Facades\Schedule;
 
 Schedule::job(FetchProxyCloudResponses::class, [])->cron(
     config('services.trmnl.proxy_refresh_cron') ? config('services.trmnl.proxy_refresh_cron') :
@@ -9,3 +11,4 @@ Schedule::job(FetchProxyCloudResponses::class, [])->cron(
 );
 
 Schedule::job(FirmwarePollJob::class)->daily();
+Schedule::job(CleanupDeviceLogsJob::class)->daily();
