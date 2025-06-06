@@ -1,4 +1,5 @@
-<x-trmnl::view>
+@props(['size' => 'full'])
+<x-trmnl::view size="{{$size}}">
     <x-trmnl::layout>
         <x-trmnl::table>
             <thead>

@@ -1,9 +1,10 @@
 {{--@dump($data)--}}
-<x-trmnl::view>
+@props(['size' => 'full'])
+<x-trmnl::view size="{{ $size }}">
     <x-trmnl::layout>
         <x-trmnl::layout class="layout--col">
             <div class="b-h-gray-1">{{$data[0]['a']}}</div>
-            @if (strlen($data[0]['q']) < 300)
+            @if (strlen($data[0]['q']) < 300 && $size != 'quadrant')
                 <p class="value">{{ $data[0]['q'] }}</p>
             @else
                 <p class="value--small">{{ $data[0]['q'] }}</p>

@@ -195,7 +195,19 @@ new class extends Component {
                                             @foreach($playlist->items->sortBy('order') as $item)
                                                 <tr data-flux-row>
                                                     <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
-                                                        {{ $item->plugin->name }}
+                                                        @if($item->isMashup())
+                                                            <div class="flex items-center gap-2">
+                                                                <div>
+                                                                    <div class="font-medium">{{ $item->getMashupName() }}</div>
+                                                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                                                        <flux:icon name="mashup-{{ $item->getMashupLayoutType() }}" class="inline-block pb-1" variant="mini" />
+                                                                        {{ collect($item->getMashupPluginIds())->map(fn($id) => App\Models\Plugin::find($id)->name)->join(' | ') }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        @else
+                                                            <div class="font-medium">{{ $item->plugin->name }}</div>
+                                                        @endif
                                                     </td>
                                                     <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
                                                         <flux:switch wire:model.live="item.is_active"
@@ -219,8 +231,20 @@ new class extends Component {
 
                                                         <flux:modal name="delete-playlist-item-{{ $item->id }}" class="min-w-[22rem] space-y-6">
                                                             <div>
-                                                                <flux:heading size="lg">Delete {{ $item->plugin->name }}?</flux:heading>
-                                                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">This will remove this item from the playlist.</p>
+                                                                <flux:heading size="lg">
+                                                                    @if($item->isMashup())
+                                                                        Delete {{ $item->getMashupName() }}?
+                                                                    @else
+                                                                        Delete {{ $item->plugin->name }}?
+                                                                    @endif
+                                                                </flux:heading>
+                                                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                                                                    @if($item->isMashup())
+                                                                        This will remove this mashup from the playlist.
+                                                                    @else
+                                                                        This will remove this item from the playlist.
+                                                                    @endif
+                                                                </p>
                                                             </div>
 
                                                             <div class="flex gap-2">

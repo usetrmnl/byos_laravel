@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -64,5 +65,39 @@ class Plugin extends Model
                 'data_payload_updated_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * Render the plugin's markup
+     */
+    public function render(string $size = 'full', bool $standalone = true): string
+    {
+        if ($this->render_markup) {
+            if ($standalone) {
+                return view('trmnl-layouts.single', [
+                    'slot' => Blade::render($this->render_markup, ['size' => $size, 'data' => $this->data_payload]),
+                ])->render();
+            }
+
+            return Blade::render($this->render_markup, ['size' => $size, 'data' => $this->data_payload]);
+        }
+
+        if ($this->render_markup_view) {
+            if ($standalone) {
+                return view('trmnl-layouts.single', [
+                    'slot' => view($this->render_markup_view, [
+                        'size' => $size,
+                        'data' => $this->data_payload,
+                    ])->render(),
+                ])->render();
+            } else {
+                return view($this->render_markup_view, [
+                    'size' => $size,
+                    'data' => $this->data_payload,
+                ])->render();
+            }
+        }
+
+        return '<p>No render markup yet defined for this plugin.</p>';
     }
 }

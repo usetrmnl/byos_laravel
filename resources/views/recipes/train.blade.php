@@ -1,4 +1,5 @@
-<x-trmnl::view>
+@props(['size' => 'full'])
+<x-trmnl::view size="{{$size}}">
     <x-trmnl::layout>
         <x-trmnl::table>
             <thead>
@@ -28,7 +29,7 @@
                     </td>
                     @if($journey['isCancelled'])
                         <td>
-                            <x-trmnl::label variant="inverted">Cancelled</x-trmnl::label>
+                            <x-trmnl::label variant="inverted">Ausfall</x-trmnl::label>
                         </td>
                     @else
                         <td>

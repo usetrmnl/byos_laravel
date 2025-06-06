@@ -4,7 +4,8 @@
     });
 @endphp
 
-<x-trmnl::view>
+@props(['size' => 'full'])
+<x-trmnl::view size="{{$size}}">
     <x-trmnl::layout class="layout--col gap--space-between">
         @if($weatherEntity)
 

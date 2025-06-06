@@ -150,6 +150,7 @@ new class extends Component {
                 'plugin_id' => $this->plugin->id,
                 'order' => $maxOrder + 1,
             ]);
+
         }
 
         $this->reset(['checked_devices', 'playlist_name', 'selected_weekdays', 'active_from', 'active_until', 'selected_playlist']);
@@ -200,16 +201,12 @@ HTML;
 HTML;
     }
 
-    public function renderPreview(): void
+    public function renderPreview($size = 'full'): void
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
 
         try {
-            if ($this->plugin->render_markup_view) {
-                $previewMarkup = view($this->plugin->render_markup_view, ['data' => $this->plugin->data_payload])->render();
-            } else {
-                $previewMarkup = Blade::render($this->plugin->render_markup, ['data' => $this->plugin->data_payload]);
-            }
+            $previewMarkup = $this->plugin->render($size);
             $this->dispatch('preview-updated', preview: $previewMarkup);
         } catch (\Exception $e) {
             $this->dispatch('preview-error', message: $e->getMessage());
@@ -237,6 +234,27 @@ HTML;
                 <flux:modal.trigger name="preview-plugin">
                     <flux:button icon="eye" wire:click="renderPreview">Preview</flux:button>
                 </flux:modal.trigger>
+                <flux:dropdown>
+                    <flux:button icon="chevron-down"></flux:button>
+                    <flux:menu>
+                        <flux:modal.trigger name="preview-plugin">
+                            <flux:menu.item icon="mashup-1Tx1B" wire:click="renderPreview('half_horizontal')">Half-Horizontal
+                            </flux:menu.item>
+                        </flux:modal.trigger>
+
+                        <flux:modal.trigger name="preview-plugin">
+                            <flux:menu.item icon="mashup-1Lx1R" wire:click="renderPreview('half_vertical')">Half-Vertical
+                            </flux:menu.item>
+                        </flux:modal.trigger>
+
+                        <flux:modal.trigger name="preview-plugin">
+                            <flux:menu.item icon="mashup-2x2" wire:click="renderPreview('quadrant')">Quadrant</flux:menu.item>
+                        </flux:modal.trigger>
+                    </flux:menu>
+                </flux:dropdown>
+
+            </flux:button.group>
+            <flux:button.group>
                 <flux:modal.trigger name="add-to-playlist">
                     <flux:button icon="play" variant="primary">Add to Playlist</flux:button>
                 </flux:modal.trigger>
@@ -475,7 +493,7 @@ HTML;
 
 @script
 <script>
-    $wire.on('preview-updated', ({ preview }) => {
+    $wire.on('preview-updated', ({preview}) => {
         const frame = document.getElementById('preview-frame');
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
         frameDoc.open();
@@ -483,7 +501,7 @@ HTML;
         frameDoc.close();
     });
 
-    $wire.on('preview-error', ({ message }) => {
+    $wire.on('preview-error', ({message}) => {
         alert('Preview Error: ' + message);
     });
 </script>

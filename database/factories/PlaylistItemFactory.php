@@ -17,6 +17,7 @@ class PlaylistItemFactory extends Factory
         return [
             'playlist_id' => Playlist::factory(),
             'plugin_id' => Plugin::factory(),
+            'mashup' => null,
             'order' => $this->faker->numberBetween(0, 100),
             'is_active' => $this->faker->boolean(80), // 80% chance of being active
             'last_displayed_at' => null,
