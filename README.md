@@ -152,11 +152,11 @@ Make sure that your device has a Developer license, you should be able to verify
 2.	Enter your markup manually or select from the available templates.
 3.	Save and apply the changes.
 
-* Available Blade Components are listed here: [laravel-trmnl | Blade Components](https://github.com/bnussbau/laravel-trmnl/tree/main/resources/views/components)
+* Available Blade Components are listed here: [laravel-trmnl | Blade Components](https://github.com/usetrmnl/byos_laravel/tree/main/resources/views/components)
 
 #### 🎨 Blade View
 * Edit `resources/views/trmnl.blade.php`
-    * Available Blade Components are listed here: [laravel-trmnl | Blade Components](https://github.com/bnussbau/laravel-trmnl/tree/main/resources/views/components)
+    * Available Blade Components are listed here: [laravel-trmnl | Blade Components](https://github.com/usetrmnl/byos_laravel/tree/main/resources/views/components)
 * To generate the screen, run
 
 ```bash
