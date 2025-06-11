@@ -361,7 +361,7 @@ HTML;
                             </div>
                         @endif
 
-                        <flux:separator text="Mashup" />
+                        <flux:separator text="Layout" />
                         <div class="mt-4 mb-4">
                             <flux:radio.group wire:model.live="mashup_layout" variant="segmented">
                                 <flux:radio value="full" icon="mashup-1x1"/>

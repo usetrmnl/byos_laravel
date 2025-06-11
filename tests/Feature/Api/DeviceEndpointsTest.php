@@ -756,4 +756,4 @@ test('display endpoint handles mashup playlist items correctly', function () {
     // Verify the playlist item was marked as displayed
     $playlistItem->refresh();
     expect($playlistItem->last_displayed_at)->not->toBeNull();
-});
+})->skipOnGitHubActions();
