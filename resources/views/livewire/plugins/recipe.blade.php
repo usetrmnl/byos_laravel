@@ -22,6 +22,8 @@ new class extends Component {
     public string $active_from = '';
     public string $active_until = '';
     public string $selected_playlist = '';
+    public string $mashup_layout = 'full';
+    public array $mashup_plugins = [];
 
     public function mount(): void
     {
@@ -117,11 +119,32 @@ new class extends Component {
         }
     }
 
+    public function getAvailablePlugins()
+    {
+        return auth()->user()->plugins()->where('id', '!=', $this->plugin->id)->get();
+    }
+
+    public function getRequiredPluginCount(): int
+    {
+        if ($this->mashup_layout === 'full') {
+            return 1;
+        }
+
+        return match ($this->mashup_layout) {
+            '1Lx1R', '1Tx1B' => 2,  // Left-Right or Top-Bottom split
+            '1Lx2R', '2Lx1R', '2Tx1B', '1Tx2B' => 3,  // Two on one side, one on other
+            '2x2' => 4,  // Quadrant
+            default => 1,
+        };
+    }
+
     public function addToPlaylist()
     {
         $this->validate([
             'checked_devices' => 'required|array|min:1',
             'selected_playlist' => 'required|string',
+            'mashup_layout' => 'required|string',
+            'mashup_plugins' => 'required_if:mashup_layout,1Lx1R,1Lx2R,2Lx1R,1Tx1B,2Tx1B,1Tx2B,2x2|array',
         ]);
 
         foreach ($this->checked_devices as $deviceId) {
@@ -146,14 +169,26 @@ new class extends Component {
 
             // Add plugin to playlist
             $maxOrder = $playlist->items()->max('order') ?? 0;
-            $playlist->items()->create([
-                'plugin_id' => $this->plugin->id,
-                'order' => $maxOrder + 1,
-            ]);
 
+            if ($this->mashup_layout === 'full') {
+                $playlist->items()->create([
+                    'plugin_id' => $this->plugin->id,
+                    'order' => $maxOrder + 1,
+                ]);
+            } else {
+                // Create mashup
+                $pluginIds = array_merge([$this->plugin->id], array_map('intval', $this->mashup_plugins));
+                \App\Models\PlaylistItem::createMashup(
+                    $playlist,
+                    $this->mashup_layout,
+                    $pluginIds,
+                    $this->plugin->name . ' Mashup',
+                    $maxOrder + 1
+                );
+            }
         }
 
-        $this->reset(['checked_devices', 'playlist_name', 'selected_weekdays', 'active_from', 'active_until', 'selected_playlist']);
+        $this->reset(['checked_devices', 'playlist_name', 'selected_weekdays', 'active_from', 'active_until', 'selected_playlist', 'mashup_layout', 'mashup_plugins']);
         Flux::modal('add-to-playlist')->close();
     }
 
@@ -181,7 +216,8 @@ new class extends Component {
     public function renderLayoutWithTitleBar(): string
     {
         return <<<HTML
-<x-trmnl::view>
+@props(['size' => 'full'])
+<x-trmnl::view size="{{\$size}}">
     <x-trmnl::layout>
         <!-- ADD YOUR CONTENT HERE-->
     </x-trmnl::layout>
@@ -193,7 +229,8 @@ HTML;
     public function renderLayoutBlank(): string
     {
         return <<<HTML
-<x-trmnl::view>
+@props(['size' => 'full'])
+<x-trmnl::view size="{{\$size}}">
     <x-trmnl::layout>
         <!-- ADD YOUR CONTENT HERE-->
     </x-trmnl::layout>
@@ -270,15 +307,16 @@ HTML;
             </flux:button.group>
         </div>
 
-        <flux:modal name="add-to-playlist" class="md:w-96">
+        <flux:modal name="add-to-playlist" class="min-w-2xl">
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Add to Playlist</flux:heading>
                 </div>
 
                 <form wire:submit="addToPlaylist">
-                    <div class="mb-4">
-                        <flux:checkbox.group wire:model.live="checked_devices" label="Select Devices">
+                    <flux:separator text="Device(s)" />
+                    <div class="mt-4 mb-4">
+                        <flux:checkbox.group wire:model.live="checked_devices">
                             @foreach(auth()->user()->devices as $device)
                                 <flux:checkbox label="{{ $device->name }}" value="{{ $device->id }}"/>
                             @endforeach
@@ -286,21 +324,22 @@ HTML;
                     </div>
 
                     @if(count($checked_devices) === 1)
-                        <div class="mb-4">
-                            <flux:radio.group wire:model.live.debounce="selected_playlist" label="Select Playlist"
-                                              variant="segmented">
-                                <flux:radio value="new" label="Create New"/>
+                        <flux:separator text="Playlist" />
+                        <div class="mt-4 mb-4">
+                            <flux:select wire:model.live.debounce="selected_playlist">
+                                <option value="">Select Playlist or Create New</option>
                                 @foreach($this->getDevicePlaylists($checked_devices[0]) as $playlist)
-                                    <flux:radio value="{{ $playlist->id }}" label="{{ $playlist->name }}"/>
+                                    <option value="{{ $playlist->id }}">{{ $playlist->name }}</option>
                                 @endforeach
-                            </flux:radio.group>
+                                <option value="new">Create New Playlist</option>
+                            </flux:select>
                         </div>
-
+                    @endif
+                    @if($selected_playlist)
                         @if($selected_playlist === 'new')
-                            <div class="mb-4">
+                            <div class="mt-4 mb-4">
                                 <flux:input label="Playlist Name" wire:model="playlist_name"/>
                             </div>
-
                             <div class="mb-4">
                                 <flux:checkbox.group wire:model="selected_weekdays" label="Active Days (optional)">
                                     <flux:checkbox label="Monday" value="1"/>
@@ -319,6 +358,43 @@ HTML;
 
                             <div class="mb-4">
                                 <flux:input type="time" label="Active Until (optional)" wire:model="active_until"/>
+                            </div>
+                        @endif
+
+                        <flux:separator text="Mashup" />
+                        <div class="mt-4 mb-4">
+                            <flux:radio.group wire:model.live="mashup_layout" variant="segmented">
+                                <flux:radio value="full" icon="mashup-1x1"/>
+                                <flux:radio value="1Lx1R"  icon="mashup-1Lx1R"/>
+                                <flux:radio value="1Lx2R"  icon="mashup-1Lx2R"/>
+                                <flux:radio value="2Lx1R"  icon="mashup-2Lx1R"/>
+                                <flux:radio value="1Tx1B" icon="mashup-1Tx1B"/>
+                                <flux:radio value="2Tx1B"  icon="mashup-2Tx1B"/>
+                                <flux:radio value="1Tx2B"  icon="mashup-1Tx2B"/>
+                                <flux:radio value="2x2"  icon="mashup-2x2"/>
+                            </flux:radio.group>
+                        </div>
+
+                        @if($mashup_layout !== 'full')
+                            <div class="mb-4">
+                                <div class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Mashup Slots</div>
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-24 text-sm text-zinc-500 dark:text-zinc-400">Main Plugin</div>
+                                        <flux:input :value="$plugin->name" disabled class="flex-1"/>
+                                    </div>
+                                    @for($i = 0; $i < $this->getRequiredPluginCount() - 1; $i++)
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-24 text-sm text-zinc-500 dark:text-zinc-400">Plugin {{ $i + 2 }}:</div>
+                                            <flux:select wire:model="mashup_plugins.{{ $i }}" class="flex-1">
+                                                <option value="">Select a plugin...</option>
+                                                @foreach($this->getAvailablePlugins() as $availablePlugin)
+                                                    <option value="{{ $availablePlugin->id }}">{{ $availablePlugin->name }}</option>
+                                                @endforeach
+                                            </flux:select>
+                                        </div>
+                                    @endfor
+                                </div>
                             </div>
                         @endif
                     @endif
@@ -462,8 +538,8 @@ HTML;
                 </div>
             @else
                 <div class="text-accent">
-                    <a href="#" wire:click="renderExample('layoutTitle')" class="text-xl">Layout with Title Bar</a> |
-                    <a href="#" wire:click="renderExample('layout')" class="text-xl">Blank Layout</a>
+                    <span class="pr-2">Getting started:</span><flux:button wire:click="renderExample('layoutTitle')" class="text-xl">Responsive Layout with Title Bar</flux:button>
+                    <flux:button wire:click="renderExample('layout')" class="text-xl">Responsive Layout</flux:button>
                 </div>
             @endif
         </div>

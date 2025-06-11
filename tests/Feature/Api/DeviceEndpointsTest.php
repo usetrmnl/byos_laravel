@@ -697,3 +697,63 @@ test('display endpoint updates last_refreshed_at timestamp for mirrored devices'
     expect($mirrorDevice->last_refreshed_at)->not->toBeNull()
         ->and($mirrorDevice->last_refreshed_at->diffInSeconds(now()))->toBeLessThan(2);
 });
+
+test('display endpoint handles mashup playlist items correctly', function () {
+    // Create a device
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+        'proxy_cloud' => false,
+    ]);
+
+    // Create a playlist
+    $playlist = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => 'update_test',
+        'is_active' => true,
+        'weekdays' => null,
+        'active_from' => null,
+        'active_until' => null,
+    ]);
+
+    // Create three plugins for the mashup
+    $plugin1 = Plugin::factory()->create([
+        'name' => 'Plugin 1',
+        'data_strategy' => 'webhook',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'render_markup_view' => 'trmnl',
+    ]);
+
+    $plugin2 = Plugin::factory()->create([
+        'name' => 'Plugin 2',
+        'data_strategy' => 'webhook',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'render_markup_view' => 'trmnl',
+    ]);
+
+    // Create a mashup playlist item with a 2Lx1R layout (2 plugins on left, 1 on right)
+    $playlistItem = PlaylistItem::createMashup(
+        $playlist,
+        '1Lx1R',
+        [$plugin1->id, $plugin2->id],
+        'Test Mashup',
+        1
+    );
+
+    // Make request to display endpoint
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk();
+
+    // Verify the playlist item was marked as displayed
+    $playlistItem->refresh();
+    expect($playlistItem->last_displayed_at)->not->toBeNull();
+});

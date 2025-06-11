@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
 
             $this->call([
                 ExampleRecipesSeeder::class,
-                MashupPocSeeder::class,
+                // MashupPocSeeder::class,
             ]);
         }
     }

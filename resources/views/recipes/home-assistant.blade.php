@@ -18,7 +18,7 @@
                     <div class="item h--full">
                         <div class="meta"></div>
                         <div class="justify-center">
-                            <span class="value value--xxxlarge"
+                            <span class="value @if($size == 'full' || $size == 'half_horizontal') value--xxlarge @else value--medium @endif"
                                   data-fit-value="true">{{ $weatherEntity['attributes']['temperature'] }}</span>
                             <span class="label">Temperature {{ $weatherEntity['attributes']['temperature_unit'] }}</span>
                         </div>
