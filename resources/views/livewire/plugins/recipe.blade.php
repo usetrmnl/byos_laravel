@@ -2,8 +2,10 @@
 
 use App\Models\Plugin;
 use Illuminate\Support\Carbon;
+use Keepsuit\Liquid\Exceptions\LiquidException;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Arr;
 
 new class extends Component {
     public Plugin $plugin;
@@ -28,10 +30,15 @@ new class extends Component {
     public string $selected_playlist = '';
     public string $mashup_layout = 'full';
     public array $mashup_plugins = [];
+    public array $configuration_template = [];
+    public array $configuration = [];
 
     public function mount(): void
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
+        $this->blade_code = $this->plugin->render_markup;
+        $this->configuration_template = $this->plugin->configuration_template ?? [];
+        $this->configuration = is_array($this->plugin->configuration) ? $this->plugin->configuration : [];
 
         if ($this->plugin->render_markup_view) {
             try {
@@ -86,7 +93,7 @@ new class extends Component {
         'name' => 'required|string|max:255',
         'data_stale_minutes' => 'required|integer|min:1',
         'data_strategy' => 'required|string|in:polling,webhook,static',
-        'polling_url' => 'required_if:data_strategy,polling|nullable|url',
+        'polling_url' => 'required_if:data_strategy,polling|nullable',
         'polling_verb' => 'required|string|in:get,post',
         'polling_header' => 'nullable|string|max:255',
         'polling_body' => 'nullable|string',
@@ -104,9 +111,28 @@ new class extends Component {
     public function editSettings()
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
+
+        // Custom validation for polling_url with Liquid variable resolution
+        $this->validatePollingUrl();
+
         $validated = $this->validate();
         $validated['data_payload'] = json_decode(Arr::get($validated,'data_payload'), true);
         $this->plugin->update($validated);
+    }
+
+    protected function validatePollingUrl(): void
+    {
+        if ($this->data_strategy === 'polling' && !empty($this->polling_url)) {
+            try {
+                $resolvedUrl = $this->plugin->resolveLiquidVariables($this->polling_url);
+
+                if (!filter_var($resolvedUrl, FILTER_VALIDATE_URL)) {
+                    $this->addError('polling_url', 'The polling URL must be a valid URL after resolving configuration variables.');
+                }
+            } catch (\Exception $e) {
+                $this->addError('polling_url', 'Error resolving Liquid variables: ' . $e->getMessage());
+            }
+        }
     }
 
     public function updateData(): void
@@ -197,10 +223,38 @@ new class extends Component {
         Flux::modal('add-to-playlist')->close();
     }
 
+    public function saveConfiguration()
+    {
+        abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
+
+        $configurationValues = [];
+        if (isset($this->configuration_template['custom_fields'])) {
+            foreach ($this->configuration_template['custom_fields'] as $field) {
+                $fieldKey = $field['keyname'];
+                if (isset($this->configuration[$fieldKey])) {
+                    $configurationValues[$fieldKey] = $this->configuration[$fieldKey];
+                }
+            }
+        }
+
+        $this->plugin->update([
+            'configuration' => $configurationValues
+        ]);
+
+        Flux::modal('configuration-modal')->close();
+    }
+
     public function getDevicePlaylists($deviceId)
     {
         return \App\Models\Playlist::where('device_id', $deviceId)->get();
     }
+
+    public function getConfigurationValue($key, $default = null)
+    {
+        return $this->configuration[$key] ?? $default;
+    }
+
+
 
     public function renderExample(string $example)
     {
@@ -270,9 +324,16 @@ HTML;
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
 
+        // If data strategy is polling and data_payload is null, fetch the data first
+        if ($this->plugin->data_strategy === 'polling' && $this->plugin->data_payload === null) {
+            $this->updateData();
+        }
+
         try {
             $previewMarkup = $this->plugin->render($size);
             $this->dispatch('preview-updated', preview: $previewMarkup);
+        } catch (LiquidException $e) {
+            $this->dispatch('preview-error', message: $e->toLiquidErrorMessage());
         } catch (\Exception $e) {
             $this->dispatch('preview-error', message: $e->getMessage());
         }
@@ -297,23 +358,23 @@ HTML;
 
             <flux:button.group>
                 <flux:modal.trigger name="preview-plugin">
-                    <flux:button icon="eye" wire:click="renderPreview">Preview</flux:button>
+                    <flux:button icon="eye" wire:click="renderPreview" :disabled="$plugin->hasMissingRequiredConfigurationFields()">Preview</flux:button>
                 </flux:modal.trigger>
                 <flux:dropdown>
-                    <flux:button icon="chevron-down"></flux:button>
+                    <flux:button icon="chevron-down" :disabled="$plugin->hasMissingRequiredConfigurationFields()"></flux:button>
                     <flux:menu>
                         <flux:modal.trigger name="preview-plugin">
-                            <flux:menu.item icon="mashup-1Tx1B" wire:click="renderPreview('half_horizontal')">Half-Horizontal
+                            <flux:menu.item icon="mashup-1Tx1B" wire:click="renderPreview('half_horizontal')" :disabled="$plugin->hasMissingRequiredConfigurationFields()">Half-Horizontal
                             </flux:menu.item>
                         </flux:modal.trigger>
 
                         <flux:modal.trigger name="preview-plugin">
-                            <flux:menu.item icon="mashup-1Lx1R" wire:click="renderPreview('half_vertical')">Half-Vertical
+                            <flux:menu.item icon="mashup-1Lx1R" wire:click="renderPreview('half_vertical')" :disabled="$plugin->hasMissingRequiredConfigurationFields()">Half-Vertical
                             </flux:menu.item>
                         </flux:modal.trigger>
 
                         <flux:modal.trigger name="preview-plugin">
-                            <flux:menu.item icon="mashup-2x2" wire:click="renderPreview('quadrant')">Quadrant</flux:menu.item>
+                            <flux:menu.item icon="mashup-2x2" wire:click="renderPreview('quadrant')" :disabled="$plugin->hasMissingRequiredConfigurationFields()">Quadrant</flux:menu.item>
                         </flux:modal.trigger>
                     </flux:menu>
                 </flux:dropdown>
@@ -321,7 +382,7 @@ HTML;
             </flux:button.group>
             <flux:button.group>
                 <flux:modal.trigger name="add-to-playlist">
-                    <flux:button icon="play" variant="primary">Add to Playlist</flux:button>
+                    <flux:button icon="play" variant="primary" :disabled="$plugin->hasMissingRequiredConfigurationFields()">Add to Playlist</flux:button>
                 </flux:modal.trigger>
 
                 <flux:dropdown>
@@ -429,7 +490,7 @@ HTML;
 
                     <div class="flex">
                         <flux:spacer/>
-                        <flux:button type="submit" variant="primary">Add to Playlist</flux:button>
+                        <flux:button type="submit" variant="primary" :disabled="$plugin->hasMissingRequiredConfigurationFields()">Add to Playlist</flux:button>
                     </div>
                 </form>
             </div>
@@ -461,6 +522,143 @@ HTML;
             </div>
         </flux:modal>
 
+        <flux:modal name="configuration-modal" class="md:w-96">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Configuration</flux:heading>
+                    <flux:subheading>Configure your plugin settings</flux:subheading>
+                </div>
+
+                        <form wire:submit="saveConfiguration">
+                            @if(isset($configuration_template['custom_fields']) && is_array($configuration_template['custom_fields']))
+                                @foreach($configuration_template['custom_fields'] as $field)
+                                    @php
+                                        $fieldKey = $field['keyname'] ?? $field['key'] ?? $field['name'];
+                                        $currentValue = $configuration[$fieldKey] ?? '';
+                                    @endphp
+                                    <div class="mb-8">
+                                        @if($field['field_type'] === 'author_bio')
+                                            @continue
+                                        @endif
+
+                                        @if($field['field_type'] === 'copyable_webhook_url')
+                                            @continue
+                                        @endif
+
+                                        @if($field['field_type'] === 'string' || $field['field_type'] === 'url')
+                                            <flux:input
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                            />
+                                        @elseif($field['field_type'] === 'password')
+                                            <flux:input
+                                                type="password"
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                                viewable
+                                            />
+                                        @elseif($field['field_type'] === 'copyable')
+                                            <flux:input
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                                value="{{ $field['value'] }}"
+                                                copyable
+                                            />
+                                        @elseif($field['field_type'] === 'time_zone')
+                                            <flux:select
+                                                label="{{ $field['name'] }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                            >
+                                                <option value="">Select timezone...</option>
+                                                @foreach(timezone_identifiers_list() as $timezone)
+                                                    <option value="{{ $timezone }}" {{ $currentValue === $timezone ? 'selected' : '' }}>{{ $timezone }}</option>
+                                                @endforeach
+                                            </flux:select>
+                                        @elseif($field['field_type'] === 'number')
+                                            <flux:input
+                                                type="number"
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? $field['name'] }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                            />
+                                        @elseif($field['field_type'] === 'boolean')
+                                            <flux:checkbox
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? $field['name'] }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                :checked="$currentValue"
+                                            />
+                                        @elseif($field['field_type'] === 'date')
+                                            <flux:input
+                                                type="date"
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? $field['name'] }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                            />
+                                        @elseif($field['field_type'] === 'select')
+                                            @if(isset($field['multiple']) && $field['multiple'] === true)
+                                                <flux:checkbox.group
+                                                    label="{{ $field['name'] }}"
+                                                    wire:model="configuration.{{ $fieldKey }}"
+                                                    description="{{ $field['description'] ?? '' }}"
+                                                >
+                                                    @if(isset($field['options']) && is_array($field['options']))
+                                                        @foreach($field['options'] as $option)
+                                                            @if(is_array($option))
+                                                                @foreach($option as $label => $value)
+                                                                    <flux:checkbox label="{{ $label }}" value="{{ $value }}"/>
+                                                                @endforeach
+                                                            @else
+                                                                <flux:checkbox label="{{ $option }}" value="{{ $option }}"/>
+                                                            @endif
+                                                        @endforeach
+                                                    @endif
+                                                </flux:checkbox.group>
+                                            @else
+                                                <flux:select
+                                                    label="{{ $field['name'] }}"
+                                                    wire:model="configuration.{{ $fieldKey }}"
+                                                    description="{{ $field['description'] ?? '' }}"
+                                                >
+                                                    <option value="">Select {{ $field['name'] }}...</option>
+                                                    @if(isset($field['options']) && is_array($field['options']))
+                                                        @foreach($field['options'] as $option)
+                                                            @if(is_array($option))
+                                                                @foreach($option as $label => $value)
+                                                                    <option value="{{ $value }}" {{ $currentValue === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                                @endforeach
+                                                            @else
+                                                                @php
+                                                                    $key = mb_strtolower(str_replace(' ', '_', $option));
+                                                                @endphp
+                                                                <option value="{{ $key }}" {{ $currentValue === $key ? 'selected' : '' }}>{{ $option }}</option>
+                                                            @endif
+                                                        @endforeach
+                                                    @endif
+                                                </flux:select>
+                                            @endif
+                                        @else
+                                            <p>{{ $field['name'] }}: Field type "{{ $field['field_type'] }}" not yet supported</p>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            @endif
+
+                            <div class="flex">
+                                <flux:spacer/>
+                                <flux:button type="submit" variant="primary">Save Configuration</flux:button>
+                            </div>
+                        </form>
+            </div>
+        </flux:modal>
+
         <div class="mt-5 mb-5">
             <h3 class="text-xl font-semibold dark:text-gray-100">Settings</h3>
         </div>
@@ -472,6 +670,85 @@ HTML;
                                     name="name" autofocus/>
                     </div>
 
+                    @php
+                        $authorField = null;
+                        if (isset($configuration_template['custom_fields'])) {
+                            foreach ($configuration_template['custom_fields'] as $field) {
+                                if ($field['field_type'] === 'author_bio') {
+                                    $authorField = $field;
+                                    break;
+                                }
+                            }
+                        }
+                    @endphp
+
+                    @if($authorField)
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                            <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                {{ $authorField['description'] }}
+                            </div>
+
+                            @if(isset($authorField['github_url']) || isset($authorField['learn_more_url']) || isset($authorField['email_address']))
+                                <div class="mt-4 flex flex-wrap gap-2">
+                                    @if(isset($authorField['github_url']))
+                                        @php
+                                            $githubUrl = $authorField['github_url'];
+                                            $githubUsername = null;
+
+                                            // Extract username from various GitHub URL formats
+                                            if (preg_match('/github\.com\/([^\/\?]+)/', $githubUrl, $matches)) {
+                                                $githubUsername = $matches[1];
+                                            }
+                                        @endphp
+                                        @if($githubUsername)<flux:label badge="{{ $githubUsername }}"/>@endif
+                                    @endif
+                                    @if(isset($authorField['learn_more_url']))
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon:trailing="arrow-up-right"
+                                            href="{{ $authorField['learn_more_url'] }}"
+                                            target="_blank"
+                                        >
+                                            Learn More
+                                        </flux:button>
+                                    @endif
+
+                                    @if(isset($authorField['github_url']))
+                                        <flux:button
+                                            size="sm"
+                                            icon="github"
+                                            variant="ghost"
+                                            href="{{ $authorField['github_url'] }}"
+                                            target="_blank"
+                                        >
+                                        </flux:button>
+                                    @endif
+
+                                    @if(isset($authorField['email_address']))
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="envelope"
+                                            href="mailto:{{ $authorField['email_address'] }}"
+                                        >
+                                        </flux:button>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
+                    @if(isset($configuration_template['custom_fields']) && !empty($configuration_template['custom_fields']))
+                        @if($plugin->hasMissingRequiredConfigurationFields())
+                            <flux:callout class="mb-2" variant="warning" icon="exclamation-circle" heading="Please set required configuration fields." />
+                        @endif
+                        <div class="mb-4">
+                            <flux:modal.trigger name="configuration-modal">
+                                <flux:button icon="cog" class="block mt-1 w-full">Configuration</flux:button>
+                            </flux:modal.trigger>
+                        </div>
+                    @endif
                     <div class="mb-4">
                         <flux:radio.group wire:model.live="data_strategy" label="Data Strategy" variant="segmented">
                             <flux:radio value="polling" label="Polling"/>
@@ -482,15 +759,13 @@ HTML;
 
                     @if($data_strategy === 'polling')
                         <div class="mb-4">
-                            <flux:input label="Polling URL" wire:model="polling_url" id="polling_url"
+                            <flux:textarea label="Polling URL" description="You can use configuration variables with Liquid syntax. Supports multiple requests via line break separation" wire:model="polling_url" id="polling_url"
                                         placeholder="https://example.com/api"
-                                        class="block mt-1 w-full" type="text" name="polling_url" autofocus>
-                                <x-slot name="iconTrailing">
-                                    <flux:button size="sm" variant="subtle" icon="cloud-arrow-down"
-                                                 wire:click="updateData"
-                                                 tooltip="Fetch data now" class="-mr-1"/>
-                                </x-slot>
+                                        class="block w-full" type="text" name="polling_url" autofocus>
                             </flux:input>
+                            <flux:button icon="cloud-arrow-down" wire:click="updateData" class="block mt-2 w-full">
+                                Fetch data now
+                            </flux:button>
                         </div>
 
                         <div class="mb-4">
@@ -533,6 +808,7 @@ HTML;
                         <div class="mb-4">
                             <flux:input
                                 label="Webhook URL"
+                                descriptionTrailing="Send JSON payload with key <code>merge_variables</code> to the webhook URL. The payload will be merged with the plugin data."
                                 :value="route('api.custom_plugins.webhook', ['plugin_uuid' => $plugin->uuid])"
                                 class="block mt-1 w-full font-mono"
                                 readonly
@@ -540,19 +816,13 @@ HTML;
                             >
                             </flux:input>
                         </div>
-                        <div>
-                            <p>Send JSON payload with key <code>merge_variables</code> to the webhook URL. The payload
-                                will be merged with the plugin data.</p>
-                        </div>
                     @elseif($data_strategy === 'static')
-                        <div>
-                            <p>Enter static JSON data in the Data Payload field.</p>
-                        </div>
+                        <flux:text class="mb-2">Enter static JSON data in the Data Payload field.</flux:text>
                     @endif
 
                     <div class="flex">
                         <flux:spacer/>
-                        <flux:button type="submit" variant="primary">Save</flux:button>
+                        <flux:button type="submit" variant="primary" class="w-full">Save</flux:button>
                     </div>
                 </form>
             </div>
@@ -626,6 +896,8 @@ HTML;
         @endif
     </div>
 </div>
+
+
 
 @script
 <script>

@@ -1,8 +1,13 @@
 <?php
 
+use App\Console\Commands\ExampleRecipesSeederCommand;
+use App\Services\PluginImportService;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
+use Illuminate\Support\Str;
 
 new class extends Component {
+    use WithFileUploads;
 
     public string $name;
     public int $data_stale_minutes = 60;
@@ -12,6 +17,7 @@ new class extends Component {
     public $polling_header;
     public $polling_body;
     public array $plugins;
+    public $zipFile;
 
     public array $native_plugins = [
         'markup' =>
@@ -50,7 +56,7 @@ new class extends Component {
         $this->validate();
 
         \App\Models\Plugin::create([
-            'uuid' => \Illuminate\Support\Str::uuid(),
+            'uuid' => Str::uuid(),
             'user_id' => auth()->id(),
             'name' => $this->name,
             'data_stale_minutes' => $this->data_stale_minutes,
@@ -69,8 +75,32 @@ new class extends Component {
 
     public function seedExamplePlugins(): void
     {
-        \Artisan::call(\App\Console\Commands\ExampleRecipesSeederCommand::class, ['user_id' => auth()->id()]);
+        Artisan::call(ExampleRecipesSeederCommand::class, ['user_id' => auth()->id()]);
         $this->refreshPlugins();
+
+    }
+
+
+    public function importZip(PluginImportService $pluginImportService): void
+    {
+        abort_unless(auth()->user() !== null, 403);
+
+        $this->validate([
+            'zipFile' => 'required|file|mimes:zip|max:10240', // 10MB max
+        ]);
+
+        try {
+            $plugin = $pluginImportService->importFromZip($this->zipFile, auth()->user());
+
+            $this->refreshPlugins();
+            $this->reset(['zipFile']);
+
+            Flux::modal('import-zip')->close();
+            $this->dispatch('notify', ['type' => 'success', 'message' => 'Plugin imported successfully!']);
+
+        } catch (\Exception $e) {
+            $this->dispatch('notify', ['type' => 'error', 'message' => 'Error importing plugin: ' . $e->getMessage()]);
+        }
     }
 
 };
@@ -89,21 +119,72 @@ new class extends Component {
                 <flux:dropdown>
                     <flux:button icon="chevron-down" variant="primary"></flux:button>
                     <flux:menu>
+                        <flux:modal.trigger name="import-zip">
+                            <flux:menu.item icon="archive-box">Import Recipe</flux:menu.item>
+                        </flux:modal.trigger>
                         <flux:menu.item icon="beaker" wire:click="seedExamplePlugins">Seed Example Recipes</flux:menu.item>
-                        {{--                        <flux:menu.separator/>--}}
-                        {{--                        <flux:modal.trigger name="import-recipe">--}}
-                        {{--                            <flux:menu.item icon="paper-clip">Import Recipe ZIP File</flux:menu.item>--}}
-                        {{--                        </flux:modal.trigger>--}}
-                        {{--                        <flux:menu.separator/>--}}
-                        {{--                        <flux:modal.trigger name="add-native-plugin">--}}
-                        {{--                            <flux:menu.item icon="code-bracket">New Native Plugin</flux:menu.item>--}}
-                        {{--                        </flux:modal.trigger>--}}
                     </flux:menu>
                 </flux:dropdown>
             </flux:button.group>
 
 
         </div>
+
+        <flux:modal name="import-zip" class="md:w-96">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Import Recipe
+                        <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
+                    </flux:heading>
+                    <flux:subheading>Upload a ZIP archive containing a TRMNL recipe — either exported from the cloud service or structured using the <a href="https://github.com/usetrmnl/trmnlp" target="_blank" class="underline">trmnlp</a> project structure.</flux:subheading>
+                </div>
+
+                <div class="mb-4">
+                    <flux:text>The archive must at least contain <code>settings.yml</code> and <code>full.liquid</code> files.</flux:text>
+{{--                    <p>The ZIP file should contain the following structure:</p>--}}
+{{--                    <pre class="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto">--}}
+{{--.--}}
+{{--├── src--}}
+{{--│   ├── full.liquid (required)--}}
+{{--│   ├── settings.yml (required)--}}
+{{--│   └── ...--}}
+{{--└── ...--}}
+{{--                    </pre>--}}
+                </div>
+
+                <div class="mb-4">
+                    <flux:heading size="sm">Limitations</flux:heading>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li><flux:text>Only full view will be imported; shared markup will be prepended</flux:text></li>
+                        <li><flux:text>Some Liquid filters may be not supported or behave differently</flux:text></li>
+                        <li><flux:text>API responses in formats other than JSON are not yet supported</flux:text></li>
+{{--                        <ul class="list-disc pl-5 mt-2">--}}
+{{--                            <li><flux:text><code>date: "%N"</code> is unsupported. Use <code>date: "u"</code> instead </flux:text></li>--}}
+{{--                        </ul>--}}
+                    </ul>
+                    <flux:text class="mt-1">Please report <a href="https://github.com/usetrmnl/byos_laravel/issues/new" target="_blank" class="underline">issues on GitHub</a>. Include your example zip file.</flux:text></li>
+                </div>
+
+                <form wire:submit="importZip">
+                    <div class="mb-4">
+                        <label for="zipFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">.zip Archive</label>
+                        <input
+                            type="file"
+                            wire:model="zipFile"
+                            id="zipFile"
+                            accept=".zip"
+                            class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 p-2.5"
+                        />
+                        @error('zipFile') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="flex">
+                        <flux:spacer/>
+                        <flux:button type="submit" variant="primary">Import</flux:button>
+                    </div>
+                </form>
+            </div>
+        </flux:modal>
 
         <flux:modal name="add-plugin" class="md:w-96">
             <div class="space-y-6">
