@@ -72,4 +72,9 @@ class User extends Authenticatable // implements MustVerifyEmail
     {
         return $this->hasMany(Plugin::class);
     }
+
+    public function routeNotificationForWebhook(): ?string
+    {
+        return config('services.webhook.notifications.url');
+    }
 }

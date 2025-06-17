@@ -43,4 +43,11 @@ return [
         'image_url_timeout' => env('TRMNL_IMAGE_URL_TIMEOUT', 30), // 30 seconds; increase on low-powered devices
     ],
 
+    'webhook' => [
+        'notifications' => [
+            'url' => env('WEBHOOK_NOTIFICATION_URL', null),
+            'topic' => env('WEBHOOK_NOTIFICATION_TOPIC', 'null'),
+        ],
+    ],
+
 ];

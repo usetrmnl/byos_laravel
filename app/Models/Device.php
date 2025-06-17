@@ -15,6 +15,7 @@ class Device extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
+        'battery_notification_sent' => 'boolean',
         'proxy_cloud' => 'boolean',
         'last_log_request' => 'json',
         'proxy_cloud_response' => 'json',
@@ -178,5 +179,10 @@ class Device extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(DeviceLog::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

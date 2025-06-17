@@ -131,6 +131,12 @@ return [
     'puppeteer_docker' => env('PUPPETEER_DOCKER', false),
     'puppeteer_mode' => env('PUPPETEER_MODE', 'local'),
 
+    'notifications' => [
+        'battery_low' => [
+            'warn_at_percent' => env('NOTIFICATION_BATTERYLOW_WARNATPERCENT', 20),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Version
