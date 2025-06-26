@@ -77,10 +77,11 @@ new class extends Component {
     protected array $rules = [
         'name' => 'required|string|max:255',
         'data_stale_minutes' => 'required|integer|min:1',
-        'data_strategy' => 'required|string|in:polling,webhook',
+        'data_strategy' => 'required|string|in:polling,webhook,static',
         'polling_url' => 'required_if:data_strategy,polling|nullable|url',
         'polling_verb' => 'required|string|in:get,post',
         'polling_header' => 'nullable|string|max:255',
+        'data_payload' => 'required_if:data_strategy,static|nullable|json',
         'blade_code' => 'nullable|string',
         'checked_devices' => 'array',
         'playlist_name' => 'required_if:selected_playlist,new|string|max:255',
@@ -94,6 +95,12 @@ new class extends Component {
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
         $validated = $this->validate();
+        
+        // If static strategy is selected, parse and save the JSON data
+        if ($this->data_strategy === 'static' && isset($validated['data_payload'])) {
+            $validated['data_payload'] = json_decode($validated['data_payload'], true);
+        }
+        
         $this->plugin->update($validated);
     }
 
@@ -452,15 +459,10 @@ HTML;
                     </div>
 
                     <div class="mb-4">
-                        <flux:input label="Data is stale after minutes" wire:model="data_stale_minutes"
-                                    id="data_stale_minutes"
-                                    class="block mt-1 w-full" type="number" name="data_stale_minutes" autofocus/>
-                    </div>
-
-                    <div class="mb-4">
                         <flux:radio.group wire:model.live="data_strategy" label="Data Strategy" variant="segmented">
                             <flux:radio value="polling" label="Polling"/>
                             <flux:radio value="webhook" label="Webhook"/>
+                            <flux:radio value="static" label="Static"/>
                         </flux:radio.group>
                     </div>
 
@@ -495,7 +497,12 @@ HTML;
                                 placeholder="Authorization: Bearer ey.*******&#10;Content-Type: application/json"
                             />
                         </div>
-                    @else
+                        <div class="mb-4">
+                            <flux:input label="Data is stale after minutes" wire:model="data_stale_minutes"
+                                        id="data_stale_minutes"
+                                        class="block mt-1 w-full" type="number" name="data_stale_minutes" autofocus/>
+                        </div>
+                    @elseif($data_strategy === 'webhook')
                         <div class="mb-4">
                             <flux:input
                                 label="Webhook URL"
@@ -510,6 +517,10 @@ HTML;
                             <p>Send JSON payload with key <code>merge_variables</code> to the webhook URL. The payload
                                 will be merged with the plugin data.</p>
                         </div>
+                    @elseif($data_strategy === 'static')
+                        <div>
+                            <p>Enter static JSON data in the Data Payload field.</p>
+                        </div>
                     @endif
 
                     <div class="flex">
@@ -523,7 +534,7 @@ HTML;
                 <flux:badge icon="clock" size="sm" variant="pill" class="ml-2">{{ $this->data_payload_updated_at?->diffForHumans() ?? 'Never' }}</flux:badge>
                 <flux:textarea wire:model="data_payload" id="data_payload"
                                class="block mt-1 w-full font-mono" type="text" name="data_payload"
-                               readonly rows="24"/>
+                               :readonly="$data_strategy !== 'static'" rows="24"/>
             </div>
         </div>
         <flux:separator/>

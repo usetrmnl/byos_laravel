@@ -22,7 +22,7 @@ new class extends Component {
     protected $rules = [
         'name' => 'required|string|max:255',
         'data_stale_minutes' => 'required|integer|min:1',
-        'data_strategy' => 'required|string|in:polling,webhook',
+        'data_strategy' => 'required|string|in:polling,webhook,static',
         'polling_url' => 'required_if:data_strategy,polling|nullable|url',
         'polling_verb' => 'required|string|in:get,post',
         'polling_header' => 'nullable|string|max:255',
@@ -53,14 +53,14 @@ new class extends Component {
             'name' => $this->name,
             'data_stale_minutes' => $this->data_stale_minutes,
             'data_strategy' => $this->data_strategy,
-            'polling_url' => $this->polling_url,
+            'polling_url' => $this->polling_url ?? null,
             'polling_verb' => $this->polling_verb,
             'polling_header' => $this->polling_header,
         ]);
 
         $this->reset(['name', 'data_stale_minutes', 'data_strategy', 'polling_url', 'polling_verb', 'polling_header']);
         $this->refreshPlugins();
-        
+
         Flux::modal('add-plugin')->close();
     }
 
@@ -116,35 +116,37 @@ new class extends Component {
                     </div>
 
                     <div class="mb-4">
-                        <flux:input label="Data is stale after minutes" wire:model="data_stale_minutes"
-                                    id="data_stale_minutes"
-                                    class="block mt-1 w-full" type="number" name="data_stale_minutes" autofocus/>
-                    </div>
-
-                    <div class="mb-4">
-                        <flux:radio.group wire:model="data_strategy" label="Data Strategy" variant="segmented">
+                        <flux:radio.group wire:model.live="data_strategy" label="Data Strategy" variant="segmented">
                             <flux:radio value="polling" label="Polling"/>
                             <flux:radio value="webhook" label="Webhook"/>
+                            <flux:radio value="static" label="Static"/>
                         </flux:radio.group>
                     </div>
 
-                    <div class="mb-4">
-                        <flux:input label="Polling URL" wire:model="polling_url" id="polling_url"
-                                    placeholder="https://example.com/api"
-                                    class="block mt-1 w-full" type="text" name="polling_url" autofocus/>
-                    </div>
+                    @if($data_strategy === 'polling')
+                        <div class="mb-4">
+                            <flux:input label="Polling URL" wire:model="polling_url" id="polling_url"
+                                        placeholder="https://example.com/api"
+                                        class="block mt-1 w-full" type="text" name="polling_url" autofocus/>
+                        </div>
 
-                    <div class="mb-4">
-                        <flux:radio.group wire:model="polling_verb" label="Polling Verb" variant="segmented">
-                            <flux:radio value="get" label="GET"/>
-                            <flux:radio value="post" label="POST"/>
-                        </flux:radio.group>
-                    </div>
+                        <div class="mb-4">
+                            <flux:radio.group wire:model="polling_verb" label="Polling Verb" variant="segmented">
+                                <flux:radio value="get" label="GET"/>
+                                <flux:radio value="post" label="POST"/>
+                            </flux:radio.group>
+                        </div>
 
-                    <div class="mb-4">
-                        <flux:input label="Polling Header" wire:model="polling_header" id="polling_header"
-                                    class="block mt-1 w-full" type="text" name="polling_header" autofocus/>
-                    </div>
+                        <div class="mb-4">
+                            <flux:input label="Polling Header" wire:model="polling_header" id="polling_header"
+                                        class="block mt-1 w-full" type="text" name="polling_header" autofocus/>
+                        </div>
+                        <div class="mb-4">
+                            <flux:input label="Data is stale after minutes" wire:model.live="data_stale_minutes"
+                                        id="data_stale_minutes"
+                                        class="block mt-1 w-full" type="number" name="data_stale_minutes" autofocus/>
+                        </div>
+                    @endif
 
                     <div class="flex">
                         <flux:spacer/>
