@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Plugin;
+use Illuminate\Support\Carbon;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Blade;
 
@@ -16,6 +17,7 @@ new class extends Component {
     public string $polling_verb;
     public string|null $polling_header;
     public $data_payload;
+    public ?Carbon $data_payload_updated_at;
     public array $checked_devices = [];
     public string $playlist_name = '';
     public array|null $selected_weekdays = null;
@@ -51,6 +53,7 @@ new class extends Component {
         }
 
         $this->fillformFields();
+        $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
     }
 
     public function fillFormFields(): void
@@ -114,8 +117,12 @@ new class extends Component {
                 ->get($this->plugin->polling_url)
                 ->json();
 
-            $this->plugin->update(['data_payload' => $response]);
+            $this->plugin->update([
+                'data_payload' => $response,
+                'data_payload_updated_at' => now()
+            ]);
             $this->data_payload = json_encode($response, JSON_PRETTY_PRINT);
+            $this->data_payload_updated_at = now();
         }
     }
 
@@ -512,7 +519,9 @@ HTML;
                 </form>
             </div>
             <div>
-                <flux:textarea label="Data Payload" wire:model="data_payload" id="data_payload"
+                <flux:label>Data Payload</flux:label>
+                <flux:badge icon="clock" size="sm" variant="pill" class="ml-2">{{ $this->data_payload_updated_at?->diffForHumans() ?? 'Never' }}</flux:badge>
+                <flux:textarea wire:model="data_payload" id="data_payload"
                                class="block mt-1 w-full font-mono" type="text" name="data_payload"
                                readonly rows="24"/>
             </div>
