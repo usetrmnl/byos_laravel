@@ -531,7 +531,9 @@ HTML;
             </div>
             <div>
                 <flux:label>Data Payload</flux:label>
-                <flux:badge icon="clock" size="sm" variant="pill" class="ml-2">{{ $this->data_payload_updated_at?->diffForHumans() ?? 'Never' }}</flux:badge>
+                @isset($this->data_payload_updated_at)
+                    <flux:badge icon="clock" size="sm" variant="pill" class="ml-2">{{ $this->data_payload_updated_at?->diffForHumans() ?? 'Never' }}</flux:badge>
+                @endisset
                 <flux:textarea wire:model="data_payload" id="data_payload"
                                class="block mt-1 w-full font-mono" type="text" name="data_payload"
                                :readonly="$data_strategy !== 'static'" rows="24"/>
