@@ -56,9 +56,19 @@ class Plugin extends Model
                 }
             }
 
-            $response = Http::withHeaders($headers)
-                ->get($this->polling_url)
-                ->json();
+            $httpRequest = Http::withHeaders($headers);
+
+            // Add body for POST requests if polling_body is provided
+            if ($this->polling_verb === 'post' && $this->polling_body) {
+                $httpRequest = $httpRequest->withBody($this->polling_body);
+            }
+
+            // Make the request based on the verb
+            if ($this->polling_verb === 'post') {
+                $response = $httpRequest->post($this->polling_url)->json();
+            } else {
+                $response = $httpRequest->get($this->polling_url)->json();
+            }
 
             $this->update([
                 'data_payload' => $response,

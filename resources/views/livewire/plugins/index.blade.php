@@ -10,6 +10,7 @@ new class extends Component {
     public string $polling_url;
     public string $polling_verb = "get";
     public $polling_header;
+    public $polling_body;
     public array $plugins;
 
     public array $native_plugins = [
@@ -26,6 +27,7 @@ new class extends Component {
         'polling_url' => 'required_if:data_strategy,polling|nullable|url',
         'polling_verb' => 'required|string|in:get,post',
         'polling_header' => 'nullable|string|max:255',
+        'polling_body' => 'nullable|string',
     ];
 
     private function refreshPlugins(): void
@@ -56,9 +58,10 @@ new class extends Component {
             'polling_url' => $this->polling_url ?? null,
             'polling_verb' => $this->polling_verb,
             'polling_header' => $this->polling_header,
+            'polling_body' => $this->polling_body,
         ]);
 
-        $this->reset(['name', 'data_stale_minutes', 'data_strategy', 'polling_url', 'polling_verb', 'polling_header']);
+        $this->reset(['name', 'data_stale_minutes', 'data_strategy', 'polling_url', 'polling_verb', 'polling_header', 'polling_body']);
         $this->refreshPlugins();
 
         Flux::modal('add-plugin')->close();
@@ -131,7 +134,7 @@ new class extends Component {
                         </div>
 
                         <div class="mb-4">
-                            <flux:radio.group wire:model="polling_verb" label="Polling Verb" variant="segmented">
+                            <flux:radio.group wire:model.live="polling_verb" label="Polling Verb" variant="segmented">
                                 <flux:radio value="get" label="GET"/>
                                 <flux:radio value="post" label="POST"/>
                             </flux:radio.group>
@@ -141,6 +144,20 @@ new class extends Component {
                             <flux:input label="Polling Header" wire:model="polling_header" id="polling_header"
                                         class="block mt-1 w-full" type="text" name="polling_header" autofocus/>
                         </div>
+
+                        @if($polling_verb === 'post')
+                        <div class="mb-4">
+                            <flux:textarea
+                                label="Polling Body"
+                                wire:model="polling_body"
+                                id="polling_body"
+                                class="block mt-1 w-full font-mono"
+                                name="polling_body"
+                                rows="4"
+                                placeholder=''
+                            />
+                        </div>
+                        @endif
                         <div class="mb-4">
                             <flux:input label="Data is stale after minutes" wire:model.live="data_stale_minutes"
                                         id="data_stale_minutes"

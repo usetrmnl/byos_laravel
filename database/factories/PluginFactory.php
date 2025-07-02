@@ -22,6 +22,7 @@ class PluginFactory extends Factory
             'polling_url' => $this->faker->url(),
             'polling_verb' => $this->faker->randomElement(['get', 'post']),
             'polling_header' => null,
+            'polling_body' => null,
             'render_markup' => null,
             'render_markup_view' => null,
             'detail_view_route' => null,

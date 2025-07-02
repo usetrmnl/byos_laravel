@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('plugins', function (Blueprint $table) {
-            $table->string('polling_url', 1024)->nullable()->change();
+            $table->text('polling_body')->nullable()->after('polling_header');
         });
     }
 
@@ -22,8 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('plugins', function (Blueprint $table) {
-            // old default string length value in Illuminate
-            $table->string('polling_url', 255)->nullable()->change();
+            $table->dropColumn('polling_body');
         });
     }
 };

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Plugin;
+use Illuminate\Support\Facades\Http;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -39,4 +40,34 @@ test('plugin data_payload is cast to array', function () {
     expect($plugin->data_payload)
         ->toBeArray()
         ->toBe($data);
+});
+
+test('plugin can have polling body for POST requests', function () {
+    $plugin = Plugin::factory()->create([
+        'polling_verb' => 'post',
+        'polling_body' => '{"query": "query { user { id name } }"}',
+    ]);
+
+    expect($plugin->polling_body)->toBe('{"query": "query { user { id name } }"}');
+});
+
+test('updateDataPayload sends POST request with body when polling_verb is post', function () {
+    Http::fake([
+        'https://example.com/api' => Http::response(['success' => true], 200),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://example.com/api',
+        'polling_verb' => 'post',
+        'polling_body' => '{"query": "query { user { id name } }"}',
+    ]);
+
+    $plugin->updateDataPayload();
+
+    Http::assertSent(function ($request) {
+        return $request->url() === 'https://example.com/api' &&
+               $request->method() === 'POST' &&
+               $request->body() === '{"query": "query { user { id name } }"}';
+    });
 });

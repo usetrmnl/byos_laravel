@@ -16,6 +16,7 @@ new class extends Component {
     public string|null $polling_url;
     public string $polling_verb;
     public string|null $polling_header;
+    public string|null $polling_body;
     public $data_payload;
     public ?Carbon $data_payload_updated_at;
     public array $checked_devices = [];
@@ -64,6 +65,7 @@ new class extends Component {
         $this->polling_url = $this->plugin->polling_url;
         $this->polling_verb = $this->plugin->polling_verb;
         $this->polling_header = $this->plugin->polling_header;
+        $this->polling_body = $this->plugin->polling_body;
         $this->data_payload = json_encode($this->plugin->data_payload, JSON_PRETTY_PRINT);
     }
 
@@ -81,6 +83,7 @@ new class extends Component {
         'polling_url' => 'required_if:data_strategy,polling|nullable|url',
         'polling_verb' => 'required|string|in:get,post',
         'polling_header' => 'nullable|string|max:255',
+        'polling_body' => 'nullable|string',
         'data_payload' => 'required_if:data_strategy,static|nullable|json',
         'blade_code' => 'nullable|string',
         'checked_devices' => 'array',
@@ -95,12 +98,8 @@ new class extends Component {
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
         $validated = $this->validate();
-        
-        // If static strategy is selected, parse and save the JSON data
-        if ($this->data_strategy === 'static' && isset($validated['data_payload'])) {
-            $validated['data_payload'] = json_decode($validated['data_payload'], true);
-        }
-        
+        $validated['data_payload'] = json_decode($validated['data_payload'], true);
+
         $this->plugin->update($validated);
     }
 
@@ -120,9 +119,20 @@ new class extends Component {
                 }
             }
 
-            $response = Http::withHeaders($headers)
-                ->get($this->plugin->polling_url)
-                ->json();
+            // Prepare the HTTP request
+            $httpRequest = Http::withHeaders($headers);
+
+            // Add body for POST requests if polling_body is provided
+            if ($this->plugin->polling_verb === 'post' && $this->plugin->polling_body) {
+                $httpRequest = $httpRequest->withBody($this->plugin->polling_body, 'application/json');
+            }
+
+            // Make the request based on the verb
+            if ($this->plugin->polling_verb === 'post') {
+                $response = $httpRequest->post($this->plugin->polling_url)->json();
+            } else {
+                $response = $httpRequest->get($this->plugin->polling_url)->json();
+            }
 
             $this->plugin->update([
                 'data_payload' => $response,
@@ -480,7 +490,7 @@ HTML;
                         </div>
 
                         <div class="mb-4">
-                            <flux:radio.group wire:model="polling_verb" label="Polling Verb" variant="segmented">
+                            <flux:radio.group wire:model.live="polling_verb" label="Polling Verb" variant="segmented">
                                 <flux:radio value="get" label="GET"/>
                                 <flux:radio value="post" label="POST"/>
                             </flux:radio.group>
@@ -497,6 +507,19 @@ HTML;
                                 placeholder="Authorization: Bearer ey.*******&#10;Content-Type: application/json"
                             />
                         </div>
+
+                        @if($polling_verb === 'post')
+                        <div class="mb-4">
+                            <flux:textarea
+                                label="Polling Body (e.g. for GraphQL queries)"
+                                wire:model="polling_body"
+                                id="polling_body"
+                                class="block mt-1 w-full font-mono"
+                                name="polling_body"
+                                rows="6"
+                            />
+                        </div>
+                        @endif
                         <div class="mb-4">
                             <flux:input label="Data is stale after minutes" wire:model="data_stale_minutes"
                                         id="data_stale_minutes"
@@ -534,13 +557,14 @@ HTML;
                 @isset($this->data_payload_updated_at)
                     <flux:badge icon="clock" size="sm" variant="pill" class="ml-2">{{ $this->data_payload_updated_at?->diffForHumans() ?? 'Never' }}</flux:badge>
                 @endisset
+                <flux:error name="data_payload"/>
                 <flux:textarea wire:model="data_payload" id="data_payload"
                                class="block mt-1 w-full font-mono" type="text" name="data_payload"
                                :readonly="$data_strategy !== 'static'" rows="24"/>
             </div>
         </div>
-        <flux:separator/>
-        <div class="mt-5 mb-5 ">
+        <flux:separator class="my-5"/>
+        <div>
             <h3 class="text-xl font-semibold dark:text-gray-100">Markup</h3>
             @if($plugin->render_markup_view)
                 <div>
