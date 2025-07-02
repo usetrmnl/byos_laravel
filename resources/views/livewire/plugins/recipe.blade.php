@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Blade;
 
 new class extends Component {
     public Plugin $plugin;
-    public string|null $blade_code;
+    public string|null $markup_code;
     public string|null $view_content;
+    public string|null $markup_language;
 
     public string $name;
     public int $data_stale_minutes;
@@ -31,7 +32,6 @@ new class extends Component {
     public function mount(): void
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
-        $this->blade_code = $this->plugin->render_markup;
 
         if ($this->plugin->render_markup_view) {
             try {
@@ -51,6 +51,9 @@ new class extends Component {
             } catch (\Exception $e) {
                 $this->view_content = null;
             }
+        } else {
+            $this->markup_code = $this->plugin->render_markup;
+            $this->markup_language = $this->plugin->markup_language ?? 'blade';
         }
 
         $this->fillformFields();
@@ -73,7 +76,10 @@ new class extends Component {
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
         $this->validate();
-        $this->plugin->update(['render_markup' => $this->blade_code]);
+        $this->plugin->update([
+            'render_markup' => $this->markup_code ?? null,
+            'markup_language' => $this->markup_language ?? null
+        ]);
     }
 
     protected array $rules = [
@@ -85,7 +91,8 @@ new class extends Component {
         'polling_header' => 'nullable|string|max:255',
         'polling_body' => 'nullable|string',
         'data_payload' => 'required_if:data_strategy,static|nullable|json',
-        'blade_code' => 'nullable|string',
+        'markup_code' => 'nullable|string',
+        'markup_language' => 'required|string|in:blade,liquid',
         'checked_devices' => 'array',
         'playlist_name' => 'required_if:selected_playlist,new|string|max:255',
         'selected_weekdays' => 'nullable|array',
@@ -209,11 +216,24 @@ new class extends Component {
                 $markup = '<h1>Hello World!</h1>';
                 break;
         }
-        $this->blade_code = $markup;
+        $this->markup_code = $markup;
     }
 
     public function renderLayoutWithTitleBar(): string
     {
+        if ($this->markup_language === 'liquid') {
+            return <<<HTML
+<div class="view view--{{ size }}">
+    <div class="layout">
+        <!-- ADD YOUR CONTENT HERE-->
+    </div>
+    <div class="title_bar">
+        <span class="title">TRMNL BYOS</span>
+    </div>
+</div>
+HTML;
+        }
+
         return <<<HTML
 @props(['size' => 'full'])
 <x-trmnl::view size="{{\$size}}">
@@ -227,6 +247,16 @@ HTML;
 
     public function renderLayoutBlank(): string
     {
+        if ($this->markup_language === 'liquid') {
+            return <<<HTML
+<div class="view view--{{ size }}">
+    <div class="layout">
+        <!-- ADD YOUR CONTENT HERE-->
+    </div>
+</div>
+HTML;
+        }
+
         return <<<HTML
 @props(['size' => 'full'])
 <x-trmnl::view size="{{\$size}}">
@@ -558,23 +588,33 @@ HTML;
                     />
                 </div>
             @else
-                <div class="text-accent">
-                    <span class="pr-2">Getting started:</span><flux:button wire:click="renderExample('layoutTitle')" class="text-xl">Responsive Layout with Title Bar</flux:button>
+            <div class="flex items-center gap-6 mb-4 mt-4">
+                <div class="flex-1 flex items-center">
+                    <span class="pr-2">Template language</span>
+                    <flux:radio.group wire:model.live="markup_language" variant="segmented">
+                        <flux:radio value="blade" label="Blade"/>
+                        <flux:radio value="liquid" label="Liquid"/>
+                    </flux:radio.group>
+                </div>
+                <div class="text-accent flex items-center gap-2">
+                    <span class="pr-2">Getting started</span>
+                    <flux:button wire:click="renderExample('layoutTitle')" class="text-xl">Responsive Layout with Title Bar</flux:button>
                     <flux:button wire:click="renderExample('layout')" class="text-xl">Responsive Layout</flux:button>
                 </div>
+            </div>
             @endif
         </div>
         @if(!$plugin->render_markup_view)
             <form wire:submit="saveMarkup">
                 <div class="mb-4">
                     <flux:textarea
-                        label="Blade Code"
+                        label="{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}"
                         class="font-mono"
-                        wire:model="blade_code"
-                        id="blade_code"
-                        name="blade_code"
+                        wire:model="markup_code"
+                        id="markup_code"
+                        name="markup_code"
                         rows="15"
-                        placeholder="Enter your blade code here..."
+                        placeholder="{{ $markup_language === 'liquid' ? 'Enter your liquid code here...' : 'Enter your blade code here...' }}"
                     />
                 </div>
 

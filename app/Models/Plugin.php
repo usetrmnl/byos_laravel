@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Keepsuit\LaravelLiquid\Facades\Liquid;
+use Illuminate\Support\Facades\App;
+use Keepsuit\Liquid\Exceptions\LiquidException;
 
 class Plugin extends Model
 {
@@ -18,6 +21,7 @@ class Plugin extends Model
         'data_payload' => 'json',
         'data_payload_updated_at' => 'datetime',
         'is_native' => 'boolean',
+        'markup_language' => 'string',
     ];
 
     protected static function boot()
@@ -78,17 +82,29 @@ class Plugin extends Model
 
     /**
      * Render the plugin's markup
+     * @throws LiquidException
      */
     public function render(string $size = 'full', bool $standalone = true): string
     {
         if ($this->render_markup) {
+            $renderedContent = '';
+
+            if ($this->markup_language === 'liquid') {
+                $environment = App::make('liquid.environment');
+                $template = $environment->parseString($this->render_markup);
+                $context = $environment->newRenderContext(data: ['size' => $size, 'data' => $this->data_payload]);
+                $renderedContent = $template->render($context);
+            } else {
+                $renderedContent = Blade::render($this->render_markup, ['size' => $size, 'data' => $this->data_payload]);
+            }
+
             if ($standalone) {
                 return view('trmnl-layouts.single', [
-                    'slot' => Blade::render($this->render_markup, ['size' => $size, 'data' => $this->data_payload]),
+                    'slot' => $renderedContent,
                 ])->render();
             }
 
-            return Blade::render($this->render_markup, ['size' => $size, 'data' => $this->data_payload]);
+            return $renderedContent;
         }
 
         if ($this->render_markup_view) {
