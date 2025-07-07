@@ -30,6 +30,7 @@ class ImageGenerationService
             try {
                 BrowsershotLambda::html($markup)
                     ->windowSize(800, 480)
+                    ->waitUntilNetworkIdle()
                     ->save($pngPath);
             } catch (Exception $e) {
                 Log::error('Failed to generate PNG: '.$e->getMessage());
@@ -40,6 +41,7 @@ class ImageGenerationService
                 Browsershot::html($markup)
                     ->setOption('args', config('app.puppeteer_docker') ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'] : [])
                     ->windowSize(800, 480)
+                    ->waitUntilNetworkIdle()
                     ->save($pngPath);
             } catch (Exception $e) {
                 Log::error('Failed to generate PNG: '.$e->getMessage());
