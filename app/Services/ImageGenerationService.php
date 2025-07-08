@@ -28,21 +28,29 @@ class ImageGenerationService
         // Generate PNG
         if (config('app.puppeteer_mode') === 'sidecar-aws') {
             try {
-                BrowsershotLambda::html($markup)
-                    ->windowSize(800, 480)
-                    ->waitUntilNetworkIdle()
-                    ->save($pngPath);
+                $browsershot = BrowsershotLambda::html($markup)
+                    ->windowSize(800, 480);
+
+                if (config('app.puppeteer_wait_for_network_idle')) {
+                    $browsershot->waitUntilNetworkIdle();
+                }
+
+                $browsershot->save($pngPath);
             } catch (Exception $e) {
                 Log::error('Failed to generate PNG: '.$e->getMessage());
                 throw new RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
             }
         } else {
             try {
-                Browsershot::html($markup)
+                $browsershot = Browsershot::html($markup)
                     ->setOption('args', config('app.puppeteer_docker') ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'] : [])
-                    ->windowSize(800, 480)
-                    ->waitUntilNetworkIdle()
-                    ->save($pngPath);
+                    ->windowSize(800, 480);
+
+                if (config('app.puppeteer_wait_for_network_idle')) {
+                    $browsershot->waitUntilNetworkIdle();
+                }
+                ray($browsershot);
+                $browsershot->save($pngPath);
             } catch (Exception $e) {
                 Log::error('Failed to generate PNG: '.$e->getMessage());
                 throw new RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);

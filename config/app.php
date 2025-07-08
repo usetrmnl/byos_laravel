@@ -130,6 +130,7 @@ return [
     'force_https' => env('FORCE_HTTPS', false),
     'puppeteer_docker' => env('PUPPETEER_DOCKER', false),
     'puppeteer_mode' => env('PUPPETEER_MODE', 'local'),
+    'puppeteer_wait_for_network_idle' => env('PUPPETEER_WAIT_FOR_NETWORK_IDLE', false),
 
     'notifications' => [
         'battery_low' => [
