@@ -2,6 +2,11 @@
 
 namespace App\Models;
 
+use App\Liquid\Filters\Data;
+use App\Liquid\Filters\Localization;
+use App\Liquid\Filters\Numbers;
+use App\Liquid\Filters\StringMarkup;
+use App\Liquid\Filters\Uniqueness;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\App;
@@ -95,6 +100,14 @@ class Plugin extends Model
 
             if ($this->markup_language === 'liquid') {
                 $environment = App::make('liquid.environment');
+
+                // Register all custom filters
+                $environment->filterRegistry->register(Numbers::class);
+                $environment->filterRegistry->register(Data::class);
+                $environment->filterRegistry->register(StringMarkup::class);
+                $environment->filterRegistry->register(Uniqueness::class);
+                $environment->filterRegistry->register(Localization::class);
+
                 $template = $environment->parseString($this->render_markup);
                 $context = $environment->newRenderContext(data: ['size' => $size, 'data' => $this->data_payload]);
                 $renderedContent = $template->render($context);
