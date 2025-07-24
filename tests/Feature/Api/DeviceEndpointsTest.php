@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\GenerateScreenJob;
 use App\Models\Device;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
@@ -837,4 +838,43 @@ test('device returns sleep.png and correct refresh time when paused', function (
     expect($json['filename'])->toBe('sleep.png');
     expect($json['image_url'])->toContain('sleep.png');
     expect($json['refresh_rate'])->toBeLessThanOrEqual(3600); // ~60 min
+});
+
+test('screens endpoint accepts nullable file_name', function () {
+    Queue::fake();
+
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+    ]);
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+    ])->post('/api/screens', [
+        'image' => [
+            'content' => '<div>Test content</div>',
+        ],
+    ]);
+
+    $response->assertOk();
+
+    Queue::assertPushed(GenerateScreenJob::class);
+});
+
+test('screens endpoint returns 404 for invalid device credentials', function () {
+    $response = $this->withHeaders([
+        'id' => 'invalid-mac',
+        'access-token' => 'invalid-key',
+    ])->post('/api/screens', [
+        'image' => [
+            'content' => '<div>Test content</div>',
+            'file_name' => 'test.blade.php',
+        ],
+    ]);
+
+    $response->assertNotFound()
+        ->assertJson([
+            'message' => 'MAC Address not registered or invalid access token',
+        ]);
 });

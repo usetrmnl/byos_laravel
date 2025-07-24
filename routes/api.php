@@ -276,6 +276,34 @@ Route::post('/display/update', function (Request $request) {
     ->name('display.update')
     ->middleware('auth:sanctum', 'ability:update-screen');
 
+Route::post('/screens', function (Request $request) {
+    $mac_address = $request->header('id');
+    $access_token = $request->header('access-token');
+    $device = Device::where('mac_address', $mac_address)
+        ->where('api_key', $access_token)
+        ->first();
+
+    if (! $device) {
+        return response()->json([
+            'message' => 'MAC Address not registered or invalid access token',
+        ], 404);
+    }
+
+    $request->validate([
+        'image' => 'array|required',
+        'image.content' => 'string|required',
+        'image.file_name' => 'string',
+    ]);
+    $content = $request['image']['content'];
+
+    $view = Blade::render($content);
+    GenerateScreenJob::dispatchSync($device->id, null, $view);
+
+    return response()->json([
+        'message' => 'success',
+    ]);
+})->name('screens.update');
+
 Route::get('/display/status', function (Request $request) {
     $request->validate([
         'device_id' => 'required|exists:devices,id',
