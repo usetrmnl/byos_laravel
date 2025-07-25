@@ -4,6 +4,8 @@
     @include('partials.head')
 </head>
 <body class="min-h-screen bg-white dark:bg-zinc-800">
+
+<!-- Desktop Header Menu -->
 <flux:header container class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
     <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left"/>
 
@@ -92,23 +94,23 @@
     </a>
 
     <flux:navlist variant="outline">
-        <flux:navlist.group heading="Platform">
+        <flux:navlist.group heading="Menu">
             <flux:navlist.item icon="layout-grid" href="{{ route('dashboard') }}" wire:navigate
                                :current="request()->routeIs('dashboard')" class="m-2">
                 Dashboard
             </flux:navlist.item>
-            <flux:navbar.item icon="trmnl" href="{{ route('devices') }}" wire:navigate
+            <flux:navlist.item icon="trmnl" href="{{ route('devices') }}" wire:navigate
                               :current="request()->routeIs('devices')" class="m-2">
                 Devices
-            </flux:navbar.item>
-            <flux:navbar.item icon="puzzle-piece" href="{{ route('plugins.index') }}" wire:navigate
+            </flux:navlist.item>
+            <flux:navlist.item icon="puzzle-piece" href="{{ route('plugins.index') }}" wire:navigate
                               :current="request()->routeIs('plugins.index')" class="m-2">
                 Plugins &amp; Recipes
-            </flux:navbar.item>
-            <flux:navbar.item icon="play" href="{{ route('playlists.index') }}" wire:navigate
+            </flux:navlist.item>
+            <flux:navlist.item icon="play" href="{{ route('playlists.index') }}" wire:navigate
                               :current="request()->routeIs('playlists.index')" class="m-2">
                 Playlists
-            </flux:navbar.item>
+            </flux:navlist.item>
         </flux:navlist.group>
     </flux:navlist>
 
