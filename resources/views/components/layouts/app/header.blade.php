@@ -66,7 +66,8 @@
             <flux:menu.separator/>
 
             <flux:menu.radio.group>
-                <flux:menu.item href="/settings/preferences" wire:navigate icon="cog">Settings</flux:menu.item>
+                <flux:menu.item href="{{ route('settings.preferences') }}" wire:navigate icon="cog">Settings</flux:menu.item>
+                <flux:menu.item href="{{ route('settings.support') }}" wire:navigate icon="heart">Support</flux:menu.item>
             </flux:menu.radio.group>
 
             <flux:menu.separator/>
