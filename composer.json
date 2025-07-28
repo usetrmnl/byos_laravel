@@ -12,7 +12,7 @@
     "require": {
         "php": "^8.2",
         "ext-imagick": "*",
-        "bnussbau/laravel-trmnl-blade": "1.1.*",
+        "bnussbau/laravel-trmnl-blade": "1.2.*",
         "intervention/image": "^3.11",
         "keepsuit/laravel-liquid": "^0.5.2",
         "laravel/framework": "^12.1",
