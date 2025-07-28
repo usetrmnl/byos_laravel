@@ -125,9 +125,6 @@ class ImageGenerationService
 
         $imagick->setImageType(Imagick::IMGTYPE_GRAYSCALE);
 
-        // Sharpen the image to make blurry text more defined
-        $imagick->sharpenImage(0.7, 0.5);
-
         if ($quantize) {
             $imagick->quantizeImage(2, Imagick::COLORSPACE_GRAY, 0, true, false);
         }
