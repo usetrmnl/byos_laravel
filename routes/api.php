@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\ImageGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -222,7 +223,16 @@ Route::post('/log', function (Request $request) {
         'last_log_request' => $request->json()->all(),
     ]);
 
-    $logs = $request->json('log.logs_array', []);
+    $logs = [];
+    // Revised format: {"logs": [...]}
+    if ($request->has('logs')) {
+        $logs = $request->json('logs', []);
+    }
+    // Fall back to old format: {"log": {"logs_array": [...]}}
+    elseif ($request->has('log.logs_array')) {
+        $logs = $request->json('log.logs_array', []);
+    }
+
     foreach ($logs as $log) {
         Log::info('Device Log', $log);
         DeviceLog::create([

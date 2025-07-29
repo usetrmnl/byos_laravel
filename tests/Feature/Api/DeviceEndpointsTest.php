@@ -192,6 +192,34 @@ test('device can submit logs', function () {
 
     expect($device->fresh()->last_log_request)
         ->toBe($logData);
+
+    expect($device->logs()->count())->toBe(1);
+});
+
+test('device can submit logs in revised format', function () {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+    ]);
+
+    $logData = [
+        'logs' => [
+            ['message' => 'Test log message', 'level' => 'info'],
+        ],
+    ];
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+    ])->postJson('/api/log', $logData);
+
+    $response->assertOk()
+        ->assertJson(['status' => '200']);
+
+    expect($device->fresh()->last_log_request)
+        ->toBe($logData);
+
+    expect($device->logs()->count())->toBe(1);
 });
 
 // test('authenticated user can update device display', function () {

@@ -45,37 +45,48 @@ new class extends Component {
 
                 <tbody class="divide-y divide-zinc-800/10 dark:divide-white/20" data-flux-rows="">
                     @foreach ($logs as $log)
-                        @if (!isset($log->log_entry['log_message']))
+                        @php
+                            $message = $log->log_entry['message'] ?? $log->log_entry['log_message'] ?? null;
+                        @endphp
+                        @if (!$message)
                             @continue
                         @endif
+                        @php
+                            // Support both previous and revised log formats
+                            $timestamp = $log->log_entry['created_at'] ?? $log->log_entry['creation_timestamp'] ?? null;
+                            $wifiStatus = $log->log_entry['wifi_status'] ?? $log->log_entry['device_status_stamp']['wifi_status'] ?? 'Unknown';
+                            $wifiRssi = $log->log_entry['wifi_signal'] ?? $log->log_entry['device_status_stamp']['wifi_rssi_level'] ?? null;
+                            $hasDeviceStatus = isset($log->log_entry['device_status_stamp']) ||
+                                              (isset($log->log_entry['wifi_status']) && $log->log_entry['wifi_status'] !== 'Unknown');
+                        @endphp
                         <tr data-flux-row="">
                             <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
-                                @if (isset($log->log_entry['creation_timestamp']))
-                                    {{ \Carbon\Carbon::createFromTimestamp($log->log_entry['creation_timestamp'])->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s') }}
+                                @if ($timestamp)
+                                    {{ \Carbon\Carbon::createFromTimestamp($timestamp)->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s') }}
                                 @endif
                             </td>
                             <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
                                 <div class="inline-flex items-center font-medium whitespace-nowrap -mt-1 -mb-1 text-xs py-1 px-2 rounded-md
-                                    @if(str_contains(strtolower($log->log_entry['log_message']), 'error'))
+                                    @if(str_contains(strtolower($message), 'error'))
                                         bg-red-400/15 text-red-700 dark:bg-red-400/40 dark:text-red-200
-                                    @elseif(str_contains(strtolower($log->log_entry['log_message']), 'warning'))
+                                    @elseif(str_contains(strtolower($message), 'warning'))
                                         bg-yellow-400/15 text-yellow-700 dark:bg-yellow-400/40 dark:text-yellow-200
                                     @else
                                         bg-zinc-400/15 text-zinc-700 dark:bg-zinc-400/40 dark:text-zinc-200
                                     @endif">
-                                    {{ str_contains(strtolower($log->log_entry['log_message']), 'error') ? 'Error' :
-                                       (str_contains(strtolower($log->log_entry['log_message']), 'warning') ? 'Warning' : 'Info') }}
+                                    {{ str_contains(strtolower($message), 'error') ? 'Error' :
+                                       (str_contains(strtolower($message), 'warning') ? 'Warning' : 'Info') }}
                                 </div>
                             </td>
                             <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
                                 <div class="flex items-center gap-2">
                                     <div class="inline-flex items-center font-medium whitespace-nowrap -mt-1 -mb-1 text-xs py-1 px-2 rounded-md bg-zinc-400/15 text-zinc-700 dark:bg-zinc-400/40 dark:text-zinc-200">
-                                        {{ $log->log_entry['device_status_stamp']['wifi_status'] ?? 'Unknown' }}
-                                        @if(isset($log->log_entry['device_status_stamp']['wifi_rssi_level']))
-                                            ({{ $log->log_entry['device_status_stamp']['wifi_rssi_level'] }}dBm)
+                                        {{ $wifiStatus }}
+                                        @if($wifiRssi)
+                                            ({{ $wifiRssi }}dBm)
                                         @endif
                                     </div>
-                                    @if(isset($log->log_entry['device_status_stamp']))
+                                    @if($hasDeviceStatus)
                                         <flux:modal.trigger name="device-status-{{ $log->id }}">
                                             <flux:button icon="information-circle" variant="ghost" size="xs" />
                                         </flux:modal.trigger>
@@ -84,7 +95,7 @@ new class extends Component {
                             </td>
                             <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
                                 <div class="flex items-center gap-2">
-                                    <span>{{ $log->log_entry['log_message'] }}</span>
+                                    <span>{{ $message }}</span>
                                     <flux:modal.trigger name="log-details-{{ $log->id }}">
                                         <flux:button icon="information-circle" variant="ghost" size="xs" />
                                     </flux:modal.trigger>
@@ -92,7 +103,7 @@ new class extends Component {
                             </td>
                         </tr>
 
-                        @if(isset($log->log_entry['device_status_stamp']))
+                        @if($hasDeviceStatus)
                             <flux:modal name="device-status-{{ $log->id }}" class="md:w-96">
                                 <div class="space-y-6">
                                     <div>
@@ -102,44 +113,46 @@ new class extends Component {
                                     <dl class="text-sm space-y-1">
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">WiFi Status:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['wifi_status'] ?? 'Unknown' }}</dd>
+                                            <dd>{{ $wifiStatus }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">WiFi RSSI:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['wifi_rssi_level'] ?? 'Unknown' }} dBm</dd>
+                                            <dd>{{ $wifiRssi ?? 'Unknown' }} dBm</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Refresh Rate:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['refresh_rate'] ?? 'Unknown' }}s</dd>
+                                            <dd>{{ $log->log_entry['refresh_rate'] ?? $log->log_entry['device_status_stamp']['refresh_rate'] ?? 'Unknown' }}s</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Time Since Sleep:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['time_since_last_sleep_start'] ?? 'Unknown' }}s</dd>
+                                            <dd>{{ $log->log_entry['sleep_duration'] ?? $log->log_entry['device_status_stamp']['time_since_last_sleep_start'] ?? 'Unknown' }}s</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Firmware Version:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['current_fw_version'] ?? 'Unknown' }}</dd>
+                                            <dd>{{ $log->log_entry['firmware_version'] ?? $log->log_entry['device_status_stamp']['current_fw_version'] ?? 'Unknown' }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Special Function:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['special_function'] ?? 'None' }}</dd>
+                                            <dd>{{ $log->log_entry['special_function'] ?? $log->log_entry['device_status_stamp']['special_function'] ?? 'None' }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Battery Voltage:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['battery_voltage'] ?? 'Unknown' }}V</dd>
+                                            <dd>{{ $log->log_entry['battery_voltage'] ?? $log->log_entry['device_status_stamp']['battery_voltage'] ?? 'Unknown' }}V</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Wakeup Reason:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['wakeup_reason'] ?? 'Unknown' }}</dd>
+                                            <dd>{{ $log->log_entry['wake_reason'] ?? $log->log_entry['device_status_stamp']['wakeup_reason'] ?? 'Unknown' }}</dd>
                                         </div>
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Free Heap:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['free_heap_size'] ?? 'Unknown' }} bytes</dd>
+                                            <dd>{{ $log->log_entry['free_heap_size'] ?? $log->log_entry['device_status_stamp']['free_heap_size'] ?? 'Unknown' }} bytes</dd>
                                         </div>
+                                        @if(isset($log->log_entry['device_status_stamp']['max_alloc_size']))
                                         <div class="flex justify-between">
                                             <dt class="text-zinc-500">Max Alloc Size:</dt>
-                                            <dd>{{ $log->log_entry['device_status_stamp']['max_alloc_size'] ?? 'Unknown' }} bytes</dd>
+                                            <dd>{{ $log->log_entry['device_status_stamp']['max_alloc_size'] }} bytes</dd>
                                         </div>
+                                        @endif
                                     </dl>
 
                                     <div class="flex">
@@ -161,11 +174,11 @@ new class extends Component {
                                 <dl class="text-sm space-y-1">
                                     <div class="flex justify-between">
                                         <dt class="text-zinc-500">Source File:</dt>
-                                        <dd>{{ $log->log_entry['log_sourcefile'] ?? 'Unknown' }}</dd>
+                                        <dd>{{ $log->log_entry['source_path'] ?? $log->log_entry['log_sourcefile'] ?? 'Unknown' }}</dd>
                                     </div>
                                     <div class="flex justify-between">
                                         <dt class="text-zinc-500">Line Number:</dt>
-                                        <dd>{{ $log->log_entry['log_codeline'] ?? 'Unknown' }}</dd>
+                                        <dd>{{ $log->log_entry['source_line'] ?? $log->log_entry['log_codeline'] ?? 'Unknown' }}</dd>
                                     </div>
                                     @if(isset($log->log_entry['additional_info']))
                                         <div class="mt-2">
