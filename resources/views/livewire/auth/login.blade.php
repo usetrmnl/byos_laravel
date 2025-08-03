@@ -118,6 +118,29 @@ new #[Layout('components.layouts.auth')] class extends Component {
         </div>
     </form>
 
+    @if (config('services.oidc.enabled'))
+        <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+                <span class="w-full border-t border-zinc-300 dark:border-zinc-600"></span>
+            </div>
+            <div class="relative flex justify-center text-sm">
+                <span class="bg-white dark:bg-zinc-900 px-2 text-zinc-500 dark:text-zinc-400">
+                    {{ __('Or') }}
+                </span>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end">
+            <flux:button 
+                variant="outline" 
+                type="button" 
+                class="w-full" 
+                href="{{ route('auth.oidc.redirect') }}"
+            >
+                {{ __('Continue with OIDC') }}
+            </flux:button>
+        </div>
+    @endif
 
     @if (Route::has('register'))
         <div class="space-x-1 text-center text-sm text-zinc-600 dark:text-zinc-400">

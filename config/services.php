@@ -50,4 +50,16 @@ return [
         ],
     ],
 
+    'oidc' => [
+        'enabled' => env('OIDC_ENABLED', false),
+        // OIDC_ENDPOINT can be either:
+        // - Base URL: https://your-provider.com (will append /.well-known/openid-configuration)
+        // - Full well-known URL: https://your-provider.com/.well-known/openid-configuration
+        'endpoint' => env('OIDC_ENDPOINT'),
+        'client_id' => env('OIDC_CLIENT_ID'),
+        'client_secret' => env('OIDC_CLIENT_SECRET'),
+        'redirect' => env('APP_URL', 'http://localhost:8000') . '/auth/oidc/callback',
+        'scopes' => explode(',', env('OIDC_SCOPES', 'openid,profile,email')),
+    ],
+
 ];
