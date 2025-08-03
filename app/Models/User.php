@@ -26,6 +26,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'password',
         'assign_new_devices',
         'assign_new_device_id',
+        'oidc_sub',
     ];
 
     /**

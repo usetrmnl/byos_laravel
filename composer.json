@@ -17,6 +17,7 @@
         "keepsuit/laravel-liquid": "^0.5.2",
         "laravel/framework": "^12.1",
         "laravel/sanctum": "^4.0",
+        "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.0",
         "livewire/volt": "^1.7",
