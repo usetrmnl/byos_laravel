@@ -632,7 +632,7 @@ new class extends Component {
                             </thead>
                             <tbody class="divide-y divide-zinc-800/10 dark:divide-white/20" data-flux-rows>
                             @foreach($playlist->items->sortBy('order') as $item)
-                                <tr data-flux-row>
+                                <tr data-flux-row wire:key="playlist-item-{{ $item->id }}">
                                     <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
                                         @if($item->isMashup())
                                             <div class="flex items-center gap-2">
@@ -649,7 +649,7 @@ new class extends Component {
                                         @endif
                                     </td>
                                     <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
-                                        <flux:switch wire:model.live="item.is_active"
+                                        <flux:switch
                                                      wire:click="togglePlaylistItemActive({{ $item->id }})"
                                                      :checked="$item->is_active"/>
                                     </td>
