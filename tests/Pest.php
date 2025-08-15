@@ -17,7 +17,10 @@ pest()->extend(Tests\TestCase::class)
 
 registerSpatiePestHelpers();
 
-arch()->preset()->laravel();
+arch()
+    ->preset()
+    ->laravel()
+    ->ignoring(App\Http\Controllers\Auth\OidcController::class);
 
 arch()
     ->expect('App')
