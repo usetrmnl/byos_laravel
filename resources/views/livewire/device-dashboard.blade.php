@@ -95,7 +95,11 @@ new class extends Component {
                                 </flux:callout>
                             @elseif($current_image_path)
                                 <flux:separator class="mt-2 mb-4"/>
-                                <img src="{{ asset($current_image_path) }}" class="max-h-[480px]" alt="Current Image"/>
+                                <div class="flex justify-center">
+                                    <div class="relative origin-center -rotate-[{{ $device->rotate ?? 0 }}deg]">
+                                        <img src="{{ asset($current_image_path) }}" class="max-h-[480px]" alt="Current Image"/>
+                                    </div>
+                                </div>
                             @endif
                         </div>
                     </div>
