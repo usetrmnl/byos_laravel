@@ -182,7 +182,10 @@ class Device extends Model
     {
         return $this->belongsTo(Firmware::class, 'update_firmware_id');
     }
-
+    public function deviceModel(): BelongsTo
+    {
+        return $this->belongsTo(DeviceModel::class);
+    }
     public function logs(): HasMany
     {
         return $this->hasMany(DeviceLog::class);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Device;
+use App\Models\DeviceModel;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -22,6 +23,8 @@ new class extends Component {
     public $is_mirror = false;
 
     public $mirror_device_id = null;
+    public $device_model_id = null;
+    public $deviceModels;
 
     public ?int $pause_duration;
 
@@ -29,13 +32,27 @@ new class extends Component {
         'mac_address' => 'required',
         'api_key' => 'required',
         'default_refresh_interval' => 'required|integer',
+        'device_model_id' => 'nullable|exists:device_models,id',
         'mirror_device_id' => 'required_if:is_mirror,true',
     ];
 
     public function mount()
     {
         $this->devices = auth()->user()->devices;
+        $this->deviceModels = DeviceModel::orderBy('label')->get()->sortBy(function ($deviceModel) {
+            // Put TRMNL models at the top, then sort alphabetically within each group
+            $isTrmnl = str_starts_with($deviceModel->label, 'TRMNL');
+            return $isTrmnl ? '0' . $deviceModel->label : '1' . $deviceModel->label;
+        });
         return view('livewire.devices.manage');
+    }
+
+    public function updatedDeviceModelId(): void
+    {
+        // Convert empty string to null for custom selection
+        if (empty($this->device_model_id)) {
+            $this->device_model_id = null;
+        }
     }
 
     public function createDevice(): void
@@ -49,6 +66,9 @@ new class extends Component {
             abort_if($mirrorDevice->mirror_device_id !== null, 403, 'Cannot mirror a device that is already a mirror device');
         }
 
+        // Convert empty string to null for custom selection
+        $deviceModelId = empty($this->device_model_id) ? null : $this->device_model_id;
+
         Device::create([
             'name' => $this->name,
             'mac_address' => $this->mac_address,
@@ -56,6 +76,7 @@ new class extends Component {
             'default_refresh_interval' => $this->default_refresh_interval,
             'friendly_id' => $this->friendly_id,
             'user_id' => auth()->id(),
+            'device_model_id' => $deviceModelId,
             'mirror_device_id' => $this->is_mirror ? $this->mirror_device_id : null,
         ]);
 
@@ -152,6 +173,19 @@ new class extends Component {
                                         id="default_refresh_interval"
                                         class="block mt-1 w-full" type="number" name="default_refresh_interval"
                                         autofocus/>
+                        </div>
+
+                        <div class="mb-4">
+                            <flux:select label="Device Model" wire:model.live="device_model_id">
+                                <flux:select.option value="">Custom (Manual Dimensions)</flux:select.option>
+                              @if ($deviceModels && $deviceModels->count() > 0)
+                                    @foreach($deviceModels as $deviceModel)
+                                        <flux:select.option value="{{ $deviceModel->id }}">
+                                            {{ $deviceModel->label }} ({{ $deviceModel->width }}x{{ $deviceModel->height }})
+                                        </flux:select.option>
+                                    @endforeach
+                                @endif
+                            </flux:select>
                         </div>
 
                         <div class="mb-4">

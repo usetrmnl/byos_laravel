@@ -16,6 +16,10 @@ test('it creates firmwares directory if it does not exist', function () {
         'version_tag' => '1.0.0',
     ]);
 
+    Http::fake([
+        'https://example.com/firmware.bin' => Http::response('fake firmware content', 200),
+    ]);
+
     (new FirmwareDownloadJob($firmware))->handle();
 
     expect(Storage::disk('public')->exists('firmwares'))->toBeTrue();
