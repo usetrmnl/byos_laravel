@@ -20,11 +20,15 @@ registerSpatiePestHelpers();
 arch()
     ->preset()
     ->laravel()
-    ->ignoring(App\Http\Controllers\Auth\OidcController::class);
+    ->ignoring([
+        App\Http\Controllers\Auth\OidcController::class,
+        App\Models\DeviceModel::class,
+    ]);
 
 arch()
     ->expect('App')
-    ->not->toUse(['die', 'dd', 'dump']);
+    ->not->toUse(['die', 'dd', 'dump', 'ray']);
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

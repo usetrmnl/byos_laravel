@@ -10,6 +10,12 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 beforeEach(function () {
     Storage::fake('public');
     Storage::disk('public')->makeDirectory('/images/generated');
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://example.com/test-image.bmp*' => Http::response([], 200),
+        'https://trmnl.app/api/log' => Http::response([], 200),
+        'https://example.com/api/log' => Http::response([], 200),
+    ]);
 });
 
 test('it fetches and processes proxy cloud responses for devices', function () {

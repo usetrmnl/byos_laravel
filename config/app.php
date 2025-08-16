@@ -131,6 +131,7 @@ return [
     'puppeteer_docker' => env('PUPPETEER_DOCKER', false),
     'puppeteer_mode' => env('PUPPETEER_MODE', 'local'),
     'puppeteer_wait_for_network_idle' => env('PUPPETEER_WAIT_FOR_NETWORK_IDLE', false),
+    'puppeteer_window_size_strategy' => env('PUPPETEER_WINDOW_SIZE_STRATEGY', null),
 
     'notifications' => [
         'battery_low' => [

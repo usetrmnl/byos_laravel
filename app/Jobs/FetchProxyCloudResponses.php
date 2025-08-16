@@ -78,22 +78,30 @@ class FetchProxyCloudResponses implements ShouldQueue
                     Log::info("Successfully updated proxy cloud response for device: {$device->mac_address}");
 
                     if ($device->last_log_request) {
-                        Http::withHeaders([
-                            'id' => $device->mac_address,
-                            'access-token' => $device->api_key,
-                            'width' => 800,
-                            'height' => 480,
-                            'rssi' => $device->last_rssi_level,
-                            'battery_voltage' => $device->last_battery_voltage,
-                            'refresh-rate' => $device->default_refresh_interval,
-                            'fw-version' => $device->last_firmware_version,
-                            'accept-encoding' => 'identity;q=1,chunked;q=0.1,*;q=0',
-                            'user-agent' => 'ESP32HTTPClient',
-                        ])->post(config('services.trmnl.proxy_base_url').'/api/log', $device->last_log_request);
+                        try {
+                            Http::withHeaders([
+                                'id' => $device->mac_address,
+                                'access-token' => $device->api_key,
+                                'width' => 800,
+                                'height' => 480,
+                                'rssi' => $device->last_rssi_level,
+                                'battery_voltage' => $device->last_battery_voltage,
+                                'refresh-rate' => $device->default_refresh_interval,
+                                'fw-version' => $device->last_firmware_version,
+                                'accept-encoding' => 'identity;q=1,chunked;q=0.1,*;q=0',
+                                'user-agent' => 'ESP32HTTPClient',
+                            ])->post(config('services.trmnl.proxy_base_url').'/api/log', $device->last_log_request);
 
-                        $device->update([
-                            'last_log_request' => null,
-                        ]);
+                            // Only clear the pending log request if the POST succeeded
+                            $device->update([
+                                'last_log_request' => null,
+                            ]);
+                        } catch (Exception $e) {
+                            // Do not fail the entire proxy fetch if the log upload fails
+                            Log::error("Failed to upload device log for device: {$device->mac_address}", [
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
 
                 } catch (Exception $e) {

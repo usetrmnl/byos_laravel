@@ -21,6 +21,8 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('/devices/{device}/configure', 'devices.configure')->name('devices.configure');
     Volt::route('/devices/{device}/logs', 'devices.logs')->name('devices.logs');
 
+    Volt::route('/device-models', 'device-models.index')->name('device-models.index');
+
     Volt::route('plugins', 'plugins.index')->name('plugins.index');
 
     Volt::route('plugins/recipe/{plugin}', 'plugins.recipe')->name('plugins.recipe');

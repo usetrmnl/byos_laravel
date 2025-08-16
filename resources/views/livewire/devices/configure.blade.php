@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\FirmwareDownloadJob;
+use App\Models\DeviceModel;
 use App\Models\Firmware;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
@@ -19,6 +20,7 @@ new class extends Component {
     public $height;
     public $rotate;
     public $image_format;
+    public $device_model_id;
 
     // Sleep mode and special function
     public $sleep_mode_enabled = false;
@@ -33,6 +35,9 @@ new class extends Component {
     public $active_from;
     public $active_until;
     public $refresh_time = null;
+
+    // Device model properties
+    public $deviceModels;
 
     // Firmware properties
     public $firmwares;
@@ -56,6 +61,12 @@ new class extends Component {
         $this->height = $device->height;
         $this->rotate = $device->rotate;
         $this->image_format = $device->image_format;
+        $this->device_model_id = $device->device_model_id;
+        $this->deviceModels = DeviceModel::orderBy('label')->get()->sortBy(function ($deviceModel) {
+            // Put TRMNL models at the top, then sort alphabetically within each group
+            $isTrmnl = str_starts_with($deviceModel->label, 'TRMNL');
+            return $isTrmnl ? '0' . $deviceModel->label : '1' . $deviceModel->label;
+        });
         $this->playlists = $device->playlists()->with('items.plugin')->orderBy('created_at')->get();
         $this->firmwares = \App\Models\Firmware::orderBy('latest', 'desc')->orderBy('created_at', 'desc')->get();
         $this->selected_firmware_id = $this->firmwares->where('latest', true)->first()?->id;
@@ -77,6 +88,24 @@ new class extends Component {
         redirect()->route('devices');
     }
 
+    public function updatedDeviceModelId()
+    {
+        // Convert empty string to null for custom selection
+        if (empty($this->device_model_id)) {
+            $this->device_model_id = null;
+            return;
+        }
+
+        if ($this->device_model_id) {
+            $deviceModel = DeviceModel::find($this->device_model_id);
+            if ($deviceModel) {
+                $this->width = $deviceModel->width;
+                $this->height = $deviceModel->height;
+                $this->rotate = $deviceModel->rotation;
+            }
+        }
+    }
+
     public function updateDevice()
     {
         abort_unless(auth()->user()->devices->contains($this->device), 403);
@@ -90,11 +119,15 @@ new class extends Component {
             'height' => 'required|integer|min:1',
             'rotate' => 'required|integer|min:0|max:359',
             'image_format' => 'required|string',
+            'device_model_id' => 'nullable|exists:device_models,id',
             'sleep_mode_enabled' => 'boolean',
             'sleep_mode_from' => 'nullable|date_format:H:i',
             'sleep_mode_to' => 'nullable|date_format:H:i',
             'special_function' => 'nullable|string',
         ]);
+
+        // Convert empty string to null for custom selection
+        $deviceModelId = empty($this->device_model_id) ? null : $this->device_model_id;
 
         $this->device->update([
             'name' => $this->name,
@@ -105,6 +138,7 @@ new class extends Component {
             'height' => $this->height,
             'rotate' => $this->rotate,
             'image_format' => $this->image_format,
+            'device_model_id' => $deviceModelId,
             'sleep_mode_enabled' => $this->sleep_mode_enabled,
             'sleep_mode_from' => $this->sleep_mode_from,
             'sleep_mode_to' => $this->sleep_mode_to,
@@ -357,19 +391,32 @@ new class extends Component {
 
                         <flux:input label="Friendly ID" wire:model="friendly_id"/>
                         <flux:input label="MAC Address" wire:model="mac_address"/>
-                        <flux:separator class="my-4" text="Advanced Device Settings" />
-                        <div class="flex gap-4">
-                            <flux:input label="Width (px)" wire:model="width" type="number" />
-                            <flux:input label="Height (px)" wire:model="height" type="number"/>
-                            <flux:input label="Rotate °" wire:model="rotate" type="number"/>
-                        </div>
-                        <flux:select label="Image Format" wire:model="image_format">
-                            @foreach(\App\Enums\ImageFormat::cases() as $format)
-                                <flux:select.option value="{{ $format->value }}">{{$format->label()}}</flux:select.option>
-                            @endforeach
-                        </flux:select>
+
                         <flux:input label="Default Refresh Interval (seconds)" wire:model="default_refresh_interval"
                                     type="number"/>
+
+                        <flux:select label="Device Model" wire:model.live="device_model_id">
+                            <flux:select.option value="">Custom (Manual Dimensions)</flux:select.option>
+                            @foreach($deviceModels as $deviceModel)
+                                <flux:select.option value="{{ $deviceModel->id }}">
+                                    {{ $deviceModel->label }} ({{ $deviceModel->width }}x{{ $deviceModel->height }})
+                                </flux:select.option>
+                            @endforeach
+                        </flux:select>
+
+                        @if(empty($device_model_id))
+                            <flux:separator class="my-4" text="Advanced Device Settings" />
+                            <div class="flex gap-4">
+                                <flux:input label="Width (px)" wire:model="width" type="number" />
+                                <flux:input label="Height (px)" wire:model="height" type="number"/>
+                                <flux:input label="Rotate °" wire:model="rotate" type="number"/>
+                            </div>
+                            <flux:select label="Image Format" wire:model="image_format">
+                                @foreach(\App\Enums\ImageFormat::cases() as $format)
+                                    <flux:select.option value="{{ $format->value }}">{{$format->label()}}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        @endif
 
                         <flux:separator class="my-4" text="Special Functions" />
                         <flux:select label="Special Function" wire:model="special_function">

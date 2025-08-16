@@ -266,6 +266,22 @@ Route::get('/devices', function (Request $request) {
     ]);
 })->middleware('auth:sanctum');
 
+Route::get('/device-models', function (Request $request) {
+    $deviceModels = App\Models\DeviceModel::get([
+        'id',
+        'name',
+        'label',
+        'description',
+        'width',
+        'height',
+        'bit_depth',
+    ]);
+
+    return response()->json([
+        'data' => $deviceModels,
+    ]);
+})->middleware('auth:sanctum');
+
 Route::post('/display/update', function (Request $request) {
     $request->validate([
         'device_id' => 'required|exists:devices,id',
