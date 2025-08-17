@@ -1,4 +1,4 @@
-### Local Development
+## Local Development
 
 #### Requirements
 
@@ -19,17 +19,24 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-#### Install dependencies
+#### Install dependencies and Build frontend
 
 ```bash
 composer install
 npm i
+npm run build
 ```
 
 #### Run migrations
 
 ```bash
 php artisan migrate --seed
+```
+
+#### Link storage to expose public assets
+
+```bash
+php artisan storage:link
 ```
 
 #### Run the server
@@ -40,7 +47,9 @@ To expose the built-in server to the local network, you can run the following co
 php artisan serve  --host=0.0.0.0 --port 4567
 ```
 
-### Docker
+---
+
+## Docker
 Use the provided Dockerfile, or docker-compose file to run the server in a container.
 
 #### .devcontainer
