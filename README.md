@@ -110,7 +110,7 @@ php artisan db:seed --class=ExampleRecipesSeeder
 | `FORCE_HTTPS`                 | If your server handles SSL termination, enforce HTTPS.                                                                                      | 0                 |
 | `PHP_OPCACHE_ENABLE`          | Enable PHP Opcache                                                                                                                          | 0                 |
 | `TRMNL_IMAGE_URL_TIMEOUT`     | How long TRMNL waits for a response on the display endpoint. (sec)                                                                          | 30                |
-| `APP_TIMEZONE`                | The timezone that the system should run under (Affects "Sleep Mode"                                                                         | UTC               |
+| `APP_TIMEZONE`                | Default timezone, which will be used by the PHP date functions                                                                              | UTC               |
 
 #### Login
 
