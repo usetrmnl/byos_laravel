@@ -423,3 +423,35 @@ it('determines correct image format from device model', function (): void {
     expect($device3->current_screen_image)->toBe($uuid3);
     Storage::disk('public')->assertExists("/images/generated/{$uuid3}.png");
 })->skipOnGitHubActions();
+
+it('generates BMP for legacy device with bmp3_1bit_srgb format', function (): void {
+    // Create a device with BMP format but no DeviceModel (legacy behavior)
+    $device = Device::factory()->create([
+        'width' => 800,
+        'height' => 480,
+        'rotate' => 0,
+        'image_format' => ImageFormat::BMP3_1BIT_SRGB->value,
+        'device_model_id' => null, // Explicitly no DeviceModel
+    ]);
+
+    $markup = '<div style="background: white; color: black; padding: 20px;">Test Content</div>';
+    $uuid = ImageGenerationService::generateImage($markup, $device->id);
+
+    // Assert the device was updated with a new image UUID
+    $device->refresh();
+    expect($device->current_screen_image)->toBe($uuid);
+
+    // Assert BMP file was created
+    Storage::disk('public')->assertExists("/images/generated/{$uuid}.bmp");
+
+    // Verify the BMP file has content and isn't blank
+    $imagePath = Storage::disk('public')->path("/images/generated/{$uuid}.bmp");
+    $imageSize = filesize($imagePath);
+    expect($imageSize)->toBeGreaterThan(100); // Should be at least 100 bytes for a BMP
+
+    // Verify it's a valid BMP file
+    $imageInfo = getimagesize($imagePath);
+    expect($imageInfo[0])->toBe(800); // Width
+    expect($imageInfo[1])->toBe(480); // Height
+    expect($imageInfo[2])->toBe(IMAGETYPE_BMP); // BMP type
+})->skipOnGitHubActions();

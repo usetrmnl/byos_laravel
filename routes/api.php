@@ -126,10 +126,25 @@ Route::get('/display', function (Request $request) {
             $image_path = 'images/setup-logo.bmp';
             $filename = 'setup-logo.bmp';
         } else {
-            if (isset($device->last_firmware_version)
-                && version_compare($device->last_firmware_version, '1.5.2', '<')
-                && Storage::disk('public')->exists('images/generated/'.$image_uuid.'.bmp')) {
-                $image_path = 'images/generated/'.$image_uuid.'.bmp';
+            // Determine image format based on device settings
+            $preferred_format = 'png'; // Default to PNG for newer firmware
+
+            if (! $device->device_model_id) {
+                // No device model, use device's image_format setting
+                if (str_contains($device->image_format, 'bmp')) {
+                    $preferred_format = 'bmp';
+                }
+                // For 'auto' or unknown formats, fall back to firmware version logic
+                if (isset($device->last_firmware_version)
+                    && version_compare($device->last_firmware_version, '1.5.2', '<')
+                    && Storage::disk('public')->exists('images/generated/'.$image_uuid.'.bmp')) {
+                    $preferred_format = 'bmp';
+                }
+            }
+
+            // Check if a preferred format exists, otherwise fall back
+            if (Storage::disk('public')->exists('images/generated/'.$image_uuid.'.'.$preferred_format)) {
+                $image_path = 'images/generated/'.$image_uuid.'.'.$preferred_format;
             } elseif (Storage::disk('public')->exists('images/generated/'.$image_uuid.'.png')) {
                 $image_path = 'images/generated/'.$image_uuid.'.png';
             } else {
@@ -422,10 +437,25 @@ Route::get('/current_screen', function (Request $request) {
         $image_path = 'images/setup-logo.bmp';
         $filename = 'setup-logo.bmp';
     } else {
-        if (isset($device->last_firmware_version)
-            && version_compare($device->last_firmware_version, '1.5.2', '<')
-            && Storage::disk('public')->exists('images/generated/'.$image_uuid.'.bmp')) {
-            $image_path = 'images/generated/'.$image_uuid.'.bmp';
+        // Determine image format based on device settings
+        $preferred_format = 'png'; // Default to PNG for newer firmware
+
+        if (! $device->device_model_id) {
+            // No device model, use device's image_format setting
+            if (str_contains($device->image_format, 'bmp')) {
+                $preferred_format = 'bmp';
+            }
+            // For 'auto' or unknown formats, fall back to firmware version logic
+            if (isset($device->last_firmware_version)
+                && version_compare($device->last_firmware_version, '1.5.2', '<')
+                && Storage::disk('public')->exists('images/generated/'.$image_uuid.'.bmp')) {
+                $preferred_format = 'bmp';
+            }
+        }
+
+        // Check if preferred format exists, otherwise fall back
+        if (Storage::disk('public')->exists('images/generated/'.$image_uuid.'.'.$preferred_format)) {
+            $image_path = 'images/generated/'.$image_uuid.'.'.$preferred_format;
         } elseif (Storage::disk('public')->exists('images/generated/'.$image_uuid.'.png')) {
             $image_path = 'images/generated/'.$image_uuid.'.png';
         } else {
