@@ -226,6 +226,59 @@ it('reset_if_not_cacheable preserves cache for standard devices', function (): v
     expect($plugin->current_image)->toBe('test-uuid');
 })->skipOnGitHubActions();
 
+it('reset_if_not_cacheable preserves cache for og_png and og_plus device models', function (): void {
+    // Create a plugin
+    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid']);
+
+    // Create og_png device model
+    $ogPngModel = DeviceModel::factory()->create([
+        'name' => 'test_og_png',
+        'width' => 800,
+        'height' => 480,
+        'rotation' => 0,
+    ]);
+
+    // Create og_plus device model
+    $ogPlusModel = DeviceModel::factory()->create([
+        'name' => 'test_og_plus',
+        'width' => 800,
+        'height' => 480,
+        'rotation' => 0,
+    ]);
+
+    // Create devices with og_png and og_plus device models
+    Device::factory()->create(['device_model_id' => $ogPngModel->id]);
+    Device::factory()->create(['device_model_id' => $ogPlusModel->id]);
+
+    // Test that the method preserves cache for standard device models
+    ImageGenerationService::resetIfNotCacheable($plugin);
+
+    $plugin->refresh();
+    expect($plugin->current_image)->toBe('test-uuid');
+})->skipOnGitHubActions();
+
+it('reset_if_not_cacheable resets cache for non-standard device models', function (): void {
+    // Create a plugin
+    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid']);
+
+    // Create a non-standard device model (e.g., kindle)
+    $kindleModel = DeviceModel::factory()->create([
+        'name' => 'test_amazon_kindle_2024',
+        'width' => 1400,
+        'height' => 840,
+        'rotation' => 90,
+    ]);
+
+    // Create a device with the non-standard device model
+    Device::factory()->create(['device_model_id' => $kindleModel->id]);
+
+    // Test that the method resets cache for non-standard device models
+    ImageGenerationService::resetIfNotCacheable($plugin);
+
+    $plugin->refresh();
+    expect($plugin->current_image)->toBeNull();
+})->skipOnGitHubActions();
+
 it('reset_if_not_cacheable handles null plugin', function (): void {
     // Test that the method handles null plugin gracefully
     expect(fn () => ImageGenerationService::resetIfNotCacheable(null))->not->toThrow(Exception::class);

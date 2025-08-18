@@ -353,20 +353,27 @@ class ImageGenerationService
     public static function resetIfNotCacheable(?Plugin $plugin): void
     {
         if ($plugin?->id) {
-            // Check if any devices have custom dimensions or use DeviceModels
+            // Check if any devices have custom dimensions or use non-standard DeviceModels
             $hasCustomDimensions = Device::query()
                 ->where(function ($query) {
                     $query->where('width', '!=', 800)
                         ->orWhere('height', '!=', 480)
                         ->orWhere('rotate', '!=', 0);
                 })
-                ->orWhereNotNull('device_model_id')
+                ->orWhereHas('deviceModel', function ($query) {
+                    // Only allow caching if all device models have standard dimensions (800x480, rotation=0)
+                    $query->where(function ($subQuery) {
+                        $subQuery->where('width', '!=', 800)
+                            ->orWhere('height', '!=', 480)
+                            ->orWhere('rotation', '!=', 0);
+                    });
+                })
                 ->exists();
 
             if ($hasCustomDimensions) {
                 // TODO cache image per device
                 $plugin->update(['current_image' => null]);
-                Log::debug('Skip cache as devices with custom dimensions or DeviceModels exist');
+                Log::debug('Skip cache as devices with custom dimensions or non-standard DeviceModels exist');
             }
         }
     }
