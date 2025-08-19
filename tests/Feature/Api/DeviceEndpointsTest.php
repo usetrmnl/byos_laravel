@@ -2,10 +2,12 @@
 
 use App\Jobs\GenerateScreenJob;
 use App\Models\Device;
+use App\Models\DeviceModel;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Plugin;
 use App\Models\User;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
@@ -905,4 +907,46 @@ test('screens endpoint returns 404 for invalid device credentials', function () 
         ->assertJson([
             'message' => 'MAC Address not registered or invalid access token',
         ]);
+});
+
+test('setup endpoint assigns device model when model-id header is provided', function () {
+    $user = User::factory()->create(['assign_new_devices' => true]);
+    $deviceModel = DeviceModel::factory()->create([
+        'name' => 'test-model',
+        'label' => 'Test Model',
+    ]);
+
+    $response = $this->withHeaders([
+        'id' => '00:11:22:33:44:55',
+        'model-id' => 'test-model',
+    ])->get('/api/setup');
+
+    $response->assertOk()
+        ->assertJson([
+            'status' => 200,
+            'message' => 'Welcome to TRMNL BYOS',
+        ]);
+
+    $device = Device::where('mac_address', '00:11:22:33:44:55')->first();
+    expect($device)->not->toBeNull()
+        ->and($device->device_model_id)->toBe($deviceModel->id);
+});
+
+test('setup endpoint handles non-existent device model gracefully', function () {
+    $user = User::factory()->create(['assign_new_devices' => true]);
+
+    $response = $this->withHeaders([
+        'id' => '00:11:22:33:44:55',
+        'model-id' => 'non-existent-model',
+    ])->get('/api/setup');
+
+    $response->assertOk()
+        ->assertJson([
+            'status' => 200,
+            'message' => 'Welcome to TRMNL BYOS',
+        ]);
+
+    $device = Device::where('mac_address', '00:11:22:33:44:55')->first();
+    expect($device)->not->toBeNull()
+        ->and($device->device_model_id)->toBeNull();
 });

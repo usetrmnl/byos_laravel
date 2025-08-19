@@ -3,6 +3,7 @@
 use App\Jobs\GenerateScreenJob;
 use App\Models\Device;
 use App\Models\DeviceLog;
+use App\Models\DeviceModel;
 use App\Models\Plugin;
 use App\Models\User;
 use App\Services\ImageGenerationService;
@@ -178,6 +179,7 @@ Route::get('/display', function (Request $request) {
 
 Route::get('/setup', function (Request $request) {
     $mac_address = $request->header('id');
+    $model_name = $request->header('model-id');
 
     if (! $mac_address) {
         return response()->json([
@@ -193,6 +195,12 @@ Route::get('/setup', function (Request $request) {
         $auto_assign_user = User::where('assign_new_devices', true)->first();
 
         if ($auto_assign_user) {
+            // Check if device model exists by name
+            $device_model = null;
+            if ($model_name) {
+                $device_model = DeviceModel::where('name', $model_name)->first();
+            }
+
             // Create a new device and assign it to this user
             $device = Device::create([
                 'mac_address' => $mac_address,
@@ -202,6 +210,7 @@ Route::get('/setup', function (Request $request) {
                 'friendly_id' => Str::random(6),
                 'default_refresh_interval' => 900,
                 'mirror_device_id' => $auto_assign_user->assign_new_device_id,
+                'device_model_id' => $device_model?->id,
             ]);
         } else {
             return response()->json([
@@ -282,7 +291,7 @@ Route::get('/devices', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/device-models', function (Request $request) {
-    $deviceModels = App\Models\DeviceModel::get([
+    $deviceModels = DeviceModel::get([
         'id',
         'name',
         'label',
