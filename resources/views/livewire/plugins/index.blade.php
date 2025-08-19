@@ -69,9 +69,8 @@ new class extends Component {
 
     public function seedExamplePlugins(): void
     {
-//        \Artisan::call('db:seed', ['--class' => 'ExampleRecipesSeeder']);
         \Artisan::call(\App\Console\Commands\ExampleRecipesSeederCommand::class, ['user_id' => auth()->id()]);
-
+        $this->refreshPlugins();
     }
 
 };
