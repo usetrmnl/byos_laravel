@@ -106,7 +106,7 @@ return new class extends Migration
                 'label' => 'Inkplate 10',
                 'description' => 'Inkplate 10',
                 'width' => 1200,
-                'height' => 820,
+                'height' => 825,
                 'colors' => 8,
                 'bit_depth' => 3,
                 'scale_factor' => 1,
