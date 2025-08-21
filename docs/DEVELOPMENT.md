@@ -16,15 +16,20 @@ git clone git@github.com:usetrmnl/byos_laravel.git
 
 ```bash
 cp .env.example .env
-php artisan key:generate
 ```
 
-#### Install dependencies and Build frontend
+#### Install dependencies and build frontend
 
 ```bash
 composer install
 npm i
 npm run build
+```
+
+#### Generate application key
+
+```bash
+php artisan key:generate
 ```
 
 #### Run migrations
