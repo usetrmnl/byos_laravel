@@ -23,7 +23,7 @@ test('it generates screen images and updates device', function () {
     // Assert both PNG and BMP files were created
     $uuid = $device->current_screen_image;
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 test('it cleans up unused images', function () {
     // Create some test devices with images
@@ -45,7 +45,7 @@ test('it cleans up unused images', function () {
     Storage::disk('public')->assertMissing('/images/generated/uuid-to-be-replaced.bmp');
     Storage::disk('public')->assertMissing('/images/generated/inactive-uuid.png');
     Storage::disk('public')->assertMissing('/images/generated/inactive-uuid.bmp');
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 test('it preserves gitignore file during cleanup', function () {
     Storage::disk('public')->put('/images/generated/.gitignore', '*');
@@ -55,4 +55,4 @@ test('it preserves gitignore file during cleanup', function () {
     $job->handle();
 
     Storage::disk('public')->assertExists('/images/generated/.gitignore');
-})->skipOnGitHubActions();
+})->skipOnCi();

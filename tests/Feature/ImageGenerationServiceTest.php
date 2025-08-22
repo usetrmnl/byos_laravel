@@ -34,7 +34,7 @@ it('generates image for device without device model', function (): void {
 
     // Assert PNG file was created
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('generates image for device with device model', function (): void {
     // Create a DeviceModel
@@ -64,7 +64,7 @@ it('generates image for device with device model', function (): void {
 
     // Assert PNG file was created
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('generates 4-color 2-bit PNG with device model', function (): void {
     // Create a DeviceModel for 4-color, 2-bit PNG
@@ -125,7 +125,7 @@ it('generates 4-color 2-bit PNG with device model', function (): void {
 
     imagedestroy($image);
     expect($hasContent)->toBe(true, 'Image should contain visible content');
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('generates BMP with device model', function (): void {
     // Create a DeviceModel for BMP format
@@ -155,7 +155,7 @@ it('generates BMP with device model', function (): void {
 
     // Assert BMP file was created
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.bmp");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('applies scale factor from device model', function (): void {
     // Create a DeviceModel with scale factor
@@ -185,7 +185,7 @@ it('applies scale factor from device model', function (): void {
 
     // Assert PNG file was created
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('applies rotation from device model', function (): void {
     // Create a DeviceModel with rotation
@@ -215,7 +215,7 @@ it('applies rotation from device model', function (): void {
 
     // Assert PNG file was created
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('applies offset from device model', function (): void {
     // Create a DeviceModel with offset
@@ -245,7 +245,7 @@ it('applies offset from device model', function (): void {
 
     // Assert PNG file was created
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('falls back to device settings when no device model', function (): void {
     // Create a device with custom settings but no DeviceModel
@@ -265,7 +265,7 @@ it('falls back to device settings when no device model', function (): void {
 
     // Assert PNG file was created
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('handles auto image format for legacy devices', function (): void {
     // Create a device with AUTO format (legacy behavior)
@@ -286,7 +286,7 @@ it('handles auto image format for legacy devices', function (): void {
 
     // Assert PNG file was created (modern firmware defaults to PNG)
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('cleanupFolder removes unused images', function (): void {
     // Create active devices with images
@@ -309,7 +309,7 @@ it('cleanupFolder removes unused images', function (): void {
     // Assert inactive files are removed
     Storage::disk('public')->assertMissing('/images/generated/inactive-uuid.png');
     Storage::disk('public')->assertMissing('/images/generated/another-inactive.png');
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('cleanupFolder preserves .gitignore', function (): void {
     // Create gitignore file
@@ -323,7 +323,7 @@ it('cleanupFolder preserves .gitignore', function (): void {
 
     // Assert gitignore is preserved
     Storage::disk('public')->assertExists('/images/generated/.gitignore');
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('resetIfNotCacheable resets when device models exist', function (): void {
     // Create a plugin
@@ -340,7 +340,7 @@ it('resetIfNotCacheable resets when device models exist', function (): void {
     // Assert plugin image was reset
     $plugin->refresh();
     expect($plugin->current_image)->toBeNull();
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('resetIfNotCacheable resets when custom dimensions exist', function (): void {
     // Create a plugin
@@ -358,7 +358,7 @@ it('resetIfNotCacheable resets when custom dimensions exist', function (): void 
     // Assert plugin image was reset
     $plugin->refresh();
     expect($plugin->current_image)->toBeNull();
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('resetIfNotCacheable preserves image for standard devices', function (): void {
     // Create a plugin
@@ -377,7 +377,7 @@ it('resetIfNotCacheable preserves image for standard devices', function (): void
     // Assert plugin image was preserved
     $plugin->refresh();
     expect($plugin->current_image)->toBe('test-uuid');
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('determines correct image format from device model', function (): void {
     // Test BMP format detection
@@ -422,7 +422,7 @@ it('determines correct image format from device model', function (): void {
     $device3->refresh();
     expect($device3->current_screen_image)->toBe($uuid3);
     Storage::disk('public')->assertExists("/images/generated/{$uuid3}.png");
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('generates BMP for legacy device with bmp3_1bit_srgb format', function (): void {
     // Create a device with BMP format but no DeviceModel (legacy behavior)
@@ -454,4 +454,4 @@ it('generates BMP for legacy device with bmp3_1bit_srgb format', function (): vo
     expect($imageInfo[0])->toBe(800); // Width
     expect($imageInfo[1])->toBe(480); // Height
     expect($imageInfo[2])->toBe(IMAGETYPE_BMP); // BMP type
-})->skipOnGitHubActions();
+})->skipOnCi();

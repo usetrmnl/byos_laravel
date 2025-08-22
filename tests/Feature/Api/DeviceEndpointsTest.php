@@ -573,7 +573,7 @@ test('plugin caches image until data is stale', function () {
 
     expect($thirdResponse['filename'])
         ->not->toBe($firstResponse['filename']);
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 test('plugins in playlist are rendered in order', function () {
     // Create source device with a playlist
@@ -677,7 +677,7 @@ test('plugins in playlist are rendered in order', function () {
     $thirdResponse->assertOk();
     expect($thirdResponse['filename'])
         ->not->toBe($secondResponse['filename']);
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 test('display endpoint updates last_refreshed_at timestamp', function () {
     $device = Device::factory()->create([
@@ -787,7 +787,7 @@ test('display endpoint handles mashup playlist items correctly', function () {
     // Verify the playlist item was marked as displayed
     $playlistItem->refresh();
     expect($playlistItem->last_displayed_at)->not->toBeNull();
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 test('device in sleep mode returns sleep image and correct refresh rate', function () {
     $device = Device::factory()->create([

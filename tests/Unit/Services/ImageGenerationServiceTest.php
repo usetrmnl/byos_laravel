@@ -47,7 +47,7 @@ it('get_image_settings returns device model settings when available', function (
     expect($settings['offset_x'])->toBe(10);
     expect($settings['offset_y'])->toBe(20);
     expect($settings['use_model_settings'])->toBe(true);
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('get_image_settings falls back to device settings when no device model', function (): void {
     // Create a device without DeviceModel
@@ -71,7 +71,7 @@ it('get_image_settings falls back to device settings when no device model', func
     expect($settings['rotation'])->toBe(180);
     expect($settings['image_format'])->toBe(ImageFormat::PNG_8BIT_GRAYSCALE->value);
     expect($settings['use_model_settings'])->toBe(false);
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('get_image_settings uses defaults for missing device properties', function (): void {
     // Create a device without DeviceModel and missing properties
@@ -101,7 +101,7 @@ it('get_image_settings uses defaults for missing device properties', function ()
     expect($settings['offset_y'])->toBe(0);
     // image_format will be null if the device doesn't have it set, which is the expected behavior
     expect($settings['image_format'])->toBeNull();
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('determine_image_format_from_model returns correct formats', function (): void {
     // Use reflection to access private method
@@ -153,7 +153,7 @@ it('determine_image_format_from_model returns correct formats', function (): voi
     ]);
     $format = $method->invoke(null, $unknownModel);
     expect($format)->toBe(ImageFormat::AUTO->value);
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('cleanup_folder identifies active images correctly', function (): void {
     // Create devices with images
@@ -189,7 +189,7 @@ it('reset_if_not_cacheable detects device models', function (): void {
 
     $plugin->refresh();
     expect($plugin->current_image)->toBeNull();
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('reset_if_not_cacheable detects custom dimensions', function (): void {
     // Create a plugin
@@ -206,7 +206,7 @@ it('reset_if_not_cacheable detects custom dimensions', function (): void {
 
     $plugin->refresh();
     expect($plugin->current_image)->toBeNull();
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('reset_if_not_cacheable preserves cache for standard devices', function (): void {
     // Create a plugin
@@ -224,7 +224,7 @@ it('reset_if_not_cacheable preserves cache for standard devices', function (): v
 
     $plugin->refresh();
     expect($plugin->current_image)->toBe('test-uuid');
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('reset_if_not_cacheable preserves cache for og_png and og_plus device models', function (): void {
     // Create a plugin
@@ -255,7 +255,7 @@ it('reset_if_not_cacheable preserves cache for og_png and og_plus device models'
 
     $plugin->refresh();
     expect($plugin->current_image)->toBe('test-uuid');
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('reset_if_not_cacheable resets cache for non-standard device models', function (): void {
     // Create a plugin
@@ -277,12 +277,12 @@ it('reset_if_not_cacheable resets cache for non-standard device models', functio
 
     $plugin->refresh();
     expect($plugin->current_image)->toBeNull();
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('reset_if_not_cacheable handles null plugin', function (): void {
     // Test that the method handles null plugin gracefully
     expect(fn () => ImageGenerationService::resetIfNotCacheable(null))->not->toThrow(Exception::class);
-})->skipOnGitHubActions();
+})->skipOnCi();
 
 it('image_format enum includes new 2bit 4c format', function (): void {
     // Test that the new format is properly defined in the enum
