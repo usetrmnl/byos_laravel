@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Yaml\Yaml;
 use ZipArchive;
 
@@ -82,34 +83,45 @@ class PluginImportService
                 'custom_fields' => $settings['custom_fields'],
             ];
 
-            // Extract default values from custom_fields and populate configuration
-            $configuration = [];
-            if (isset($settings['custom_fields']) && is_array($settings['custom_fields'])) {
+            $plugin_updated = isset($settings['id'])
+                            && Plugin::where('user_id', $user->id)->where('trmnlp_id', $settings['id'])->exists();
+            // Create a new plugin
+            $plugin = Plugin::updateOrCreate(
+                [
+                    'user_id' => $user->id, 'trmnlp_id' => $settings['id'] ?? Uuid::v7(),
+                ],
+                [
+                    'user_id' => $user->id,
+                    'name' => $settings['name'] ?? 'Imported Plugin',
+                    'trmnlp_id' => $settings['id'] ?? Uuid::v7(),
+                    'data_stale_minutes' => $settings['refresh_interval'] ?? 15,
+                    'data_strategy' => $settings['strategy'] ?? 'static',
+                    'polling_url' => $settings['polling_url'] ?? null,
+                    'polling_verb' => $settings['polling_verb'] ?? 'get',
+                    'polling_header' => isset($settings['polling_headers'])
+                        ? str_replace('=', ':', $settings['polling_headers'])
+                        : null,
+                    'polling_body' => $settings['polling_body'] ?? null,
+                    'markup_language' => $markupLanguage,
+                    'render_markup' => $fullLiquid,
+                    'configuration_template' => $configurationTemplate,
+                    'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
+                ]);
+
+            if (! $plugin_updated) {
+                // Extract default values from custom_fields and populate configuration
+                $configuration = [];
                 foreach ($settings['custom_fields'] as $field) {
                     if (isset($field['keyname']) && isset($field['default'])) {
                         $configuration[$field['keyname']] = $field['default'];
                     }
                 }
+                // set only if plugin is new
+                $plugin->update([
+                    'configuration' => $configuration,
+                ]);
             }
-
-            // Create a new plugin
-            $plugin = Plugin::create([
-                'user_id' => $user->id,
-                'name' => $settings['name'] ?? 'Imported Plugin',
-                'data_stale_minutes' => $settings['refresh_interval'] ?? 15,
-                'data_strategy' => $settings['strategy'] ?? 'static',
-                'polling_url' => $settings['polling_url'] ?? null,
-                'polling_verb' => $settings['polling_verb'] ?? 'get',
-                'polling_header' => isset($settings['polling_headers'])
-                    ? str_replace('=', ':', $settings['polling_headers'])
-                    : null,
-                'polling_body' => $settings['polling_body'] ?? null,
-                'markup_language' => $markupLanguage,
-                'render_markup' => $fullLiquid,
-                'configuration_template' => $configurationTemplate,
-                'configuration' => $configuration,
-                'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
-            ]);
+            $plugin['trmnlp_yaml'] = $settingsYaml;
 
             return $plugin;
 
@@ -119,12 +131,6 @@ class PluginImportService
         }
     }
 
-    /**
-     * Find required files in the extracted ZIP directory
-     *
-     * @param  string  $tempDir  The temporary directory path
-     * @return array Array containing paths to required files
-     */
     private function findRequiredFiles(string $tempDir): array
     {
         $settingsYamlPath = null;
