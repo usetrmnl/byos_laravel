@@ -7,6 +7,7 @@ use App\Models\DeviceModel;
 use App\Models\Plugin;
 use App\Models\User;
 use App\Services\ImageGenerationService;
+use App\Services\PluginImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
@@ -511,3 +512,48 @@ Route::post('custom_plugins/{plugin_uuid}', function (string $plugin_uuid) {
 
     return response()->json(['message' => 'Data updated successfully']);
 })->name('api.custom_plugins.webhook');
+
+Route::get('plugin_settings/{trmnlp_id}/archive', function (Request $request, string $trmnlp_id) {
+    if (! $trmnlp_id || trim($trmnlp_id) === '') {
+        return response()->json([
+            'message' => 'trmnlp_id is required',
+        ], 400);
+    }
+
+    // Find the plugin by trmnlp_id and ensure it belongs to the authenticated user
+    $plugin = Plugin::where('trmnlp_id', $trmnlp_id)
+        ->where('user_id', auth()->user()->id)
+        ->firstOrFail();
+
+    // Use the export service to create the ZIP file
+    /** @var App\Services\PluginExportService $exporter */
+    $exporter = app(App\Services\PluginExportService::class);
+
+    return $exporter->exportToZip($plugin, auth()->user());
+})->middleware('auth:sanctum');
+
+Route::post('plugin_settings/{trmnlp_id}/archive', function (Request $request, string $trmnlp_id) {
+    if (! $trmnlp_id) {
+        return response()->json([
+            'message' => 'trmnl_id is required',
+        ]);
+    }
+
+    $validated = $request->validate([
+        'file' => 'required|file|mimes:zip',
+    ]);
+
+    /** @var Illuminate\Http\UploadedFile $file */
+    $file = $request->file('file');
+    // Apply archive to existing plugin using the import service
+    /** @var PluginImportService $importer */
+    $importer = app(PluginImportService::class);
+    $plugin = $importer->importFromZip($file, auth()->user());
+
+    return response()->json([
+        'message' => 'Plugin settings archive processed successfully',
+        'data' => [
+            'settings_yaml' => $plugin['trmnlp_yaml'],
+        ],
+    ]);
+})->middleware('auth:sanctum');

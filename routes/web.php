@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Plugin;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -29,6 +31,14 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('plugins/markup', 'plugins.markup')->name('plugins.markup');
     Volt::route('plugins/api', 'plugins.api')->name('plugins.api');
     Volt::route('playlists', 'playlists.index')->name('playlists.index');
+
+    Route::get('plugin_settings/{trmnlp_id}/edit', function (Request $request, string $trmnlp_id) {
+        $plugin = Plugin::query()
+            ->where('user_id', $request->user()->id)
+            ->where('trmnlp_id', $trmnlp_id)->firstOrFail();
+
+        return redirect()->route('plugins.recipe', ['plugin' => $plugin]);
+    });
 });
 
 require __DIR__.'/auth.php';
