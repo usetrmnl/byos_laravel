@@ -6,6 +6,7 @@ use Keepsuit\Liquid\Exceptions\LiquidException;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
 
 new class extends Component {
     public Plugin $plugin;
@@ -32,6 +33,8 @@ new class extends Component {
     public array $mashup_plugins = [];
     public array $configuration_template = [];
     public array $configuration = [];
+    public array $xhrSelectOptions = [];
+    public array $searchQueries = [];
 
     public function mount(): void
     {
@@ -345,6 +348,41 @@ HTML;
         $this->plugin->delete();
         $this->redirect(route('plugins.index'));
     }
+
+        public function loadXhrSelectOptions(string $fieldKey, string $endpoint, ?string $query = null): void
+        {
+            abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
+
+            try {
+                $requestData = [];
+                if ($query !== null) {
+                    $requestData = [
+                        'function' => $fieldKey,
+                        'query' => $query
+                    ];
+                }
+
+                $response = $query !== null
+                    ? Http::post($endpoint, $requestData)
+                    : Http::post($endpoint);
+
+                if ($response->successful()) {
+                    $this->xhrSelectOptions[$fieldKey] = $response->json();
+                } else {
+                    $this->xhrSelectOptions[$fieldKey] = [];
+                }
+            } catch (\Exception $e) {
+                $this->xhrSelectOptions[$fieldKey] = [];
+            }
+        }
+
+        public function searchXhrSelect(string $fieldKey, string $endpoint): void
+        {
+            $query = $this->searchQueries[$fieldKey] ?? '';
+            if (!empty($query)) {
+                $this->loadXhrSelectOptions($fieldKey, $endpoint, $query);
+            }
+        }
 }
 
 ?>
@@ -644,6 +682,76 @@ HTML;
                                                     @endif
                                                 </flux:select>
                                             @endif
+                                        @elseif($field['field_type'] === 'xhrSelect')
+                                            <flux:select
+                                                label="{{ $field['name'] }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                                wire:init="loadXhrSelectOptions('{{ $fieldKey }}', '{{ $field['endpoint'] }}')"
+                                            >
+                                                <option value="">Select {{ $field['name'] }}...</option>
+                                                @if(isset($xhrSelectOptions[$fieldKey]) && is_array($xhrSelectOptions[$fieldKey]))
+                                                    @foreach($xhrSelectOptions[$fieldKey] as $option)
+                                                        @if(is_array($option))
+                                                            @if(isset($option['id']) && isset($option['name']))
+                                                                {{-- xhrSelectSearch format: { 'id' => 'db-456', 'name' => 'Team Goals' } --}}
+                                                                <option value="{{ $option['id'] }}" {{ $currentValue === (string)$option['id'] ? 'selected' : '' }}>{{ $option['name'] }}</option>
+                                                            @else
+                                                                {{-- xhrSelect format: { 'Braves' => 123 } --}}
+                                                                @foreach($option as $label => $value)
+                                                                    <option value="{{ $value }}" {{ $currentValue === (string)$value ? 'selected' : '' }}>{{ $label }}</option>
+                                                                @endforeach
+                                                            @endif
+                                                        @else
+                                                            <option value="{{ $option }}" {{ $currentValue === (string)$option ? 'selected' : '' }}>{{ $option }}</option>
+                                                        @endif
+                                                    @endforeach
+                                                @endif
+                                            </flux:select>
+                                        @elseif($field['field_type'] === 'xhrSelectSearch')
+                                            <div class="space-y-2">
+
+                                                <flux:label>{{ $field['name'] }}</flux:label>
+                                                <flux:description>{{ $field['description'] ?? '' }}</flux:description>
+                                                <flux:input.group>
+                                                    <flux:input
+                                                        wire:model="searchQueries.{{ $fieldKey }}"
+                                                        placeholder="Enter search query..."
+                                                    />
+                                                    <flux:button
+                                                        wire:click="searchXhrSelect('{{ $fieldKey }}', '{{ $field['endpoint'] }}')"
+                                                        icon="magnifying-glass"/>
+                                                </flux:input.group>
+
+                                                @if((isset($xhrSelectOptions[$fieldKey]) && is_array($xhrSelectOptions[$fieldKey]) && count($xhrSelectOptions[$fieldKey]) > 0) || !empty($currentValue))
+                                                    <flux:select
+                                                        wire:model="configuration.{{ $fieldKey }}"
+                                                    >
+                                                        <option value="">Select {{ $field['name'] }}...</option>
+                                                        @if(isset($xhrSelectOptions[$fieldKey]) && is_array($xhrSelectOptions[$fieldKey]))
+                                                            @foreach($xhrSelectOptions[$fieldKey] as $option)
+                                                                @if(is_array($option))
+                                                                    @if(isset($option['id']) && isset($option['name']))
+                                                                        {{-- xhrSelectSearch format: { 'id' => 'db-456', 'name' => 'Team Goals' } --}}
+                                                                        <option value="{{ $option['id'] }}" {{ $currentValue === (string)$option['id'] ? 'selected' : '' }}>{{ $option['name'] }}</option>
+                                                                    @else
+                                                                        {{-- xhrSelect format: { 'Braves' => 123 } --}}
+                                                                        @foreach($option as $label => $value)
+                                                                            <option value="{{ $value }}" {{ $currentValue === (string)$value ? 'selected' : '' }}>{{ $label }}</option>
+                                                                        @endforeach
+                                                                    @endif
+                                                                @else
+                                                                    <option value="{{ $option }}" {{ $currentValue === (string)$option ? 'selected' : '' }}>{{ $option }}</option>
+                                                                @endif
+                                                            @endforeach
+                                                        @endif
+                                                        @if(!empty($currentValue) && (!isset($xhrSelectOptions[$fieldKey]) || empty($xhrSelectOptions[$fieldKey])))
+                                                            {{-- Show current value even if no options are loaded --}}
+                                                            <option value="{{ $currentValue }}" selected>{{ $currentValue }}</option>
+                                                        @endif
+                                                    </flux:select>
+                                                @endif
+                                            </div>
                                         @else
                                             <p>{{ $field['name'] }}: Field type "{{ $field['field_type'] }}" not yet supported</p>
                                         @endif
