@@ -23,17 +23,17 @@ test('hasMissingRequiredConfigurationFields returns true when required field is 
                 'field_type' => 'time_zone',
                 'name' => 'Timezone',
                 'description' => 'Select your timezone',
-                'optional' => true // Marked as optional
-            ]
-        ]
+                'optional' => true, // Marked as optional
+            ],
+        ],
     ];
 
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
         'configuration_template' => $configurationTemplate,
         'configuration' => [
-            'timezone' => 'UTC' // Only timezone is set, api_key is missing
-        ]
+            'timezone' => 'UTC', // Only timezone is set, api_key is missing
+        ],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
@@ -56,9 +56,9 @@ test('hasMissingRequiredConfigurationFields returns false when all required fiel
                 'field_type' => 'time_zone',
                 'name' => 'Timezone',
                 'description' => 'Select your timezone',
-                'optional' => true // Marked as optional
-            ]
-        ]
+                'optional' => true, // Marked as optional
+            ],
+        ],
     ];
 
     $plugin = Plugin::factory()->create([
@@ -66,8 +66,8 @@ test('hasMissingRequiredConfigurationFields returns false when all required fiel
         'configuration_template' => $configurationTemplate,
         'configuration' => [
             'api_key' => 'test-api-key', // Required field is set
-            'timezone' => 'UTC'
-        ]
+            'timezone' => 'UTC',
+        ],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
@@ -79,7 +79,7 @@ test('hasMissingRequiredConfigurationFields returns false when no custom fields 
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
         'configuration_template' => [],
-        'configuration' => []
+        'configuration' => [],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
@@ -96,16 +96,16 @@ test('hasMissingRequiredConfigurationFields returns true when explicitly require
                 'name' => 'API Key',
                 'description' => 'Your API key',
                 // Not marked as optional, so it's required
-            ]
-        ]
+            ],
+        ],
     ];
 
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
         'configuration_template' => $configurationTemplate,
         'configuration' => [
-            'api_key' => null // Explicitly set to null
-        ]
+            'api_key' => null, // Explicitly set to null
+        ],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
@@ -122,16 +122,16 @@ test('hasMissingRequiredConfigurationFields returns true when required field is 
                 'name' => 'API Key',
                 'description' => 'Your API key',
                 // Not marked as optional, so it's required
-            ]
-        ]
+            ],
+        ],
     ];
 
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
         'configuration_template' => $configurationTemplate,
         'configuration' => [
-            'api_key' => '' // Empty string
-        ]
+            'api_key' => '', // Empty string
+        ],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
@@ -149,16 +149,16 @@ test('hasMissingRequiredConfigurationFields returns true when required array fie
                 'description' => 'Select items',
                 'multiple' => true,
                 // Not marked as optional, so it's required
-            ]
-        ]
+            ],
+        ],
     ];
 
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
         'configuration_template' => $configurationTemplate,
         'configuration' => [
-            'selected_items' => [] // Empty array
-        ]
+            'selected_items' => [], // Empty array
+        ],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
@@ -178,16 +178,16 @@ test('hasMissingRequiredConfigurationFields returns false when author_bio field 
                 'keyname' => 'plugin_field',
                 'name' => 'Field Name',
                 'field_type' => 'string',
-            ]
-        ]
+            ],
+        ],
     ];
 
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
         'configuration_template' => $configurationTemplate,
         'configuration' => [
-            'plugin_field' => 'set' // Required field is set
-        ]
+            'plugin_field' => 'set', // Required field is set
+        ],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
@@ -203,15 +203,67 @@ test('hasMissingRequiredConfigurationFields returns false when field has default
                 'field_type' => 'string',
                 'name' => 'API Key',
                 'description' => 'Your API key',
-                'default' => 'default-api-key' // Has default value
-            ]
-        ]
+                'default' => 'default-api-key', // Has default value
+            ],
+        ],
     ];
 
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
         'configuration_template' => $configurationTemplate,
-        'configuration' => [] // Empty configuration, but field has default
+        'configuration' => [], // Empty configuration, but field has default
+    ]);
+
+    expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
+});
+
+test('hasMissingRequiredConfigurationFields returns true when required xhrSelect field is missing', function () {
+    $user = User::factory()->create();
+
+    $configurationTemplate = [
+        'custom_fields' => [
+            [
+                'keyname' => 'team',
+                'field_type' => 'xhrSelect',
+                'name' => 'Baseball Team',
+                'description' => 'Select your team',
+                'endpoint' => 'https://usetrmnl.com/custom_plugin_example_xhr_select.json',
+                // Not marked as optional, so it's required
+            ],
+        ],
+    ];
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => $configurationTemplate,
+        'configuration' => [], // Empty configuration
+    ]);
+
+    expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
+});
+
+test('hasMissingRequiredConfigurationFields returns false when required xhrSelect field is set', function () {
+    $user = User::factory()->create();
+
+    $configurationTemplate = [
+        'custom_fields' => [
+            [
+                'keyname' => 'team',
+                'field_type' => 'xhrSelect',
+                'name' => 'Baseball Team',
+                'description' => 'Select your team',
+                'endpoint' => 'https://usetrmnl.com/custom_plugin_example_xhr_select.json',
+                // Not marked as optional, so it's required
+            ],
+        ],
+    ];
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => $configurationTemplate,
+        'configuration' => [
+            'team' => '123', // Required field is set
+        ],
     ]);
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
