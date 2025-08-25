@@ -39,4 +39,28 @@ class Data extends FiltersProvider
 
         return $fallback;
     }
+
+    /**
+     * Group a collection by a specific key
+     *
+     * @param  array  $collection  The collection to group
+     * @param  string  $key  The key to group by
+     * @return array The grouped collection
+     */
+    public function group_by(array $collection, string $key): array
+    {
+        $grouped = [];
+
+        foreach ($collection as $item) {
+            if (is_array($item) && array_key_exists($key, $item)) {
+                $groupKey = $item[$key];
+                if (! isset($grouped[$groupKey])) {
+                    $grouped[$groupKey] = [];
+                }
+                $grouped[$groupKey][] = $item;
+            }
+        }
+
+        return $grouped;
+    }
 }
