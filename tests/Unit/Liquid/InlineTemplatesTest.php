@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Liquid;
 
 use App\Liquid\FileSystems\InlineTemplatesFileSystem;
+use App\Liquid\Filters\Data;
 use App\Liquid\Tags\TemplateTag;
 use Keepsuit\Liquid\Environment;
 use Keepsuit\Liquid\Exceptions\LiquidException;
@@ -27,6 +28,7 @@ class InlineTemplatesTest extends TestCase
         );
         $this->environment->tagRegistry->register(TemplateTag::class);
         $this->environment->tagRegistry->register(RenderTag::class);
+        $this->environment->filterRegistry->register(Data::class);
     }
 
     public function test_template_tag_registers_template(): void
