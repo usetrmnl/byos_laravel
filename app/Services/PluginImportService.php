@@ -59,13 +59,14 @@ class PluginImportService
 
             // Read full.liquid content
             $fullLiquid = File::get($filePaths['fullLiquidPath']);
-            $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
 
             // Prepend shared.liquid content if available
             if ($filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
                 $sharedLiquid = File::get($filePaths['sharedLiquidPath']);
                 $fullLiquid = $sharedLiquid."\n".$fullLiquid;
             }
+
+            $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
 
             // Check if the file ends with .liquid to set markup language
             $markupLanguage = 'blade';
