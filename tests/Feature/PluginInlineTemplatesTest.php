@@ -228,4 +228,28 @@ LIQUID
         // Should return the fallback value
         $this->assertStringContainsString('Not Found', $result);
     }
+
+    public function test_plugin_with_group_by_filter(): void
+    {
+        $plugin = Plugin::factory()->create([
+            'markup_language' => 'liquid',
+            'render_markup' => <<<'LIQUID'
+{{ collection | group_by: 'age' | json }}
+LIQUID
+            ,
+            'data_payload' => [
+                'collection' => [
+                    ['name' => 'Ryan', 'age' => 35],
+                    ['name' => 'Sara', 'age' => 29],
+                    ['name' => 'Jimbob', 'age' => 29],
+                ],
+            ],
+        ]);
+
+        $result = $plugin->render('full');
+
+        // Should output JSON representation of grouped data
+        $this->assertStringContainsString('"35":[{"name":"Ryan","age":35}]', $result);
+        $this->assertStringContainsString('"29":[{"name":"Sara","age":29},{"name":"Jimbob","age":29}]', $result);
+    }
 }

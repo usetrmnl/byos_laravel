@@ -133,3 +133,107 @@ test('find_by filter handles items without the specified key', function () {
     $result = $filter->find_by($collection, 'name', 'Ryan');
     expect($result)->toBe(['name' => 'Ryan', 'age' => 35]);
 });
+
+test('group_by filter groups collection by age', function () {
+    $filter = new Data();
+    $collection = [
+        ['name' => 'Ryan', 'age' => 35],
+        ['name' => 'Sara', 'age' => 29],
+        ['name' => 'Jimbob', 'age' => 29],
+    ];
+
+    $result = $filter->group_by($collection, 'age');
+
+    expect($result)->toBe([
+        35 => [['name' => 'Ryan', 'age' => 35]],
+        29 => [
+            ['name' => 'Sara', 'age' => 29],
+            ['name' => 'Jimbob', 'age' => 29],
+        ],
+    ]);
+});
+
+test('group_by filter groups collection by name', function () {
+    $filter = new Data();
+    $collection = [
+        ['name' => 'Ryan', 'age' => 35],
+        ['name' => 'Sara', 'age' => 29],
+        ['name' => 'Ryan', 'age' => 30],
+    ];
+
+    $result = $filter->group_by($collection, 'name');
+
+    expect($result)->toBe([
+        'Ryan' => [
+            ['name' => 'Ryan', 'age' => 35],
+            ['name' => 'Ryan', 'age' => 30],
+        ],
+        'Sara' => [['name' => 'Sara', 'age' => 29]],
+    ]);
+});
+
+test('group_by filter handles empty collection', function () {
+    $filter = new Data();
+    $collection = [];
+
+    $result = $filter->group_by($collection, 'age');
+    expect($result)->toBe([]);
+});
+
+test('group_by filter handles collection with non-array items', function () {
+    $filter = new Data();
+    $collection = [
+        'not an array',
+        ['name' => 'Ryan', 'age' => 35],
+        null,
+        ['name' => 'Sara', 'age' => 29],
+    ];
+
+    $result = $filter->group_by($collection, 'age');
+
+    expect($result)->toBe([
+        35 => [['name' => 'Ryan', 'age' => 35]],
+        29 => [['name' => 'Sara', 'age' => 29]],
+    ]);
+});
+
+test('group_by filter handles items without the specified key', function () {
+    $filter = new Data();
+    $collection = [
+        ['age' => 35],
+        ['name' => 'Ryan', 'age' => 35],
+        ['title' => 'Developer'],
+        ['name' => 'Sara', 'age' => 29],
+    ];
+
+    $result = $filter->group_by($collection, 'age');
+
+    expect($result)->toBe([
+        35 => [
+            ['age' => 35],
+            ['name' => 'Ryan', 'age' => 35],
+        ],
+        29 => [['name' => 'Sara', 'age' => 29]],
+    ]);
+});
+
+test('group_by filter handles mixed data types as keys', function () {
+    $filter = new Data();
+    $collection = [
+        ['name' => 'Ryan', 'active' => true],
+        ['name' => 'Sara', 'active' => false],
+        ['name' => 'Jimbob', 'active' => true],
+        ['name' => 'Alice', 'active' => null],
+    ];
+
+    $result = $filter->group_by($collection, 'active');
+
+    expect($result)->toBe([
+        1 => [ // PHP converts true to 1
+            ['name' => 'Ryan', 'active' => true],
+            ['name' => 'Jimbob', 'active' => true],
+        ],
+        0 => [['name' => 'Sara', 'active' => false]], // PHP converts false to 0
+        '' => [['name' => 'Alice', 'active' => null]], // PHP converts null keys to empty string
+    ]);
+});
