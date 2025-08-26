@@ -20,6 +20,7 @@ use Keepsuit\Liquid\TagBlock;
 class TemplateTag extends TagBlock
 {
     protected string $templateName;
+
     protected Raw $body;
 
     public static function tagName(): string
@@ -36,16 +37,16 @@ class TemplateTag extends TagBlock
     {
         // Get the template name from the tag parameters
         $templateNameExpression = $context->params->expression();
-        
+
         $this->templateName = match (true) {
             is_string($templateNameExpression) => trim($templateNameExpression),
             is_numeric($templateNameExpression) => (string) $templateNameExpression,
             $templateNameExpression instanceof VariableLookup => (string) $templateNameExpression,
-            default => throw new SyntaxException("Template name must be a string, number, or variable"),
+            default => throw new SyntaxException('Template name must be a string, number, or variable'),
         };
 
         // Validate template name (letters, numbers, underscores, and slashes only)
-        if (!preg_match('/^[a-zA-Z0-9_\/]+$/', $this->templateName)) {
+        if (! preg_match('/^[a-zA-Z0-9_\/]+$/', $this->templateName)) {
             throw new SyntaxException("Invalid template name '{$this->templateName}' - template names must contain only letters, numbers, underscores, and slashes");
         }
 
@@ -74,7 +75,7 @@ class TemplateTag extends TagBlock
         // Get the file system from the environment
         $fileSystem = $context->environment->fileSystem;
 
-        if (!$fileSystem instanceof InlineTemplatesFileSystem) {
+        if (! $fileSystem instanceof InlineTemplatesFileSystem) {
             // If no inline file system is available, just return empty string
             // This allows the template to be used in contexts where inline templates aren't supported
             return '';
@@ -96,4 +97,4 @@ class TemplateTag extends TagBlock
     {
         return $this->body;
     }
-} 
+}

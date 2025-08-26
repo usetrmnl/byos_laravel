@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Liquid\FileSystems;
 
+use InvalidArgumentException;
 use Keepsuit\Liquid\Contracts\LiquidFileSystem;
 
 /**
@@ -52,10 +53,10 @@ class InlineTemplatesFileSystem implements LiquidFileSystem
 
     public function readTemplateFile(string $templateName): string
     {
-        if (!isset($this->templates[$templateName])) {
-            throw new \InvalidArgumentException("Template '{$templateName}' not found in inline templates");
+        if (! isset($this->templates[$templateName])) {
+            throw new InvalidArgumentException("Template '{$templateName}' not found in inline templates");
         }
 
         return $this->templates[$templateName];
     }
-} 
+}

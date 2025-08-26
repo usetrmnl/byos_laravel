@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use Exception;
+use GuzzleHttp\Client;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\ProviderInterface;
 use Laravel\Socialite\Two\User;
-use GuzzleHttp\Client;
-use Illuminate\Support\Arr;
 
 class OidcProvider extends AbstractProvider implements ProviderInterface
 {
@@ -36,19 +36,19 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
     public function __construct($request, $clientId, $clientSecret, $redirectUrl, $scopes = [], $guzzle = [])
     {
         parent::__construct($request, $clientId, $clientSecret, $redirectUrl, $guzzle);
-        
+
         $endpoint = config('services.oidc.endpoint');
-        if (!$endpoint) {
-            throw new \Exception('OIDC endpoint is not configured. Please set OIDC_ENDPOINT environment variable.');
+        if (! $endpoint) {
+            throw new Exception('OIDC endpoint is not configured. Please set OIDC_ENDPOINT environment variable.');
         }
-        
+
         // Handle both full well-known URL and base URL
         if (str_ends_with($endpoint, '/.well-known/openid-configuration')) {
             $this->baseUrl = str_replace('/.well-known/openid-configuration', '', $endpoint);
         } else {
             $this->baseUrl = rtrim($endpoint, '/');
         }
-        
+
         $this->scopes = $scopes ?: ['openid', 'profile', 'email'];
         $this->loadOidcConfiguration();
     }
@@ -59,21 +59,21 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
     protected function loadOidcConfiguration()
     {
         try {
-            $url = $this->baseUrl . '/.well-known/openid-configuration';
+            $url = $this->baseUrl.'/.well-known/openid-configuration';
             $client = new Client();
             $response = $client->get($url);
             $this->oidcConfig = json_decode($response->getBody()->getContents(), true);
-            
-            if (!$this->oidcConfig) {
-                throw new \Exception('OIDC configuration is empty or invalid JSON');
+
+            if (! $this->oidcConfig) {
+                throw new Exception('OIDC configuration is empty or invalid JSON');
             }
-            
-            if (!isset($this->oidcConfig['authorization_endpoint'])) {
-                throw new \Exception('authorization_endpoint not found in OIDC configuration');
+
+            if (! isset($this->oidcConfig['authorization_endpoint'])) {
+                throw new Exception('authorization_endpoint not found in OIDC configuration');
             }
-            
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to load OIDC configuration: ' . $e->getMessage());
+
+        } catch (Exception $e) {
+            throw new Exception('Failed to load OIDC configuration: '.$e->getMessage());
         }
     }
 
@@ -82,9 +82,10 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
      */
     protected function getAuthUrl($state)
     {
-        if (!$this->oidcConfig || !isset($this->oidcConfig['authorization_endpoint'])) {
-            throw new \Exception('OIDC configuration not loaded or authorization_endpoint not found.');
+        if (! $this->oidcConfig || ! isset($this->oidcConfig['authorization_endpoint'])) {
+            throw new Exception('OIDC configuration not loaded or authorization_endpoint not found.');
         }
+
         return $this->buildAuthUrlFromBase($this->oidcConfig['authorization_endpoint'], $state);
     }
 
@@ -93,9 +94,10 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
      */
     protected function getTokenUrl()
     {
-        if (!$this->oidcConfig || !isset($this->oidcConfig['token_endpoint'])) {
-            throw new \Exception('OIDC configuration not loaded or token_endpoint not found.');
+        if (! $this->oidcConfig || ! isset($this->oidcConfig['token_endpoint'])) {
+            throw new Exception('OIDC configuration not loaded or token_endpoint not found.');
         }
+
         return $this->oidcConfig['token_endpoint'];
     }
 
@@ -104,13 +106,13 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
      */
     protected function getUserByToken($token)
     {
-        if (!$this->oidcConfig || !isset($this->oidcConfig['userinfo_endpoint'])) {
-            throw new \Exception('OIDC configuration not loaded or userinfo_endpoint not found.');
+        if (! $this->oidcConfig || ! isset($this->oidcConfig['userinfo_endpoint'])) {
+            throw new Exception('OIDC configuration not loaded or userinfo_endpoint not found.');
         }
-        
+
         $response = $this->getHttpClient()->get($this->oidcConfig['userinfo_endpoint'], [
             'headers' => [
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
             ],
         ]);
 

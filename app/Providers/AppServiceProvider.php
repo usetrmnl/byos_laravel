@@ -41,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
         // Register OIDC provider with Socialite
         Socialite::extend('oidc', function ($app) {
             $config = $app['config']['services.oidc'] ?? [];
+
             return new OidcProvider(
                 $app['request'],
                 $config['client_id'] ?? null,

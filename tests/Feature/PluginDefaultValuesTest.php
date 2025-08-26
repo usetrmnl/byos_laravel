@@ -3,10 +3,6 @@
 use App\Models\Plugin;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Livewire\Volt\Volt;
-use Symfony\Component\Yaml\Yaml;
 
 uses(RefreshDatabase::class);
 
@@ -22,23 +18,23 @@ test('plugin import extracts default values from custom_fields and stores in con
                 'field_type' => 'string',
                 'name' => 'Reading Days',
                 'description' => 'Select days of the week to read',
-                'default' => 'Monday,Friday,Saturday,Sunday'
+                'default' => 'Monday,Friday,Saturday,Sunday',
             ],
             [
                 'keyname' => 'refresh_interval',
                 'field_type' => 'number',
                 'name' => 'Refresh Interval',
                 'description' => 'How often to refresh data',
-                'default' => 15
+                'default' => 15,
             ],
             [
                 'keyname' => 'timezone',
                 'field_type' => 'time_zone',
                 'name' => 'Timezone',
-                'description' => 'Select your timezone'
+                'description' => 'Select your timezone',
                 // No default value
-            ]
-        ]
+            ],
+        ],
     ];
 
     // Extract default values from custom_fields and populate configuration
@@ -53,7 +49,7 @@ test('plugin import extracts default values from custom_fields and stores in con
 
     // Create the plugin directly
     $plugin = Plugin::create([
-        'uuid' => \Illuminate\Support\Str::uuid(),
+        'uuid' => Illuminate\Support\Str::uuid(),
         'user_id' => $user->id,
         'name' => 'Test Plugin with Defaults',
         'data_stale_minutes' => 30,
@@ -68,11 +64,11 @@ test('plugin import extracts default values from custom_fields and stores in con
     expect($plugin->configuration)->toHaveKey('reading_days');
     expect($plugin->configuration)->toHaveKey('refresh_interval');
     expect($plugin->configuration)->not->toHaveKey('timezone');
-    
+
     expect($plugin->getConfiguration('reading_days'))->toBe('Monday,Friday,Saturday,Sunday');
     expect($plugin->getConfiguration('refresh_interval'))->toBe(15);
     expect($plugin->getConfiguration('timezone'))->toBeNull();
-    
+
     // Verify configuration template was stored correctly
     expect($plugin->configuration_template)->toBeArray();
     expect($plugin->configuration_template['custom_fields'])->toHaveCount(3);
@@ -89,9 +85,9 @@ test('plugin import handles custom_fields without default values', function () {
                 'keyname' => 'timezone',
                 'field_type' => 'time_zone',
                 'name' => 'Timezone',
-                'description' => 'Select your timezone'
-            ]
-        ]
+                'description' => 'Select your timezone',
+            ],
+        ],
     ];
 
     // Extract default values from custom_fields and populate configuration
@@ -106,7 +102,7 @@ test('plugin import handles custom_fields without default values', function () {
 
     // Create the plugin directly
     $plugin = Plugin::create([
-        'uuid' => \Illuminate\Support\Str::uuid(),
+        'uuid' => Illuminate\Support\Str::uuid(),
         'user_id' => $user->id,
         'name' => 'Test Plugin No Defaults',
         'data_stale_minutes' => 30,
@@ -119,8 +115,8 @@ test('plugin import handles custom_fields without default values', function () {
     expect($plugin)->not->toBeNull();
     expect($plugin->configuration)->toBeArray();
     expect($plugin->configuration)->toBeEmpty();
-    
+
     // Verify configuration template was stored correctly
     expect($plugin->configuration_template)->toBeArray();
     expect($plugin->configuration_template['custom_fields'])->toHaveCount(1);
-}); 
+});

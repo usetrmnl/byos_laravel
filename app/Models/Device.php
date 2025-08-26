@@ -182,10 +182,12 @@ class Device extends Model
     {
         return $this->belongsTo(Firmware::class, 'update_firmware_id');
     }
+
     public function deviceModel(): BelongsTo
     {
         return $this->belongsTo(DeviceModel::class);
     }
+
     public function logs(): HasMany
     {
         return $this->hasMany(DeviceLog::class);
@@ -224,19 +226,20 @@ class Device extends Model
         if ($from < $to) {
             // Normal range, same day
             return $now->between($from, $to) ? (int) $now->diffInSeconds($to, false) : null;
-        } else {
-            // Overnight range
-            if ($now->gte($from)) {
-                // After 'from', before midnight
-                return (int) $now->diffInSeconds($to->copy()->addDay(), false);
-            } elseif ($now->lt($to)) {
-                // After midnight, before 'to'
-                return (int) $now->diffInSeconds($to, false);
-            } else {
-                // Not in sleep window
-                return null;
-            }
         }
+        // Overnight range
+        if ($now->gte($from)) {
+            // After 'from', before midnight
+            return (int) $now->diffInSeconds($to->copy()->addDay(), false);
+        }
+        if ($now->lt($to)) {
+            // After midnight, before 'to'
+            return (int) $now->diffInSeconds($to, false);
+        }
+
+        // Not in sleep window
+        return null;
+
     }
 
     public function isPauseActive(): bool

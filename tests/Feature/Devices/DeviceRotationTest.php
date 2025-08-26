@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Models\{Device, User};
+use App\Models\Device;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -16,8 +17,8 @@ test('dashboard shows device image with correct rotation', function () {
     ]);
 
     // Mock the file existence check
-    \Illuminate\Support\Facades\Storage::fake('public');
-    \Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
+    Illuminate\Support\Facades\Storage::fake('public');
+    Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
 
     $response = $this->actingAs($user)
         ->get(route('dashboard'));
@@ -36,8 +37,8 @@ test('device configure page shows device image with correct rotation', function 
     ]);
 
     // Mock the file existence check
-    \Illuminate\Support\Facades\Storage::fake('public');
-    \Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
+    Illuminate\Support\Facades\Storage::fake('public');
+    Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
 
     $response = $this->actingAs($user)
         ->get(route('devices.configure', $device));
@@ -56,8 +57,8 @@ test('device with no rotation shows no transform style', function () {
     ]);
 
     // Mock the file existence check
-    \Illuminate\Support\Facades\Storage::fake('public');
-    \Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
+    Illuminate\Support\Facades\Storage::fake('public');
+    Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
 
     $response = $this->actingAs($user)
         ->get(route('dashboard'));
@@ -75,8 +76,8 @@ test('device with null rotation defaults to 0', function () {
     ]);
 
     // Mock the file existence check
-    \Illuminate\Support\Facades\Storage::fake('public');
-    \Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
+    Illuminate\Support\Facades\Storage::fake('public');
+    Illuminate\Support\Facades\Storage::disk('public')->put('images/generated/test-image-uuid.png', 'fake-image-content');
 
     $response = $this->actingAs($user)
         ->get(route('dashboard'));

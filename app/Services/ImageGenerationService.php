@@ -51,7 +51,7 @@ class ImageGenerationService
                 if (config('app.puppeteer_wait_for_network_idle')) {
                     $browsershot->waitUntilNetworkIdle();
                 }
-                if (config('app.puppeteer_window_size_strategy') == 'v2') {
+                if (config('app.puppeteer_window_size_strategy') === 'v2') {
                     $browsershot->windowSize($imageSettings['width'], $imageSettings['height']);
                 } else {
                     $browsershot->windowSize(800, 480);

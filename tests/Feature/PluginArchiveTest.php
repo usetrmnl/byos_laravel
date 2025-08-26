@@ -266,7 +266,7 @@ it('maintains correct yaml field order', function () {
 
     // Extract and read the settings.yml file
     $zip->extractTo(sys_get_temp_dir(), 'settings.yml');
-    $yamlContent = file_get_contents(sys_get_temp_dir() . '/settings.yml');
+    $yamlContent = file_get_contents(sys_get_temp_dir().'/settings.yml');
     $zip->close();
 
     // Check that the YAML content has the expected field order
@@ -285,11 +285,11 @@ it('maintains correct yaml field order', function () {
 
     $lines = explode("\n", $yamlContent);
     $fieldLines = [];
-    
+
     foreach ($lines as $line) {
         $line = trim($line);
         if (preg_match('/^([a-zA-Z_]+):/', $line, $matches)) {
-            $fieldLines[] = $matches[1] . ':';
+            $fieldLines[] = $matches[1].':';
         }
     }
 
@@ -304,5 +304,5 @@ it('maintains correct yaml field order', function () {
     }
 
     // Clean up
-    unlink(sys_get_temp_dir() . '/settings.yml');
+    unlink(sys_get_temp_dir().'/settings.yml');
 });
