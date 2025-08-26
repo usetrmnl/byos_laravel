@@ -1,5 +1,5 @@
 # From official php image.
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 RUN addgroup -g 1000 -S user && adduser -u 1000 -D user -G user
 # Install postgres pdo driver.
 # RUN apk add --no-cache postgresql-dev && docker-php-ext-install pdo_pgsql
@@ -21,10 +21,10 @@ ENV PUPPETEER_DOCKER=1
 
 RUN mkdir -p /usr/src/php/ext/imagick
 RUN chmod 777 /usr/src/php/ext/imagick
-RUN curl -fsSL https://github.com/Imagick/imagick/archive/refs/tags/3.7.0.tar.gz | tar xvz -C "/usr/src/php/ext/imagick" --strip 1
+RUN curl -fsSL https://github.com/Imagick/imagick/archive/refs/tags/3.8.0.tar.gz | tar xvz -C "/usr/src/php/ext/imagick" --strip 1
 
 # Install PHP extensions
 RUN docker-php-ext-install imagick
 
-RUN rm -f /usr/bin/php83
-RUN ln -s /usr/local/bin/php /usr/bin/php83
+RUN rm -f /usr/bin/php84
+RUN ln -s /usr/local/bin/php /usr/bin/php84
