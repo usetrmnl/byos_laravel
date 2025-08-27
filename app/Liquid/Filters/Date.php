@@ -2,8 +2,8 @@
 
 namespace App\Liquid\Filters;
 
-use Keepsuit\Liquid\Filters\FiltersProvider;
 use Carbon\Carbon;
+use Keepsuit\Liquid\Filters\FiltersProvider;
 
 /**
  * Data filters for Liquid templates

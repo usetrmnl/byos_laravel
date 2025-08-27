@@ -6,9 +6,15 @@ namespace Tests\Unit\Liquid;
 
 use App\Liquid\FileSystems\InlineTemplatesFileSystem;
 use App\Liquid\Filters\Data;
+use App\Liquid\Filters\Date;
+use App\Liquid\Filters\Localization;
+use App\Liquid\Filters\Numbers;
+use App\Liquid\Filters\StringMarkup;
+use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
 use Keepsuit\Liquid\Environment;
 use Keepsuit\Liquid\Exceptions\LiquidException;
+use Keepsuit\Liquid\Extensions\StandardExtension;
 use Keepsuit\Liquid\Tags\RenderTag;
 use PHPUnit\Framework\TestCase;
 
@@ -24,11 +30,17 @@ class InlineTemplatesTest extends TestCase
 
         $this->fileSystem = new InlineTemplatesFileSystem();
         $this->environment = new Environment(
-            fileSystem: $this->fileSystem
+            fileSystem: $this->fileSystem,
+            extensions: [new StandardExtension()]
         );
         $this->environment->tagRegistry->register(TemplateTag::class);
         $this->environment->tagRegistry->register(RenderTag::class);
         $this->environment->filterRegistry->register(Data::class);
+        $this->environment->filterRegistry->register(Date::class);
+        $this->environment->filterRegistry->register(Localization::class);
+        $this->environment->filterRegistry->register(Numbers::class);
+        $this->environment->filterRegistry->register(StringMarkup::class);
+        $this->environment->filterRegistry->register(Uniqueness::class);
     }
 
     public function test_template_tag_registers_template(): void
@@ -295,5 +307,36 @@ LIQUID
 
         // Should not throw an error and should return empty string
         $this->assertEquals('', $result);
+    }
+
+    public function test_quotes_template_with_modulo_filter(): void
+    {
+        $template = $this->environment->parseString(<<<'LIQUID'
+{% assign quotes_array = quotes[trmnl.plugin_settings.custom_fields_values.language] %}
+{% assign random_index = 'now' | date: '%s' | modulo: quotes_array.size %}
+{{ quotes_array[random_index] }}
+LIQUID
+        );
+
+        $context = $this->environment->newRenderContext(
+            data: [
+                'quotes' => [
+                    'english' => ['Demo Quote'],
+                    'german' => ['Demo Zitat']
+                ],
+                'trmnl' => [
+                    'plugin_settings' => [
+                        'custom_fields_values' => [
+                            'language' => 'english'
+                        ]
+                    ]
+                ]
+            ]
+        );
+
+        $result = $template->render($context);
+        // Should render a quote from the english array
+        $this->assertStringContainsString('Demo Quote', $result);
+        $this->assertStringNotContainsString('Demo Zitat', $result);
     }
 }

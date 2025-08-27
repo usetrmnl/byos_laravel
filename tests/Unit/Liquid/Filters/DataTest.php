@@ -310,9 +310,9 @@ test('parse_json filter parses nested JSON structure', function () {
     expect($result)->toBe([
         'users' => [
             ['id' => 1, 'name' => 'Alice'],
-            ['id' => 2, 'name' => 'Bob']
+            ['id' => 2, 'name' => 'Bob'],
         ],
-        'total' => 2
+        'total' => 2,
     ]);
 });
 
