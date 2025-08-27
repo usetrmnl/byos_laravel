@@ -237,3 +237,43 @@ test('group_by filter handles mixed data types as keys', function () {
         '' => [['name' => 'Alice', 'active' => null]], // PHP converts null keys to empty string
     ]);
 });
+
+test('sample filter returns a random element from array', function () {
+    $filter = new Data();
+    $array = ['1', '2', '3', '4', '5'];
+
+    $result = $filter->sample($array);
+    expect($result)->toBeIn($array);
+});
+
+test('sample filter returns a random element from string array', function () {
+    $filter = new Data();
+    $array = ['cat', 'dog'];
+
+    $result = $filter->sample($array);
+    expect($result)->toBeIn($array);
+});
+
+test('sample filter returns null for empty array', function () {
+    $filter = new Data();
+    $array = [];
+
+    $result = $filter->sample($array);
+    expect($result)->toBeNull();
+});
+
+test('sample filter returns the only element from single element array', function () {
+    $filter = new Data();
+    $array = ['single'];
+
+    $result = $filter->sample($array);
+    expect($result)->toBe('single');
+});
+
+test('sample filter works with mixed data types', function () {
+    $filter = new Data();
+    $array = [1, 'string', true, null, ['nested']];
+
+    $result = $filter->sample($array);
+    expect($result)->toBeIn($array);
+});

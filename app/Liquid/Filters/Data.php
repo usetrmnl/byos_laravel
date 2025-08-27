@@ -63,4 +63,19 @@ class Data extends FiltersProvider
 
         return $grouped;
     }
+
+    /**
+     * Return a random element from an array
+     *
+     * @param  array  $array  The array to sample from
+     * @return mixed A random element from the array
+     */
+    public function sample(array $array): mixed
+    {
+        if (empty($array)) {
+            return null;
+        }
+
+        return $array[array_rand($array)];
+    }
 }
