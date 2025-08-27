@@ -78,4 +78,15 @@ class Data extends FiltersProvider
 
         return $array[array_rand($array)];
     }
+
+    /**
+     * Parse a JSON string into a PHP value
+     *
+     * @param  string  $json  The JSON string to parse
+     * @return mixed The parsed JSON value
+     */
+    public function parse_json(string $json): mixed
+    {
+        return json_decode($json, true);
+    }
 }

@@ -277,3 +277,51 @@ test('sample filter works with mixed data types', function () {
     $result = $filter->sample($array);
     expect($result)->toBeIn($array);
 });
+
+test('parse_json filter parses JSON string to array', function () {
+    $filter = new Data();
+    $jsonString = '[{"a":1,"b":"c"},"d"]';
+
+    $result = $filter->parse_json($jsonString);
+    expect($result)->toBe([['a' => 1, 'b' => 'c'], 'd']);
+});
+
+test('parse_json filter parses simple JSON object', function () {
+    $filter = new Data();
+    $jsonString = '{"name":"John","age":30,"city":"New York"}';
+
+    $result = $filter->parse_json($jsonString);
+    expect($result)->toBe(['name' => 'John', 'age' => 30, 'city' => 'New York']);
+});
+
+test('parse_json filter parses JSON array', function () {
+    $filter = new Data();
+    $jsonString = '["apple","banana","cherry"]';
+
+    $result = $filter->parse_json($jsonString);
+    expect($result)->toBe(['apple', 'banana', 'cherry']);
+});
+
+test('parse_json filter parses nested JSON structure', function () {
+    $filter = new Data();
+    $jsonString = '{"users":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}],"total":2}';
+
+    $result = $filter->parse_json($jsonString);
+    expect($result)->toBe([
+        'users' => [
+            ['id' => 1, 'name' => 'Alice'],
+            ['id' => 2, 'name' => 'Bob']
+        ],
+        'total' => 2
+    ]);
+});
+
+test('parse_json filter handles primitive values', function () {
+    $filter = new Data();
+
+    expect($filter->parse_json('"hello"'))->toBe('hello');
+    expect($filter->parse_json('123'))->toBe(123);
+    expect($filter->parse_json('true'))->toBe(true);
+    expect($filter->parse_json('false'))->toBe(false);
+    expect($filter->parse_json('null'))->toBe(null);
+});
