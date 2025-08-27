@@ -574,7 +574,7 @@ HTML;
                                         $fieldKey = $field['keyname'] ?? $field['key'] ?? $field['name'];
                                         $currentValue = $configuration[$fieldKey] ?? '';
                                     @endphp
-                                    <div class="mb-8">
+                                    <div class="mb-4">
                                         @if($field['field_type'] === 'author_bio')
                                             @continue
                                         @endif
@@ -587,14 +587,35 @@ HTML;
                                             <flux:input
                                                 label="{{ $field['name'] }}"
                                                 description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 wire:model="configuration.{{ $fieldKey }}"
                                                 value="{{ $currentValue }}"
+                                            />
+                                        @elseif($field['field_type'] === 'text')
+                                            <flux:textarea
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                            />
+                                        @elseif($field['field_type'] === 'code')
+                                            <flux:textarea
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
+                                                rows="{{ $field['rows'] ?? 3 }}"
+                                                placeholder="{{ $field['placeholder'] ?? null }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                                class="font-mono"
                                             />
                                         @elseif($field['field_type'] === 'password')
                                             <flux:input
                                                 type="password"
                                                 label="{{ $field['name'] }}"
                                                 description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 wire:model="configuration.{{ $fieldKey }}"
                                                 value="{{ $currentValue }}"
                                                 viewable
@@ -603,6 +624,7 @@ HTML;
                                             <flux:input
                                                 label="{{ $field['name'] }}"
                                                 description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 value="{{ $field['value'] }}"
                                                 copyable
                                             />
@@ -611,6 +633,7 @@ HTML;
                                                 label="{{ $field['name'] }}"
                                                 wire:model="configuration.{{ $fieldKey }}"
                                                 description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                             >
                                                 <option value="">Select timezone...</option>
                                                 @foreach(timezone_identifiers_list() as $timezone)
@@ -622,6 +645,7 @@ HTML;
                                                 type="number"
                                                 label="{{ $field['name'] }}"
                                                 description="{{ $field['description'] ?? $field['name'] }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 wire:model="configuration.{{ $fieldKey }}"
                                                 value="{{ $currentValue }}"
                                             />
@@ -629,6 +653,7 @@ HTML;
                                             <flux:checkbox
                                                 label="{{ $field['name'] }}"
                                                 description="{{ $field['description'] ?? $field['name'] }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 wire:model="configuration.{{ $fieldKey }}"
                                                 :checked="$currentValue"
                                             />
@@ -637,6 +662,16 @@ HTML;
                                                 type="date"
                                                 label="{{ $field['name'] }}"
                                                 description="{{ $field['description'] ?? $field['name'] }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                            />
+                                        @elseif($field['field_type'] === 'time')
+                                            <flux:input
+                                                type="time"
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? $field['name'] }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 wire:model="configuration.{{ $fieldKey }}"
                                                 value="{{ $currentValue }}"
                                             />
@@ -646,6 +681,7 @@ HTML;
                                                     label="{{ $field['name'] }}"
                                                     wire:model="configuration.{{ $fieldKey }}"
                                                     description="{{ $field['description'] ?? '' }}"
+                                                    descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 >
                                                     @if(isset($field['options']) && is_array($field['options']))
                                                         @foreach($field['options'] as $option)
@@ -664,6 +700,7 @@ HTML;
                                                     label="{{ $field['name'] }}"
                                                     wire:model="configuration.{{ $fieldKey }}"
                                                     description="{{ $field['description'] ?? '' }}"
+                                                    descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 >
                                                     <option value="">Select {{ $field['name'] }}...</option>
                                                     @if(isset($field['options']) && is_array($field['options']))
@@ -687,6 +724,7 @@ HTML;
                                                 label="{{ $field['name'] }}"
                                                 wire:model="configuration.{{ $fieldKey }}"
                                                 description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
                                                 wire:init="loadXhrSelectOptions('{{ $fieldKey }}', '{{ $field['endpoint'] }}')"
                                             >
                                                 <option value="">Select {{ $field['name'] }}...</option>
@@ -722,7 +760,7 @@ HTML;
                                                         wire:click="searchXhrSelect('{{ $fieldKey }}', '{{ $field['endpoint'] }}')"
                                                         icon="magnifying-glass"/>
                                                 </flux:input.group>
-
+                                                <flux:description>{{ $field['help_text'] ?? '' }}</flux:description>
                                                 @if((isset($xhrSelectOptions[$fieldKey]) && is_array($xhrSelectOptions[$fieldKey]) && count($xhrSelectOptions[$fieldKey]) > 0) || !empty($currentValue))
                                                     <flux:select
                                                         wire:model="configuration.{{ $fieldKey }}"
@@ -753,7 +791,7 @@ HTML;
                                                 @endif
                                             </div>
                                         @else
-                                            <p>{{ $field['name'] }}: Field type "{{ $field['field_type'] }}" not yet supported</p>
+                                            <flux:callout variant="warning">Field type "{{ $field['field_type'] }}" not yet supported</flux:callout>
                                         @endif
                                     </div>
                                 @endforeach
