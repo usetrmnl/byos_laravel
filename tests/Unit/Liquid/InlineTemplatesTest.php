@@ -322,15 +322,15 @@ LIQUID
             data: [
                 'quotes' => [
                     'english' => ['Demo Quote'],
-                    'german' => ['Demo Zitat']
+                    'german' => ['Demo Zitat'],
                 ],
                 'trmnl' => [
                     'plugin_settings' => [
                         'custom_fields_values' => [
-                            'language' => 'english'
-                        ]
-                    ]
-                ]
+                            'language' => 'english',
+                        ],
+                    ],
+                ],
             ]
         );
 
