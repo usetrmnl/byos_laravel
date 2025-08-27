@@ -144,7 +144,7 @@ class PluginExportService
         $markup = preg_replace('/^<div class="view view--\{\{ size \}\}">\s*/', '', $markup);
         $markup = preg_replace('/\s*<\/div>\s*$/', '', $markup);
 
-        return trim($markup);
+        return mb_trim($markup);
     }
 
     /**

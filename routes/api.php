@@ -514,7 +514,7 @@ Route::post('custom_plugins/{plugin_uuid}', function (string $plugin_uuid) {
 })->name('api.custom_plugins.webhook');
 
 Route::get('plugin_settings/{trmnlp_id}/archive', function (Request $request, string $trmnlp_id) {
-    if (! $trmnlp_id || trim($trmnlp_id) === '') {
+    if (! $trmnlp_id || mb_trim($trmnlp_id) === '') {
         return response()->json([
             'message' => 'trmnlp_id is required',
         ], 400);

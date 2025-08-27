@@ -287,7 +287,7 @@ it('maintains correct yaml field order', function () {
     $fieldLines = [];
 
     foreach ($lines as $line) {
-        $line = trim($line);
+        $line = mb_trim($line);
         if (preg_match('/^([a-zA-Z_]+):/', $line, $matches)) {
             $fieldLines[] = $matches[1].':';
         }

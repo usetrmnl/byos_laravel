@@ -111,11 +111,11 @@ class Plugin extends Model
             if ($this->polling_header) {
                 // Resolve Liquid variables in the polling header
                 $resolvedHeader = $this->resolveLiquidVariables($this->polling_header);
-                $headerLines = explode("\n", trim($resolvedHeader));
+                $headerLines = explode("\n", mb_trim($resolvedHeader));
                 foreach ($headerLines as $line) {
                     $parts = explode(':', $line, 2);
                     if (count($parts) === 2) {
-                        $headers[trim($parts[0])] = trim($parts[1]);
+                        $headers[mb_trim($parts[0])] = mb_trim($parts[1]);
                     }
                 }
             }

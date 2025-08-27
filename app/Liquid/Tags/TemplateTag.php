@@ -39,7 +39,7 @@ class TemplateTag extends TagBlock
         $templateNameExpression = $context->params->expression();
 
         $this->templateName = match (true) {
-            is_string($templateNameExpression) => trim($templateNameExpression),
+            is_string($templateNameExpression) => mb_trim($templateNameExpression),
             is_numeric($templateNameExpression) => (string) $templateNameExpression,
             $templateNameExpression instanceof VariableLookup => (string) $templateNameExpression,
             default => throw new SyntaxException('Template name must be a string, number, or variable'),

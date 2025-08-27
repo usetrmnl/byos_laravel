@@ -46,7 +46,7 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
         if (str_ends_with($endpoint, '/.well-known/openid-configuration')) {
             $this->baseUrl = str_replace('/.well-known/openid-configuration', '', $endpoint);
         } else {
-            $this->baseUrl = rtrim($endpoint, '/');
+            $this->baseUrl = mb_rtrim($endpoint, '/');
         }
 
         $this->scopes = $scopes ?: ['openid', 'profile', 'email'];
