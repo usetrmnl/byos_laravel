@@ -94,7 +94,7 @@ it('throws exception for missing required files', function () {
 
     $pluginImportService = new PluginImportService();
     expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
-        ->toThrow(Exception::class, 'Invalid ZIP structure. Required files settings.yml and full.liquid/full.blade.php are missing.');
+        ->toThrow(Exception::class, 'Invalid ZIP structure. Required files settings.yml and full.liquid are missing.');
 });
 
 it('sets default values when settings are missing', function () {
