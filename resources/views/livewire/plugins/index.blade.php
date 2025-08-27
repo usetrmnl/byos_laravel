@@ -36,7 +36,7 @@ new class extends Component {
         'polling_body' => 'nullable|string',
     ];
 
-    private function refreshPlugins(): void
+    public function refreshPlugins(): void
     {
         $userPlugins = auth()->user()?->plugins?->map(function ($plugin) {
             return $plugin->toArray();
@@ -96,10 +96,8 @@ new class extends Component {
             $this->reset(['zipFile']);
 
             Flux::modal('import-zip')->close();
-            $this->dispatch('notify', ['type' => 'success', 'message' => 'Plugin imported successfully!']);
-
         } catch (\Exception $e) {
-            $this->dispatch('notify', ['type' => 'error', 'message' => 'Error importing plugin: ' . $e->getMessage()]);
+            $this->addError('zipFile', 'Error installing plugin: ' . $e->getMessage());
         }
     }
 
@@ -120,7 +118,10 @@ new class extends Component {
                     <flux:button icon="chevron-down" variant="primary"></flux:button>
                     <flux:menu>
                         <flux:modal.trigger name="import-zip">
-                            <flux:menu.item icon="archive-box">Import Recipe</flux:menu.item>
+                            <flux:menu.item icon="archive-box">Import Recipe Archive</flux:menu.item>
+                        </flux:modal.trigger>
+                        <flux:modal.trigger name="import-from-catalog">
+                            <flux:menu.item icon="book-open">Import from Catalog</flux:menu.item>
                         </flux:modal.trigger>
                         <flux:menu.item icon="beaker" wire:click="seedExamplePlugins">Seed Example Recipes</flux:menu.item>
                     </flux:menu>
@@ -167,7 +168,7 @@ new class extends Component {
 
                 <form wire:submit="importZip">
                     <div class="mb-4">
-                        <label for="zipFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">.zip Archive</label>
+                        <flux:label for="zipFile">.zip Archive</flux:label>
                         <input
                             type="file"
                             wire:model="zipFile"
@@ -175,7 +176,9 @@ new class extends Component {
                             accept=".zip"
                             class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 p-2.5"
                         />
-                        @error('zipFile') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                        @error('zipFile')
+                            <flux:callout variant="danger" icon="x-circle" heading="{{$message}}" class="mt-2" />
+                        @enderror
                     </div>
 
                     <div class="flex">
@@ -183,6 +186,18 @@ new class extends Component {
                         <flux:button type="submit" variant="primary">Import</flux:button>
                     </div>
                 </form>
+            </div>
+        </flux:modal>
+
+        <flux:modal name="import-from-catalog">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Import from Catalog
+                        <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
+                    </flux:heading>
+                    <flux:subheading>Browse and install Recipes from the community. Add yours <a href="https://github.com/bnussbau/trmnl-recipe-catalog" class="underline" target="_blank">here</a>.</flux:subheading>
+                </div>
+                <livewire:catalog.index @plugin-installed="refreshPlugins" />
             </div>
         </flux:modal>
 
