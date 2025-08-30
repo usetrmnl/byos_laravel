@@ -12,7 +12,6 @@ use App\Models\Plugin;
  * to:
  * {% assign _temp_xxx = collection | filter: "key", "value" %}{% for item in _temp_xxx %}
  */
-
 test('where filter works when assigned to variable first', function () {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',

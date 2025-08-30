@@ -236,11 +236,11 @@ class Plugin extends Model
         $template = preg_replace_callback(
             '/{%\s*for\s+(\w+)\s+in\s+([^|]+)\s*\|\s*([^}]+)%}/',
             function ($matches) {
-                $variableName = trim($matches[1]);
-                $collection = trim($matches[2]);
-                $filter = trim($matches[3]);
-                $tempVarName = '_temp_' . uniqid();
-                
+                $variableName = mb_trim($matches[1]);
+                $collection = mb_trim($matches[2]);
+                $filter = mb_trim($matches[3]);
+                $tempVarName = '_temp_'.uniqid();
+
                 return "{% assign {$tempVarName} = {$collection} | {$filter} %}{% for {$variableName} in {$tempVarName} %}";
             },
             $template
