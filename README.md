@@ -39,6 +39,7 @@ Support the development of this package by purchasing a TRMNL device through the
 or
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/bnussbau)
+[GitHub Sponsors](https://github.com/sponsors/bnussbau/)
 
 ### Hosting
 
