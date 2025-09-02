@@ -7,6 +7,7 @@ use App\Liquid\Filters\Data;
 use App\Liquid\Filters\Date;
 use App\Liquid\Filters\Localization;
 use App\Liquid\Filters\Numbers;
+use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
@@ -265,6 +266,7 @@ class Plugin extends Model
 
         // Use the Liquid template engine to resolve variables
         $environment = App::make('liquid.environment');
+        $environment->filterRegistry->register(StandardFilters::class);
         $liquidTemplate = $environment->parseString($template);
         $context = $environment->newRenderContext(data: $variables);
 

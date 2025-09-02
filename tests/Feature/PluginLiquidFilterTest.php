@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Liquid\Filters\StandardFilters;
 use App\Models\Plugin;
+use Keepsuit\Liquid\Environment;
 
 /**
  * Tests for the Liquid where filter functionality
@@ -91,4 +93,32 @@ LIQUID
     $this->assertStringContainsString('"v":"4.8"', $result);
     // Should not contain the low tide data
     $this->assertStringNotContainsString('"type":"L"', $result);
+});
+
+it('encodes arrays for url_encode as JSON with spaces after commas and then percent-encodes', function () {
+    /** @var Environment $env */
+    $env = app('liquid.environment');
+    $env->filterRegistry->register(StandardFilters::class);
+
+    $template = $env->parseString('{{ categories | url_encode }}');
+
+    $output = $template->render($env->newRenderContext([
+        'categories' => ['common', 'obscure'],
+    ]));
+
+    expect($output)->toBe('%5B%22common%22%2C%22obscure%22%5D');
+});
+
+it('keeps scalar url_encode behavior intact', function () {
+    /** @var Environment $env */
+    $env = app('liquid.environment');
+    $env->filterRegistry->register(StandardFilters::class);
+
+    $template = $env->parseString('{{ text | url_encode }}');
+
+    $output = $template->render($env->newRenderContext([
+        'text' => 'hello world',
+    ]));
+
+    expect($output)->toBe('hello+world');
 });
