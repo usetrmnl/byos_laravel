@@ -2,6 +2,7 @@
 
 use App\Services\PluginImportService;
 use Livewire\Volt\Component;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,21 +27,40 @@ new class extends Component {
                 $catalogContent = $response->body();
                 $catalog = Yaml::parse($catalogContent);
 
-                return collect($catalog)->map(function ($plugin, $key) {
-                    return [
-                        'id' => $key,
-                        'name' => $plugin['name'] ?? 'Unknown Plugin',
-                        'description' => $plugin['author_bio']['description'] ?? '',
-                        'author' => $plugin['author']['name'] ?? 'Unknown Author',
-                        'github' => $plugin['author']['github'] ?? null,
-                        'license' => $plugin['license'] ?? null,
-                        'zip_url' => $plugin['trmnlp']['zip_url'] ?? null,
-                        'repo_url' => $plugin['trmnlp']['repo'] ?? null,
-                        'logo_url' => $plugin['logo_url'] ?? null,
-                        'screenshot_url' => $plugin['screenshot_url'] ?? null,
-                        'learn_more_url' => $plugin['author_bio']['learn_more_url'] ?? null,
-                    ];
-                })->toArray();
+                $currentVersion = config('app.version');
+
+                return collect($catalog)
+                    ->filter(function ($plugin) use ($currentVersion) {
+                        // Check if Laravel compatibility is true
+                        if (!Arr::get($plugin, 'byos.byos_laravel.compatibility', false)) {
+                            return false;
+                        }
+
+                        // Check minimum version if specified
+                        $minVersion = Arr::get($plugin, 'byos.byos_laravel.min_version');
+                        if ($minVersion && $currentVersion && version_compare($currentVersion, $minVersion, '<')) {
+                            return false;
+                        }
+
+                        return true;
+                    })
+                    ->map(function ($plugin, $key) {
+                        return [
+                            'id' => $key,
+                            'name' => Arr::get($plugin, 'name', 'Unknown Plugin'),
+                            'description' => Arr::get($plugin, 'author_bio.description', ''),
+                            'author' => Arr::get($plugin, 'author.name', 'Unknown Author'),
+                            'github' => Arr::get($plugin, 'author.github'),
+                            'license' => Arr::get($plugin, 'license'),
+                            'zip_url' => Arr::get($plugin, 'trmnlp.zip_url'),
+                            'repo_url' => Arr::get($plugin, 'trmnlp.repo'),
+                            'logo_url' => Arr::get($plugin, 'logo_url'),
+                            'screenshot_url' => Arr::get($plugin, 'screenshot_url'),
+                            'learn_more_url' => Arr::get($plugin, 'author_bio.learn_more_url'),
+                        ];
+                    })
+                    ->sortBy('name')
+                    ->toArray();
             } catch (\Exception $e) {
                 Log::error('Failed to load catalog from URL: ' . $e->getMessage());
                 return [];
