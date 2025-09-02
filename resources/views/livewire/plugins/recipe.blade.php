@@ -690,7 +690,10 @@ HTML;
                                                                     <flux:checkbox label="{{ $label }}" value="{{ $value }}"/>
                                                                 @endforeach
                                                             @else
-                                                                <flux:checkbox label="{{ $option }}" value="{{ $option }}"/>
+                                                                @php
+                                                                    $key = mb_strtolower(str_replace(' ', '_', $option));
+                                                                @endphp
+                                                                <flux:checkbox label="{{ $option }}" value="{{ $key }}"/>
                                                             @endif
                                                         @endforeach
                                                     @endif
