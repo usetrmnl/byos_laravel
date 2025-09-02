@@ -38,10 +38,7 @@ new class extends Component {
 
     public function refreshPlugins(): void
     {
-        $userPlugins = auth()->user()?->plugins?->map(function ($plugin) {
-            return $plugin->toArray();
-        })->toArray();
-
+        $userPlugins = auth()->user()?->plugins?->makeHidden(['render_markup', 'data_payload'])->toArray();
         $this->plugins = array_merge($this->native_plugins, $userPlugins ?? []);
     }
 
