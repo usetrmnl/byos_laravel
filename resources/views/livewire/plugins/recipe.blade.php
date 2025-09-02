@@ -133,7 +133,7 @@ new class extends Component {
                     $this->addError('polling_url', 'The polling URL must be a valid URL after resolving configuration variables.');
                 }
             } catch (\Exception $e) {
-                $this->addError('polling_url', 'Error resolving Liquid variables: ' . $e->getMessage());
+                $this->addError('polling_url', 'Error resolving Liquid variables: ' . $e->getMessage() . $e->getPrevious()?->getMessage());
             }
         }
     }
@@ -148,7 +148,7 @@ new class extends Component {
                 $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
 
             } catch (\Exception $e) {
-                $this->dispatch('data-update-error', message: $e->getMessage());
+                $this->dispatch('data-update-error', message: $e->getMessage() . $e->getPrevious()?->getMessage());
             }
         }
     }
