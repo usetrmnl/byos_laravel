@@ -14,12 +14,16 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - php - 8.4.12
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
+- laravel/sanctum (SANCTUM) - v4
+- laravel/socialite (SOCIALITE) - v5
 - livewire/flux (FLUXUI_FREE) - v2
 - livewire/livewire (LIVEWIRE) - v3
 - livewire/volt (VOLT) - v1
 - larastan/larastan (LARASTAN) - v3
 - laravel/pint (PINT) - v1
+- laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v4
+- phpunit/phpunit (PHPUNIT) - v12
 - tailwindcss (TAILWINDCSS) - v4
 
 
@@ -384,16 +388,12 @@ $delete = fn(Product $product) => $product->delete();
 <!-- HTML / UI Here -->
 </code-snippet>
 
-
-
 <code-snippet name="Real-Time Search With Volt" lang="php">
     <flux:input
         wire:model.live.debounce.300ms="search"
         placeholder="Search..."
     />
 </code-snippet>
-
-
 
 <code-snippet name="Loading States With Volt" lang="php">
     <flux:button wire:click="save" wire:loading.attr="disabled">
@@ -502,8 +502,6 @@ it('may reset the password', function () {
     Notification::assertSent(ResetPassword::class);
 });
 </code-snippet>
-
-
 
 <code-snippet name="Pest Smoke Testing Example" lang="php">
 $pages = visit(['/', '/about', '/contact']);
