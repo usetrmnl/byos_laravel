@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Keepsuit\LaravelLiquid\LaravelLiquidExtension;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Keepsuit\Liquid\Extensions\StandardExtension;
 
@@ -285,7 +286,7 @@ class Plugin extends Model
                 $inlineFileSystem = new InlineTemplatesFileSystem();
                 $environment = new \Keepsuit\Liquid\Environment(
                     fileSystem: $inlineFileSystem,
-                    extensions: [new StandardExtension()]
+                    extensions: [new StandardExtension(), new LaravelLiquidExtension()]
                 );
 
                 // Register all custom filters
