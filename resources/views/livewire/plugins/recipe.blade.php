@@ -104,11 +104,11 @@ new class extends Component {
         'markup_code' => 'nullable|string',
         'markup_language' => 'nullable|string|in:blade,liquid',
         'checked_devices' => 'array',
-        'playlist_name' => 'required_if:selected_playlist,new|string|max:255',
-        'selected_weekdays' => 'nullable|array',
-        'active_from' => 'nullable|date_format:H:i',
-        'active_until' => 'nullable|date_format:H:i',
-        'selected_playlist' => 'nullable|string',
+        'device_playlist_names' => 'array',
+        'device_playlists' => 'array',
+        'device_weekdays' => 'array',
+        'device_active_from' => 'array',
+        'device_active_until' => 'array',
     ];
 
     public function editSettings()
