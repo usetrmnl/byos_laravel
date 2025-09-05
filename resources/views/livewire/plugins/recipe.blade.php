@@ -24,11 +24,11 @@ new class extends Component {
     public $data_payload;
     public ?Carbon $data_payload_updated_at;
     public array $checked_devices = [];
-    public string $playlist_name = '';
-    public array|null $selected_weekdays = null;
-    public string $active_from = '';
-    public string $active_until = '';
-    public string $selected_playlist = '';
+    public array $device_playlists = [];
+    public array $device_playlist_names = [];
+    public array $device_weekdays = [];
+    public array $device_active_from = [];
+    public array $device_active_until = [];
     public string $mashup_layout = 'full';
     public array $mashup_plugins = [];
     public array $configuration_template = [];
@@ -176,29 +176,40 @@ new class extends Component {
     {
         $this->validate([
             'checked_devices' => 'required|array|min:1',
-            'selected_playlist' => 'required|string',
             'mashup_layout' => 'required|string',
             'mashup_plugins' => 'required_if:mashup_layout,1Lx1R,1Lx2R,2Lx1R,1Tx1B,2Tx1B,1Tx2B,2x2|array',
         ]);
 
+        // Validate that each checked device has a playlist selected
+        foreach ($this->checked_devices as $deviceId) {
+            if (!isset($this->device_playlists[$deviceId]) || empty($this->device_playlists[$deviceId])) {
+                $this->addError('device_playlists.' . $deviceId, 'Please select a playlist for each device.');
+                return;
+            }
+
+            // If creating new playlist, validate required fields
+            if ($this->device_playlists[$deviceId] === 'new') {
+                if (!isset($this->device_playlist_names[$deviceId]) || empty($this->device_playlist_names[$deviceId])) {
+                    $this->addError('device_playlist_names.' . $deviceId, 'Playlist name is required when creating a new playlist.');
+                    return;
+                }
+            }
+        }
+
         foreach ($this->checked_devices as $deviceId) {
             $playlist = null;
 
-            if ($this->selected_playlist === 'new') {
+            if ($this->device_playlists[$deviceId] === 'new') {
                 // Create new playlist
-                $this->validate([
-                    'playlist_name' => 'required|string|max:255',
-                ]);
-
                 $playlist = \App\Models\Playlist::create([
                     'device_id' => $deviceId,
-                    'name' => $this->playlist_name,
-                    'weekdays' => !empty($this->selected_weekdays) ? $this->selected_weekdays : null,
-                    'active_from' => $this->active_from ?: null,
-                    'active_until' => $this->active_until ?: null,
+                    'name' => $this->device_playlist_names[$deviceId],
+                    'weekdays' => !empty($this->device_weekdays[$deviceId] ?? null) ? $this->device_weekdays[$deviceId] : null,
+                    'active_from' => $this->device_active_from[$deviceId] ?? null,
+                    'active_until' => $this->device_active_until[$deviceId] ?? null,
                 ]);
             } else {
-                $playlist = \App\Models\Playlist::findOrFail($this->selected_playlist);
+                $playlist = \App\Models\Playlist::findOrFail($this->device_playlists[$deviceId]);
             }
 
             // Add plugin to playlist
@@ -222,7 +233,16 @@ new class extends Component {
             }
         }
 
-        $this->reset(['checked_devices', 'playlist_name', 'selected_weekdays', 'active_from', 'active_until', 'selected_playlist', 'mashup_layout', 'mashup_plugins']);
+        $this->reset([
+            'checked_devices',
+            'device_playlists',
+            'device_playlist_names',
+            'device_weekdays',
+            'device_active_from',
+            'device_active_until',
+            'mashup_layout',
+            'mashup_plugins'
+        ]);
         Flux::modal('add-to-playlist')->close();
     }
 
@@ -250,6 +270,16 @@ new class extends Component {
     public function getDevicePlaylists($deviceId)
     {
         return \App\Models\Playlist::where('device_id', $deviceId)->get();
+    }
+
+    public function hasAnyPlaylistSelected(): bool
+    {
+        foreach ($this->checked_devices as $deviceId) {
+            if (isset($this->device_playlists[$deviceId]) && !empty($this->device_playlists[$deviceId])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function getConfigurationValue($key, $default = null)
@@ -450,44 +480,60 @@ HTML;
                         </flux:checkbox.group>
                     </div>
 
-                    @if(count($checked_devices) === 1)
-                        <flux:separator text="Playlist" />
-                        <div class="mt-4 mb-4">
-                            <flux:select wire:model.live.debounce="selected_playlist">
-                                <option value="">Select Playlist or Create New</option>
-                                @foreach($this->getDevicePlaylists($checked_devices[0]) as $playlist)
-                                    <option value="{{ $playlist->id }}">{{ $playlist->name }}</option>
-                                @endforeach
-                                <option value="new">Create New Playlist</option>
-                            </flux:select>
+                    @if(count($checked_devices) > 0)
+                        <flux:separator text="Playlist Selection" />
+                        <div class="mt-4 mb-4 space-y-6">
+                            @foreach($checked_devices as $deviceId)
+                                @php
+                                    $device = auth()->user()->devices->find($deviceId);
+                                @endphp
+                                <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                                    <div class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+                                        {{ $device->name }}
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <flux:select wire:model.live.debounce="device_playlists.{{ $deviceId }}">
+                                            <option value="">Select Playlist or Create New</option>
+                                            @foreach($this->getDevicePlaylists($deviceId) as $playlist)
+                                                <option value="{{ $playlist->id }}">{{ $playlist->name }}</option>
+                                            @endforeach
+                                            <option value="new">Create New Playlist</option>
+                                        </flux:select>
+                                    </div>
+
+                                    @if(isset($device_playlists[$deviceId]) && $device_playlists[$deviceId] === 'new')
+                                        <div class="space-y-4">
+                                            <div>
+                                                <flux:input label="Playlist Name" wire:model="device_playlist_names.{{ $deviceId }}"/>
+                                            </div>
+                                            <div>
+                                                <flux:checkbox.group wire:model="device_weekdays.{{ $deviceId }}" label="Active Days (optional)">
+                                                    <flux:checkbox label="Monday" value="1"/>
+                                                    <flux:checkbox label="Tuesday" value="2"/>
+                                                    <flux:checkbox label="Wednesday" value="3"/>
+                                                    <flux:checkbox label="Thursday" value="4"/>
+                                                    <flux:checkbox label="Friday" value="5"/>
+                                                    <flux:checkbox label="Saturday" value="6"/>
+                                                    <flux:checkbox label="Sunday" value="0"/>
+                                                </flux:checkbox.group>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <flux:input type="time" label="Active From (optional)" wire:model="device_active_from.{{ $deviceId }}"/>
+                                                </div>
+                                                <div>
+                                                    <flux:input type="time" label="Active Until (optional)" wire:model="device_active_until.{{ $deviceId }}"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
                         </div>
                     @endif
-                    @if($selected_playlist)
-                        @if($selected_playlist === 'new')
-                            <div class="mt-4 mb-4">
-                                <flux:input label="Playlist Name" wire:model="playlist_name"/>
-                            </div>
-                            <div class="mb-4">
-                                <flux:checkbox.group wire:model="selected_weekdays" label="Active Days (optional)">
-                                    <flux:checkbox label="Monday" value="1"/>
-                                    <flux:checkbox label="Tuesday" value="2"/>
-                                    <flux:checkbox label="Wednesday" value="3"/>
-                                    <flux:checkbox label="Thursday" value="4"/>
-                                    <flux:checkbox label="Friday" value="5"/>
-                                    <flux:checkbox label="Saturday" value="6"/>
-                                    <flux:checkbox label="Sunday" value="0"/>
-                                </flux:checkbox.group>
-                            </div>
 
-                            <div class="mb-4">
-                                <flux:input type="time" label="Active From (optional)" wire:model="active_from"/>
-                            </div>
-
-                            <div class="mb-4">
-                                <flux:input type="time" label="Active Until (optional)" wire:model="active_until"/>
-                            </div>
-                        @endif
-
+                    @if(count($checked_devices) > 0 && $this->hasAnyPlaylistSelected())
                         <flux:separator text="Layout" />
                         <div class="mt-4 mb-4">
                             <flux:radio.group wire:model.live="mashup_layout" variant="segmented">
