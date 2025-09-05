@@ -236,7 +236,7 @@ class Plugin extends Model
         // This handles: {% for item in collection | filter: "key", "value" %}
         // Converts to: {% assign temp_filtered = collection | filter: "key", "value" %}{% for item in temp_filtered %}
         $template = preg_replace_callback(
-            '/{%\s*for\s+(\w+)\s+in\s+([^|]+)\s*\|\s*([^}]+)%}/',
+            '/{%\s*for\s+(\w+)\s+in\s+([^|%}]+)\s*\|\s*([^%}]+)%}/',
             function ($matches) {
                 $variableName = mb_trim($matches[1]);
                 $collection = mb_trim($matches[2]);
