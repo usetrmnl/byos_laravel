@@ -3,7 +3,7 @@
 [![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
 
 TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
-It enables you to manage TRMNL devices, generate screens dynamically, and can act as a proxy for the native cloud service (native plugins, recipes).
+It allows you to manage TRMNL devices, generate screens using native plugins, recipes, or the API, and can optionally act as a proxy for the native cloud service (Core).
 
 If you are looking for a Laravel package designed to streamline the development of both public and private TRMNL plugins, check out [bnussbau/trmnl-laravel](https://github.com/bnussbau/laravel-trmnl).
 
@@ -39,6 +39,7 @@ Support the development of this package by purchasing a TRMNL device through the
 or
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/bnussbau)
+
 [GitHub Sponsors](https://github.com/sponsors/bnussbau/)
 
 ### Hosting
@@ -66,8 +67,11 @@ docker compose up -d
 If you’re using a VPS (e.g., Hetzner) and prefer an alternative to native Docker, you can install Dokploy and deploy BYOS Laravel using the integrated [Template](https://templates.dokploy.com/?q=trmnl+byos+laravel).
 It’s a quick way to get started without having to manually manage Docker setup.
 
-### PikaPods
+#### PikaPods
 You can vote for TRMNL BYOS Laravel to be included as PikaPods Template here: [feedback.pikapods.com](https://feedback.pikapods.com/posts/842/add-app-trmnl-byos-laravel)
+
+#### Umbrel
+Umbrel is supported through a community store, [see](http://github.com/bnussbau/umbrel-store).
 
 #### Other Hosting Options
 Laravel Forge, or bare metal PHP server with Nginx or Apache is also supported.
