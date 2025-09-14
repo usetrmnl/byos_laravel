@@ -24,4 +24,13 @@ final class DeviceModel extends Model
         'offset_y' => 'integer',
         'published_at' => 'datetime',
     ];
+
+    public function getColorDepthAttribute(): ?string
+    {
+        if (! $this->bit_depth){
+            return null;
+        }
+
+        return $this->bit_depth . 'bit';
+    }
 }

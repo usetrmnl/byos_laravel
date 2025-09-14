@@ -13,7 +13,7 @@
         "php": "^8.2",
         "ext-imagick": "*",
         "ext-zip": "*",
-        "bnussbau/laravel-trmnl-blade": "1.2.*",
+        "bnussbau/laravel-trmnl-blade": "2.0.*",
         "intervention/image": "^3.11",
         "keepsuit/laravel-liquid": "^0.5.2",
         "laravel/framework": "^12.1",

@@ -85,7 +85,7 @@ Route::get('/display', function (Request $request) {
                     // Check and update stale data if needed
                     if ($plugin->isDataStale() || $plugin->current_image === null) {
                         $plugin->updateDataPayload();
-                        $markup = $plugin->render();
+                        $markup = $plugin->render(device: $device);
 
                         GenerateScreenJob::dispatchSync($device->id, $plugin->id, $markup);
                     }

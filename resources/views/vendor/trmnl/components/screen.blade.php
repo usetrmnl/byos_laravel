@@ -3,7 +3,7 @@
     'darkMode' => false,
     'deviceVariant' => 'og',
     'deviceOrientation' => null,
-    'colorDepth' => '2bit',
+    'colorDepth' => '1bit',
     'scaleLevel' => null,
 ])
 

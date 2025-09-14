@@ -278,7 +278,7 @@ class Plugin extends Model
      *
      * @throws LiquidException
      */
-    public function render(string $size = 'full', bool $standalone = true): string
+    public function render(string $size = 'full', bool $standalone = true, ?Device $device = null): string
     {
         if ($this->render_markup) {
             $renderedContent = '';
@@ -344,6 +344,7 @@ class Plugin extends Model
 
             if ($standalone) {
                 return view('trmnl-layouts.single', [
+                    'colorDepth' => $device?->deviceModel?->color_depth,
                     'slot' => $renderedContent,
                 ])->render();
             }
@@ -354,6 +355,7 @@ class Plugin extends Model
         if ($this->render_markup_view) {
             if ($standalone) {
                 return view('trmnl-layouts.single', [
+                    'colorDepth' => $device?->deviceModel?->color_depth,
                     'slot' => view($this->render_markup_view, [
                         'size' => $size,
                         'data' => $this->data_payload,
