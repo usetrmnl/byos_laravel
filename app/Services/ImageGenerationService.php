@@ -7,11 +7,11 @@ use App\Models\Device;
 use App\Models\DeviceModel;
 use App\Models\Plugin;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Imagick;
 use ImagickException;
 use ImagickPixel;
-use Log;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Spatie\Browsershot\Browsershot;
@@ -61,6 +61,15 @@ class ImageGenerationService
                 Log::error('Failed to generate PNG: '.$e->getMessage());
                 throw new RuntimeException('Failed to generate PNG: '.$e->getMessage(), 0, $e);
             }
+        }
+
+        // Validate that the PNG file was created and is valid
+        if (! file_exists($pngPath)) {
+            throw new RuntimeException('PNG file was not created: '.$pngPath);
+        }
+
+        if (filesize($pngPath) === 0) {
+            throw new RuntimeException('PNG file is empty: '.$pngPath);
         }
 
         // Convert image based on DeviceModel settings or fallback to device settings
@@ -293,14 +302,19 @@ class ImageGenerationService
      */
     private static function convertToBmpImageMagick(string $pngPath, string $bmpPath): void
     {
-        $imagick = new Imagick($pngPath);
-        $imagick->setImageType(Imagick::IMGTYPE_GRAYSCALE);
-        $imagick->quantizeImage(2, Imagick::COLORSPACE_GRAY, 0, true, false);
-        $imagick->setImageDepth(1);
-        $imagick->stripImage();
-        $imagick->setFormat('BMP3');
-        $imagick->writeImage($bmpPath);
-        $imagick->clear();
+        try {
+            $imagick = new Imagick($pngPath);
+            $imagick->setImageType(Imagick::IMGTYPE_GRAYSCALE);
+            $imagick->quantizeImage(2, Imagick::COLORSPACE_GRAY, 0, true, false);
+            $imagick->setImageDepth(1);
+            $imagick->stripImage();
+            $imagick->setFormat('BMP3');
+            $imagick->writeImage($bmpPath);
+            $imagick->clear();
+        } catch (ImagickException $e) {
+            Log::error('ImageMagick conversion failed for PNG: '.$pngPath.' - '.$e->getMessage());
+            throw $e;
+        }
     }
 
     /**
@@ -308,26 +322,31 @@ class ImageGenerationService
      */
     private static function convertToPngImageMagick(string $pngPath, ?int $width, ?int $height, ?int $rotate, $quantize = true): void
     {
-        $imagick = new Imagick($pngPath);
-        if ($width !== 800 || $height !== 480) {
-            $imagick->resizeImage($width, $height, Imagick::FILTER_LANCZOS, 1, true);
-        }
-        if ($rotate !== null && $rotate !== 0) {
-            $imagick->rotateImage(new ImagickPixel('black'), $rotate);
-        }
+        try {
+            $imagick = new Imagick($pngPath);
+            if ($width !== 800 || $height !== 480) {
+                $imagick->resizeImage($width, $height, Imagick::FILTER_LANCZOS, 1, true);
+            }
+            if ($rotate !== null && $rotate !== 0) {
+                $imagick->rotateImage(new ImagickPixel('black'), $rotate);
+            }
 
-        $imagick->setImageType(Imagick::IMGTYPE_GRAYSCALE);
-        $imagick->setOption('dither', 'FloydSteinberg');
+            $imagick->setImageType(Imagick::IMGTYPE_GRAYSCALE);
+            $imagick->setOption('dither', 'FloydSteinberg');
 
-        if ($quantize) {
-            $imagick->quantizeImage(2, Imagick::COLORSPACE_GRAY, 0, true, false);
+            if ($quantize) {
+                $imagick->quantizeImage(2, Imagick::COLORSPACE_GRAY, 0, true, false);
+            }
+            $imagick->setImageDepth(8);
+            $imagick->stripImage();
+
+            $imagick->setFormat('png');
+            $imagick->writeImage($pngPath);
+            $imagick->clear();
+        } catch (ImagickException $e) {
+            Log::error('ImageMagick conversion failed for PNG: '.$pngPath.' - '.$e->getMessage());
+            throw $e;
         }
-        $imagick->setImageDepth(8);
-        $imagick->stripImage();
-
-        $imagick->setFormat('png');
-        $imagick->writeImage($pngPath);
-        $imagick->clear();
     }
 
     public static function cleanupFolder(): void
