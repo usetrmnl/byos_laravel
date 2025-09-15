@@ -27,10 +27,10 @@ final class DeviceModel extends Model
 
     public function getColorDepthAttribute(): ?string
     {
-        if (! $this->bit_depth){
+        if (! $this->bit_depth) {
             return null;
         }
 
-        return $this->bit_depth . 'bit';
+        return $this->bit_depth.'bit';
     }
 }

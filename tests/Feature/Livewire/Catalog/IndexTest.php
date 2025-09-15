@@ -39,9 +39,9 @@ it('loads plugins from catalog URL', function () {
                 'zip_url' => 'https://example.com/plugin.zip',
             ],
             'byos' => [
-              'byos_laravel' => [
-                  'compatibility' => true,
-              ]
+                'byos_laravel' => [
+                    'compatibility' => true,
+                ],
             ],
             'logo_url' => 'https://example.com/logo.png',
         ],
