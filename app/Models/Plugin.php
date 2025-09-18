@@ -345,6 +345,7 @@ class Plugin extends Model
             if ($standalone) {
                 return view('trmnl-layouts.single', [
                     'colorDepth' => $device?->deviceModel?->color_depth,
+                    'deviceVariant' => $device?->deviceModel?->name ?? 'og',
                     'slot' => $renderedContent,
                 ])->render();
             }
@@ -356,6 +357,7 @@ class Plugin extends Model
             if ($standalone) {
                 return view('trmnl-layouts.single', [
                     'colorDepth' => $device?->deviceModel?->color_depth,
+                    'deviceVariant' => $device?->deviceModel?->name ?? 'og',
                     'slot' => view($this->render_markup_view, [
                         'size' => $size,
                         'data' => $this->data_payload,

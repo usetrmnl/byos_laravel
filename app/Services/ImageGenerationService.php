@@ -44,13 +44,12 @@ class ImageGenerationService
             $browserStage->html($markup);
 
             if (config('app.puppeteer_window_size_strategy') === 'v1') {
+                // default behaviour for Framework v1
+                $browserStage->useDefaultDimensions();
+            } else {
                 $browserStage
                     ->width($imageSettings['width'])
                     ->height($imageSettings['height']);
-            } else {
-                $browserStage
-                    ->width(800)
-                    ->height(480);
             }
 
             if (config('app.puppeteer_wait_for_network_idle')) {
