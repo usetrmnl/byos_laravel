@@ -99,8 +99,8 @@ it('get_image_settings uses defaults for missing device properties', function ()
     expect($settings['mime_type'])->toBe('image/png');
     expect($settings['offset_x'])->toBe(0);
     expect($settings['offset_y'])->toBe(0);
-    // image_format will be null if the device doesn't have it set, which is the expected behavior
-    expect($settings['image_format'])->toBeNull();
+    // image_format defaults to 'auto' when not set
+    expect($settings['image_format'])->toBe('auto');
 })->skipOnCi();
 
 it('determine_image_format_from_model returns correct formats', function (): void {
