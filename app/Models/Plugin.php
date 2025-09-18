@@ -346,6 +346,7 @@ class Plugin extends Model
                 return view('trmnl-layouts.single', [
                     'colorDepth' => $device?->deviceModel?->color_depth,
                     'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                    'scaleLevel' => $device?->deviceModel?->scale_level,
                     'slot' => $renderedContent,
                 ])->render();
             }
@@ -358,6 +359,7 @@ class Plugin extends Model
                 return view('trmnl-layouts.single', [
                     'colorDepth' => $device?->deviceModel?->color_depth,
                     'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                    'scaleLevel' => $device?->deviceModel?->scale_level,
                     'slot' => view($this->render_markup_view, [
                         'size' => $size,
                         'data' => $this->data_payload,

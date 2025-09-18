@@ -31,6 +31,35 @@ final class DeviceModel extends Model
             return null;
         }
 
+        //if higher then 4 return 4bit
+        if ($this->bit_depth > 4) {
+            return '4bit';
+        }
+
         return $this->bit_depth.'bit';
+    }
+
+/**
+     * Returns the scale level based on the device width.
+     */
+    public function getScaleLevelAttribute(): ?string
+    {
+        if (! $this->width) {
+            return null;
+        }
+
+        if ($this->width > 800 && $this->width <= 1000) {
+            return 'large';
+        }
+
+        if ($this->width > 1000 && $this->width <= 1400) {
+            return 'xlarge';
+        }
+
+        if ($this->width > 1400) {
+            return 'xxlarge';
+        }
+
+        return null;
     }
 }
