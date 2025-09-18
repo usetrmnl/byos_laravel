@@ -4,9 +4,9 @@
     "type": "project",
     "description": "TRMNL Server Implementation (BYOS) for Laravel",
     "keywords": [
-        "laravel",
-        "framework",
-        "trmnl"
+        "trmnl",
+        "trmnl-server",
+        "laravel"
     ],
     "license": "MIT",
     "require": {
@@ -14,7 +14,7 @@
         "ext-imagick": "*",
         "ext-zip": "*",
         "bnussbau/laravel-trmnl-blade": "2.0.*",
-        "intervention/image": "^3.11",
+        "bnussbau/trmnl-pipeline-php": "^0.2.0",
         "keepsuit/laravel-liquid": "^0.5.2",
         "laravel/framework": "^12.1",
         "laravel/sanctum": "^4.0",
@@ -73,7 +73,9 @@
         ],
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
-        "format": "vendor/bin/pint"
+        "format": "vendor/bin/pint",
+        "analyse": "vendor/bin/phpstan analyse",
+        "analyze": "vendor/bin/phpstan analyse"
     },
     "extra": {
         "laravel": {
