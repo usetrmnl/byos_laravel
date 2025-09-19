@@ -343,12 +343,22 @@ class Plugin extends Model
             }
 
             if ($standalone) {
-                return view('trmnl-layouts.single', [
-                    'colorDepth' => $device?->deviceModel?->color_depth,
-                    'deviceVariant' => $device?->deviceModel?->name ?? 'og',
-                    'scaleLevel' => $device?->deviceModel?->scale_level,
-                    'slot' => $renderedContent,
-                ])->render();
+                if ($size === 'full') {
+                    return view('trmnl-layouts.single', [
+                        'colorDepth' => $device?->deviceModel?->color_depth,
+                        'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                        'scaleLevel' => $device?->deviceModel?->scale_level,
+                        'slot' => $renderedContent,
+                    ])->render();
+                } else {
+                    return view('trmnl-layouts.mashup', [
+                        'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
+                        'colorDepth' => $device?->deviceModel?->color_depth,
+                        'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                        'scaleLevel' => $device?->deviceModel?->scale_level,
+                        'slot' => $renderedContent,
+                    ])->render();
+                }
             }
 
             return $renderedContent;
@@ -385,5 +395,14 @@ class Plugin extends Model
     public function getConfiguration(string $key, $default = null)
     {
         return $this->configuration[$key] ?? $default;
+    }
+
+    public function getPreviewMashupLayoutForSize(string $size): string
+    {
+        return match ($size) {
+            'half_vertical' => '1Lx1R',
+            'quadrant' => '2x2',
+            default => '1Tx1B',
+        };
     }
 }
