@@ -110,7 +110,7 @@ Route::get('/display', function (Request $request) {
                         }
                     }
 
-                    $markup = $playlistItem->render();
+                    $markup = $playlistItem->render(device: $device);
                     GenerateScreenJob::dispatchSync($device->id, null, $markup);
 
                     $device->refresh();

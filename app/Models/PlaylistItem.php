@@ -135,10 +135,13 @@ class PlaylistItem extends Model
     /**
      * Render all plugins with appropriate layout
      */
-    public function render(): string
+    public function render(?Device $device = null): string
     {
         if (! $this->isMashup()) {
             return view('trmnl-layouts.single', [
+                'colorDepth' => $device?->deviceModel?->color_depth,
+                'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                'scaleLevel' => $device?->deviceModel?->scale_level,
                 'slot' => $this->plugin instanceof Plugin
                     ? $this->plugin->render('full', false)
                     : throw new Exception('Invalid plugin instance'),
@@ -160,6 +163,9 @@ class PlaylistItem extends Model
         }
 
         return view('trmnl-layouts.mashup', [
+            'colorDepth' => $device?->deviceModel?->color_depth,
+            'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+            'scaleLevel' => $device?->deviceModel?->scale_level,
             'mashupLayout' => $this->getMashupLayoutType(),
             'slot' => implode('', $pluginMarkups),
         ])->render();
