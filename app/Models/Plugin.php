@@ -346,7 +346,7 @@ class Plugin extends Model
                 if ($size === 'full') {
                     return view('trmnl-layouts.single', [
                         'colorDepth' => $device?->deviceModel?->color_depth,
-                        'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                        'deviceVariant' => $device?->deviceModel->name ?? 'og',
                         'scaleLevel' => $device?->deviceModel?->scale_level,
                         'slot' => $renderedContent,
                     ])->render();
@@ -354,7 +354,7 @@ class Plugin extends Model
                     return view('trmnl-layouts.mashup', [
                         'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
                         'colorDepth' => $device?->deviceModel?->color_depth,
-                        'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                        'deviceVariant' => $device?->deviceModel->name ?? 'og',
                         'scaleLevel' => $device?->deviceModel?->scale_level,
                         'slot' => $renderedContent,
                     ])->render();
@@ -368,7 +368,7 @@ class Plugin extends Model
             if ($standalone) {
                 return view('trmnl-layouts.single', [
                     'colorDepth' => $device?->deviceModel?->color_depth,
-                    'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                    'deviceVariant' => $device?->deviceModel->name ?? 'og',
                     'scaleLevel' => $device?->deviceModel?->scale_level,
                     'slot' => view($this->render_markup_view, [
                         'size' => $size,

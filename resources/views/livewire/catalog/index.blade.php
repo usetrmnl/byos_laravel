@@ -53,6 +53,7 @@ new class extends Component {
                             'github' => Arr::get($plugin, 'author.github'),
                             'license' => Arr::get($plugin, 'license'),
                             'zip_url' => Arr::get($plugin, 'trmnlp.zip_url'),
+                            'zip_entry_path' => Arr::get($plugin, 'trmnlp.zip_entry_path'),
                             'repo_url' => Arr::get($plugin, 'trmnlp.repo'),
                             'logo_url' => Arr::get($plugin, 'logo_url'),
                             'screenshot_url' => Arr::get($plugin, 'screenshot_url'),
@@ -82,7 +83,7 @@ new class extends Component {
         $this->installingPlugin = $pluginId;
 
         try {
-            $importedPlugin = $pluginImportService->importFromUrl($plugin['zip_url'], auth()->user());
+            $importedPlugin = $pluginImportService->importFromUrl($plugin['zip_url'], auth()->user(), $plugin['zip_entry_path'] ?? null);
 
             $this->dispatch('plugin-installed');
             Flux::modal('import-from-catalog')->close();

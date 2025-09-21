@@ -22,11 +22,12 @@ class PluginImportService
      *
      * @param  UploadedFile  $zipFile  The uploaded ZIP file
      * @param  User  $user  The user importing the plugin
+     * @param  string|null  $zipEntryPath  Optional path to specific plugin in monorepo
      * @return Plugin The created plugin instance
      *
      * @throws Exception If the ZIP file is invalid or required files are missing
      */
-    public function importFromZip(UploadedFile $zipFile, User $user): Plugin
+    public function importFromZip(UploadedFile $zipFile, User $user, ?string $zipEntryPath = null): Plugin
     {
         // Create a temporary directory using Laravel's temporary directory helper
         $tempDirName = 'temp/'.uniqid('plugin_import_', true);
@@ -47,7 +48,7 @@ class PluginImportService
             $zip->close();
 
             // Find the required files (settings.yml and full.liquid/full.blade.php)
-            $filePaths = $this->findRequiredFiles($tempDir);
+            $filePaths = $this->findRequiredFiles($tempDir, $zipEntryPath);
 
             // Validate that we found the required files
             if (! $filePaths['settingsYamlPath'] || ! $filePaths['fullLiquidPath']) {
@@ -138,11 +139,12 @@ class PluginImportService
      *
      * @param  string  $zipUrl  The URL to the ZIP file
      * @param  User  $user  The user importing the plugin
+     * @param  string|null  $zipEntryPath  Optional path to specific plugin in monorepo
      * @return Plugin The created plugin instance
      *
      * @throws Exception If the ZIP file is invalid or required files are missing
      */
-    public function importFromUrl(string $zipUrl, User $user): Plugin
+    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null): Plugin
     {
         // Download the ZIP file
         $response = Http::timeout(60)->get($zipUrl);
@@ -171,7 +173,7 @@ class PluginImportService
             $zip->close();
 
             // Find the required files (settings.yml and full.liquid/full.blade.php)
-            $filePaths = $this->findRequiredFiles($tempDir);
+            $filePaths = $this->findRequiredFiles($tempDir, $zipEntryPath);
 
             // Validate that we found the required files
             if (! $filePaths['settingsYamlPath'] || ! $filePaths['fullLiquidPath']) {
@@ -257,11 +259,56 @@ class PluginImportService
         }
     }
 
-    private function findRequiredFiles(string $tempDir): array
+    private function findRequiredFiles(string $tempDir, ?string $zipEntryPath = null): array
     {
         $settingsYamlPath = null;
         $fullLiquidPath = null;
         $sharedLiquidPath = null;
+
+        // If zipEntryPath is specified, look for files in that specific directory first
+        if ($zipEntryPath) {
+            $targetDir = $tempDir . '/' . $zipEntryPath;
+            if (File::exists($targetDir)) {
+                // Check if files are directly in the target directory
+                if (File::exists($targetDir . '/settings.yml')) {
+                    $settingsYamlPath = $targetDir . '/settings.yml';
+                    
+                    if (File::exists($targetDir . '/full.liquid')) {
+                        $fullLiquidPath = $targetDir . '/full.liquid';
+                    } elseif (File::exists($targetDir . '/full.blade.php')) {
+                        $fullLiquidPath = $targetDir . '/full.blade.php';
+                    }
+                    
+                    if (File::exists($targetDir . '/shared.liquid')) {
+                        $sharedLiquidPath = $targetDir . '/shared.liquid';
+                    }
+                }
+                
+                // Check if files are in src subdirectory of target directory
+                if (!$settingsYamlPath && File::exists($targetDir . '/src/settings.yml')) {
+                    $settingsYamlPath = $targetDir . '/src/settings.yml';
+                    
+                    if (File::exists($targetDir . '/src/full.liquid')) {
+                        $fullLiquidPath = $targetDir . '/src/full.liquid';
+                    } elseif (File::exists($targetDir . '/src/full.blade.php')) {
+                        $fullLiquidPath = $targetDir . '/src/full.blade.php';
+                    }
+                    
+                    if (File::exists($targetDir . '/src/shared.liquid')) {
+                        $sharedLiquidPath = $targetDir . '/src/shared.liquid';
+                    }
+                }
+                
+                // If we found the required files in the target directory, return them
+                if ($settingsYamlPath && $fullLiquidPath) {
+                    return [
+                        'settingsYamlPath' => $settingsYamlPath,
+                        'fullLiquidPath' => $fullLiquidPath,
+                        'sharedLiquidPath' => $sharedLiquidPath,
+                    ];
+                }
+            }
+        }
 
         // First, check if files are directly in the src folder
         if (File::exists($tempDir.'/src/settings.yml')) {

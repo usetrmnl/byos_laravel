@@ -140,7 +140,7 @@ class PlaylistItem extends Model
         if (! $this->isMashup()) {
             return view('trmnl-layouts.single', [
                 'colorDepth' => $device?->deviceModel?->color_depth,
-                'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+                'deviceVariant' => $device?->deviceModel->name ?? 'og',
                 'scaleLevel' => $device?->deviceModel?->scale_level,
                 'slot' => $this->plugin instanceof Plugin
                     ? $this->plugin->render('full', false)
@@ -164,7 +164,7 @@ class PlaylistItem extends Model
 
         return view('trmnl-layouts.mashup', [
             'colorDepth' => $device?->deviceModel?->color_depth,
-            'deviceVariant' => $device?->deviceModel?->name ?? 'og',
+            'deviceVariant' => $device?->deviceModel->name ?? 'og',
             'scaleLevel' => $device?->deviceModel?->scale_level,
             'mashupLayout' => $this->getMashupLayoutType(),
             'slot' => implode('', $pluginMarkups),
