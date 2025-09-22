@@ -250,10 +250,10 @@ it('imports plugin from GitHub monorepo with repository-named directory', functi
 
     // Create a mock ZIP file that simulates GitHub's ZIP structure with repository-named directory
     $zipContent = createMockZipFile([
+        'example-repo-main/another-plugin/src/settings.yml' => "name: Other Plugin\nrefresh_interval: 60\nstrategy: static\npolling_verb: get\nstatic_data: '{}'\ncustom_fields: []",
+        'example-repo-main/another-plugin/src/full.liquid' => '<div>Other content</div>',
         'example-repo-main/example-plugin/src/settings.yml' => getValidSettingsYaml(),
         'example-repo-main/example-plugin/src/full.liquid' => getValidFullLiquid(),
-        'example-repo-main/other-plugin/src/settings.yml' => "name: Other Plugin\nrefresh_interval: 60\nstrategy: static\npolling_verb: get\nstatic_data: '{}'\ncustom_fields: []",
-        'example-repo-main/other-plugin/src/full.liquid' => '<div>Other content</div>',
     ]);
 
     // Mock the HTTP response
@@ -265,7 +265,7 @@ it('imports plugin from GitHub monorepo with repository-named directory', functi
     $plugin = $pluginImportService->importFromUrl(
         'https://github.com/example/repo/archive/refs/heads/main.zip',
         $user,
-        'example-plugin'
+        'example-repo-main/example-plugin'
     );
 
     expect($plugin)->toBeInstanceOf(Plugin::class)
@@ -306,7 +306,7 @@ it('finds required files in GitHub monorepo structure with zip_entry_path', func
     $zipFile = UploadedFile::fake()->createWithContent('monorepo.zip', $zipContent);
 
     $pluginImportService = new PluginImportService();
-    $plugin = $pluginImportService->importFromZip($zipFile, $user, 'example-plugin');
+    $plugin = $pluginImportService->importFromZip($zipFile, $user, 'example-repo-main/example-plugin');
 
     expect($plugin)->toBeInstanceOf(Plugin::class)
         ->and($plugin->user_id)->toBe($user->id)
@@ -329,7 +329,7 @@ it('imports specific plugin from monorepo zip with zip_entry_path parameter', fu
     $zipFile = UploadedFile::fake()->createWithContent('monorepo.zip', $zipContent);
 
     $pluginImportService = new PluginImportService();
-    
+
     // This test will fail because importFromZip doesn't support zip_entry_path parameter yet
     // The logic needs to be implemented to specify which plugin to import from the monorepo
     $plugin = $pluginImportService->importFromZip($zipFile, $user, 'example-plugin2');
@@ -345,7 +345,9 @@ it('imports specific plugin from monorepo zip with zip_entry_path parameter', fu
 function createMockZipFile(array $files): string
 {
     $zip = new ZipArchive();
-    $tempFile = tempnam(sys_get_temp_dir(), 'test_zip_');
+
+    $tempFileName = 'test_zip_'.uniqid().'.zip';
+    $tempFile = Storage::path($tempFileName);
 
     $zip->open($tempFile, ZipArchive::CREATE);
 
@@ -356,7 +358,8 @@ function createMockZipFile(array $files): string
     $zip->close();
 
     $content = file_get_contents($tempFile);
-    unlink($tempFile);
+
+    Storage::delete($tempFileName);
 
     return $content;
 }
