@@ -3,9 +3,7 @@
 [![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
 
 TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
-It allows you to manage TRMNL devices, generate screens using native plugins, recipes, or the API, and can optionally act as a proxy for the native cloud service (Core).
-
-If you are looking for a Laravel package designed to streamline the development of both public and private TRMNL plugins, check out [bnussbau/trmnl-laravel](https://github.com/bnussbau/laravel-trmnl).
+It allows you to manage TRMNL devices, generate screens using native plugins, recipes (45+ from the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)), or the API, and can also act as a proxy for the native cloud service (Core).
 
 ![Screenshot](README_byos-screenshot.png)
 ![Screenshot](README_byos-screenshot-dark.png)
@@ -17,6 +15,7 @@ If you are looking for a Laravel package designed to streamline the development 
 * 📡 Device Information – Display battery status, WiFi strength, firmware version, and more.
 * 🔍 Auto-Join – Automatically detects and adds devices from your local network.
 * 🖥️ Screen Generation – Supports Plugins (even Mashups), Recipes, API, Markup, or updates via Code.
+  * Over 45 compatible open-source recipes are available in the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)
   * Supported Devices / Apps: TRMNL, ESP32 with TRMNL firmware, [trmnl-android](https://github.com/usetrmnl/trmnl-android), [trmnl-kindle](https://github.com/usetrmnl/byos_laravel/pull/27), …
 * 🔄 TRMNL API Proxy – Can act as a proxy for the native cloud service (requires TRMNL Developer Edition).
     * This enables a hybrid setup – for example, you can update your custom Train Monitor every 5 minutes in the morning, while displaying native TRMNL plugins throughout the day.
@@ -25,11 +24,6 @@ If you are looking for a Laravel package designed to streamline the development 
 * 🛠️ Devcontainer support for easier development.
 
 ![Devices](README_byos-devices.jpeg)
-
-### 🎯 Target Audience
-
-This project is for developers who are looking for a self-hosted server for devices running the TRMNL firmware.
-It serves as a starter kit, giving you the flexibility to build and extend it however you like.
 
 ### Support ❤️
 This repo is maintained voluntarily by [@bnussbau](https://github.com/bnussbau).
@@ -41,6 +35,8 @@ or
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/bnussbau)
 
 [GitHub Sponsors](https://github.com/sponsors/bnussbau/)
+
+If you are looking for a Laravel package designed to streamline the development of both public and private TRMNL plugins, check out [bnussbau/trmnl-laravel](https://github.com/bnussbau/laravel-trmnl).
 
 ### Hosting
 
