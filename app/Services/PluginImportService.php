@@ -267,38 +267,38 @@ class PluginImportService
 
         // If zipEntryPath is specified, look for files in that specific directory first
         if ($zipEntryPath) {
-            $targetDir = $tempDir . '/' . $zipEntryPath;
+            $targetDir = $tempDir.'/'.$zipEntryPath;
             if (File::exists($targetDir)) {
                 // Check if files are directly in the target directory
-                if (File::exists($targetDir . '/settings.yml')) {
-                    $settingsYamlPath = $targetDir . '/settings.yml';
-                    
-                    if (File::exists($targetDir . '/full.liquid')) {
-                        $fullLiquidPath = $targetDir . '/full.liquid';
-                    } elseif (File::exists($targetDir . '/full.blade.php')) {
-                        $fullLiquidPath = $targetDir . '/full.blade.php';
+                if (File::exists($targetDir.'/settings.yml')) {
+                    $settingsYamlPath = $targetDir.'/settings.yml';
+
+                    if (File::exists($targetDir.'/full.liquid')) {
+                        $fullLiquidPath = $targetDir.'/full.liquid';
+                    } elseif (File::exists($targetDir.'/full.blade.php')) {
+                        $fullLiquidPath = $targetDir.'/full.blade.php';
                     }
-                    
-                    if (File::exists($targetDir . '/shared.liquid')) {
-                        $sharedLiquidPath = $targetDir . '/shared.liquid';
+
+                    if (File::exists($targetDir.'/shared.liquid')) {
+                        $sharedLiquidPath = $targetDir.'/shared.liquid';
                     }
                 }
-                
+
                 // Check if files are in src subdirectory of target directory
-                if (!$settingsYamlPath && File::exists($targetDir . '/src/settings.yml')) {
-                    $settingsYamlPath = $targetDir . '/src/settings.yml';
-                    
-                    if (File::exists($targetDir . '/src/full.liquid')) {
-                        $fullLiquidPath = $targetDir . '/src/full.liquid';
-                    } elseif (File::exists($targetDir . '/src/full.blade.php')) {
-                        $fullLiquidPath = $targetDir . '/src/full.blade.php';
+                if (! $settingsYamlPath && File::exists($targetDir.'/src/settings.yml')) {
+                    $settingsYamlPath = $targetDir.'/src/settings.yml';
+
+                    if (File::exists($targetDir.'/src/full.liquid')) {
+                        $fullLiquidPath = $targetDir.'/src/full.liquid';
+                    } elseif (File::exists($targetDir.'/src/full.blade.php')) {
+                        $fullLiquidPath = $targetDir.'/src/full.blade.php';
                     }
-                    
-                    if (File::exists($targetDir . '/src/shared.liquid')) {
-                        $sharedLiquidPath = $targetDir . '/src/shared.liquid';
+
+                    if (File::exists($targetDir.'/src/shared.liquid')) {
+                        $sharedLiquidPath = $targetDir.'/src/shared.liquid';
                     }
                 }
-                
+
                 // If we found the required files in the target directory, return them
                 if ($settingsYamlPath && $fullLiquidPath) {
                     return [

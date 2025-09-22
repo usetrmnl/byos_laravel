@@ -350,15 +350,16 @@ class Plugin extends Model
                         'scaleLevel' => $device?->deviceModel?->scale_level,
                         'slot' => $renderedContent,
                     ])->render();
-                } else {
-                    return view('trmnl-layouts.mashup', [
-                        'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
-                        'colorDepth' => $device?->deviceModel?->color_depth,
-                        'deviceVariant' => $device?->deviceModel->name ?? 'og',
-                        'scaleLevel' => $device?->deviceModel?->scale_level,
-                        'slot' => $renderedContent,
-                    ])->render();
                 }
+
+                return view('trmnl-layouts.mashup', [
+                    'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
+                    'colorDepth' => $device?->deviceModel?->color_depth,
+                    'deviceVariant' => $device?->deviceModel->name ?? 'og',
+                    'scaleLevel' => $device?->deviceModel?->scale_level,
+                    'slot' => $renderedContent,
+                ])->render();
+
             }
 
             return $renderedContent;
