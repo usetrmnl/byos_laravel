@@ -60,7 +60,7 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
     {
         try {
             $url = $this->baseUrl.'/.well-known/openid-configuration';
-            $client = new Client();
+            $client = app(Client::class);
             $response = $client->get($url);
             $this->oidcConfig = json_decode($response->getBody()->getContents(), true);
 
@@ -122,7 +122,7 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
     /**
      * Map the raw user array to a Socialite User instance.
      */
-    protected function mapUserToObject(array $user)
+    public function mapUserToObject(array $user)
     {
         return (new User)->setRaw($user)->map([
             'id' => $user['sub'],

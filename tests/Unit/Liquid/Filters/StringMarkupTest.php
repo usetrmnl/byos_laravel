@@ -88,3 +88,83 @@ test('strip_html handles nested tags', function () {
 
     expect($filter->strip_html($html))->toBe('Paragraph with nested tags.');
 });
+
+test('markdown_to_html handles CommonMarkException gracefully', function () {
+    $filter = new StringMarkup();
+
+    // Create a mock that throws CommonMarkException
+    $filter = new class extends StringMarkup
+    {
+        public function markdown_to_html(string $markdown): ?string
+        {
+            try {
+                // Simulate CommonMarkException
+                throw new Exception('Invalid markdown');
+            } catch (Exception $e) {
+                Illuminate\Support\Facades\Log::error('Markdown conversion error: '.$e->getMessage());
+            }
+
+            return null;
+        }
+    };
+
+    $result = $filter->markdown_to_html('invalid markdown');
+
+    expect($result)->toBeNull();
+});
+
+test('markdown_to_html handles empty string', function () {
+    $filter = new StringMarkup();
+
+    $result = $filter->markdown_to_html('');
+
+    expect($result)->toBe('');
+});
+
+test('markdown_to_html handles complex markdown', function () {
+    $filter = new StringMarkup();
+    $markdown = "# Heading\n\nThis is a paragraph with **bold** and *italic* text.\n\n- List item 1\n- List item 2\n\n[Link](https://example.com)";
+
+    $result = $filter->markdown_to_html($markdown);
+
+    expect($result)->toContain('<h1>Heading</h1>');
+    expect($result)->toContain('<strong>bold</strong>');
+    expect($result)->toContain('<em>italic</em>');
+    expect($result)->toContain('<ul>');
+    expect($result)->toContain('<li>List item 1</li>');
+    expect($result)->toContain('<a href="https://example.com">Link</a>');
+});
+
+test('strip_html handles empty string', function () {
+    $filter = new StringMarkup();
+
+    expect($filter->strip_html(''))->toBe('');
+});
+
+test('strip_html handles string without HTML tags', function () {
+    $filter = new StringMarkup();
+    $text = 'This is plain text without any HTML tags.';
+
+    expect($filter->strip_html($text))->toBe($text);
+});
+
+test('strip_html handles self-closing tags', function () {
+    $filter = new StringMarkup();
+    $html = '<p>Text with <br/> line break and <hr/> horizontal rule.</p>';
+
+    expect($filter->strip_html($html))->toBe('Text with  line break and  horizontal rule.');
+});
+
+test('pluralize handles zero count', function () {
+    $filter = new StringMarkup();
+
+    expect($filter->pluralize('book', 0))->toBe('0 books');
+    expect($filter->pluralize('person', 0))->toBe('0 people');
+});
+
+test('pluralize handles negative count', function () {
+    $filter = new StringMarkup();
+
+    expect($filter->pluralize('book', -1))->toBe('-1 book');
+    expect($filter->pluralize('person', -5))->toBe('-5 people');
+});

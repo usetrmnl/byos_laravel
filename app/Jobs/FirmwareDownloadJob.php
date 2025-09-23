@@ -33,16 +33,25 @@ class FirmwareDownloadJob implements ShouldQueue
 
         try {
             $filename = "FW{$this->firmware->version_tag}.bin";
-            Http::sink(storage_path("app/public/firmwares/$filename"))
-                ->get($this->firmware->url);
+            $response = Http::get($this->firmware->url);
 
+            if (! $response->successful()) {
+                throw new Exception('HTTP request failed with status: '.$response->status());
+            }
+
+            // Save the response content to file
+            Storage::disk('public')->put("firmwares/$filename", $response->body());
+
+            // Only update storage location if download was successful
             $this->firmware->update([
                 'storage_location' => "firmwares/$filename",
             ]);
         } catch (ConnectionException $e) {
             Log::error('Firmware download failed: '.$e->getMessage());
+            // Don't update storage_location on failure
         } catch (Exception $e) {
             Log::error('An unexpected error occurred: '.$e->getMessage());
+            // Don't update storage_location on failure
         }
     }
 }

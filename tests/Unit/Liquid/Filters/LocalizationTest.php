@@ -60,3 +60,78 @@ test('l_word returns original word for unknown locales', function () {
 
     expect($filter->l_word('today', 'unknown-locale'))->toBe('today');
 });
+
+test('l_date handles locale parameter', function () {
+    $filter = new Localization();
+    $date = '2025-01-11';
+
+    $result = $filter->l_date($date, 'Y-m-d', 'de');
+
+    // The result should still contain the date components
+    expect($result)->toContain('2025');
+    expect($result)->toContain('01');
+    expect($result)->toContain('11');
+});
+
+test('l_date handles null locale parameter', function () {
+    $filter = new Localization();
+    $date = '2025-01-11';
+
+    $result = $filter->l_date($date, 'Y-m-d', null);
+
+    // Should work the same as default
+    expect($result)->toContain('2025');
+    expect($result)->toContain('01');
+    expect($result)->toContain('11');
+});
+
+test('l_date handles different date formats with locale', function () {
+    $filter = new Localization();
+    $date = '2025-01-11';
+
+    $result = $filter->l_date($date, '%B %d, %Y', 'en');
+
+    // Should contain the month name and date
+    expect($result)->toContain('2025');
+    expect($result)->toContain('11');
+});
+
+test('l_date handles DateTimeInterface objects with locale', function () {
+    $filter = new Localization();
+    $date = new DateTimeImmutable('2025-01-11');
+
+    $result = $filter->l_date($date, 'Y-m-d', 'fr');
+
+    // Should still format correctly
+    expect($result)->toContain('2025');
+    expect($result)->toContain('01');
+    expect($result)->toContain('11');
+});
+
+test('l_date handles invalid date gracefully', function () {
+    $filter = new Localization();
+    $invalidDate = 'invalid-date';
+
+    // This should throw an exception or return a default value
+    // The exact behavior depends on Carbon's implementation
+    expect(fn () => $filter->l_date($invalidDate))->toThrow(Exception::class);
+});
+
+test('l_word handles empty string', function () {
+    $filter = new Localization();
+
+    expect($filter->l_word('', 'de'))->toBe('');
+});
+
+test('l_word handles special characters', function () {
+    $filter = new Localization();
+
+    // Test with a word that has special characters
+    expect($filter->l_word('café', 'de'))->toBe('café');
+});
+
+test('l_word handles numeric strings', function () {
+    $filter = new Localization();
+
+    expect($filter->l_word('123', 'de'))->toBe('123');
+});

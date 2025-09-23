@@ -40,13 +40,18 @@ class OidcTestCommand extends Command
         $clientId = config('services.oidc.client_id');
         $clientSecret = config('services.oidc.client_secret');
         $redirect = config('services.oidc.redirect');
+        if (! $redirect) {
+            $redirect = config('app.url', 'http://localhost').'/auth/oidc/callback';
+        }
         $scopes = config('services.oidc.scopes', []);
+        $defaultScopes = ['openid', 'profile', 'email'];
+        $effectiveScopes = empty($scopes) ? $defaultScopes : $scopes;
 
         $this->line('OIDC Endpoint: '.($endpoint ? "✅ {$endpoint}" : '❌ Not set'));
         $this->line('Client ID: '.($clientId ? "✅ {$clientId}" : '❌ Not set'));
         $this->line('Client Secret: '.($clientSecret ? '✅ Set' : '❌ Not set'));
         $this->line('Redirect URL: '.($redirect ? "✅ {$redirect}" : '❌ Not set'));
-        $this->line('Scopes: '.(empty($scopes) ? '❌ Not set' : '✅ '.implode(', ', $scopes)));
+        $this->line('Scopes: ✅ '.implode(', ', $effectiveScopes));
 
         $this->newLine();
 

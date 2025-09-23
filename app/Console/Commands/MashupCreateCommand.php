@@ -9,9 +9,6 @@ use App\Models\Plugin;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
-use function Laravel\Prompts\select;
-use function Laravel\Prompts\text;
-
 class MashupCreateCommand extends Command
 {
     /**
@@ -88,9 +85,9 @@ class MashupCreateCommand extends Command
             return null;
         }
 
-        $deviceId = select(
-            label: 'Select a device',
-            options: $devices->mapWithKeys(fn ($device) => [$device->id => $device->name])->toArray()
+        $deviceId = $this->choice(
+            'Select a device',
+            $devices->mapWithKeys(fn ($device) => [$device->id => $device->name])->toArray()
         );
 
         return $devices->firstWhere('id', $deviceId);
@@ -106,9 +103,9 @@ class MashupCreateCommand extends Command
             return null;
         }
 
-        $playlistId = select(
-            label: 'Select a playlist',
-            options: $playlists->mapWithKeys(fn (Playlist $playlist) => [$playlist->id => $playlist->name])->toArray()
+        $playlistId = $this->choice(
+            'Select a playlist',
+            $playlists->mapWithKeys(fn (Playlist $playlist) => [$playlist->id => $playlist->name])->toArray()
         );
 
         return $playlists->firstWhere('id', $playlistId);
@@ -116,24 +113,29 @@ class MashupCreateCommand extends Command
 
     protected function selectLayout(): ?string
     {
-        return select(
-            label: 'Select a layout',
-            options: PlaylistItem::getAvailableLayouts()
+        return $this->choice(
+            'Select a layout',
+            PlaylistItem::getAvailableLayouts()
         );
     }
 
     protected function getMashupName(): ?string
     {
-        return text(
-            label: 'Enter a name for this mashup',
-            required: true,
-            default: 'Mashup',
-            validate: fn (string $value) => match (true) {
-                mb_strlen($value) < 1 => 'The name must be at least 2 characters.',
-                mb_strlen($value) > 50 => 'The name must not exceed 50 characters.',
-                default => null,
-            }
-        );
+        $name = $this->ask('Enter a name for this mashup', 'Mashup');
+
+        if (mb_strlen($name) < 2) {
+            $this->error('The name must be at least 2 characters.');
+
+            return null;
+        }
+
+        if (mb_strlen($name) > 50) {
+            $this->error('The name must not exceed 50 characters.');
+
+            return null;
+        }
+
+        return $name;
     }
 
     protected function selectPlugins(string $layout): Collection
@@ -159,9 +161,9 @@ class MashupCreateCommand extends Command
                 default => ($i + 1).'th'
             };
 
-            $pluginId = select(
-                label: "Select the $position plugin",
-                options: $availablePlugins
+            $pluginId = $this->choice(
+                "Select the $position plugin",
+                $availablePlugins
             );
 
             $selectedPlugins->push($plugins->firstWhere('id', $pluginId));
