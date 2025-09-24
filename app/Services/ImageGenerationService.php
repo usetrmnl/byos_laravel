@@ -12,6 +12,7 @@ use Bnussbau\TrmnlPipeline\TrmnlPipeline;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Wnx\SidecarBrowsershot\BrowsershotLambda;
@@ -254,5 +255,152 @@ class ImageGenerationService
                 Log::debug('Skip cache as devices with custom dimensions or non-standard DeviceModels exist');
             }
         }
+    }
+
+    /**
+     * Get device-specific default image path for setup or sleep mode
+     */
+    public static function getDeviceSpecificDefaultImage(Device $device, string $imageType): ?string
+    {
+        // Validate image type
+        if (! in_array($imageType, ['setup-logo', 'sleep'])) {
+            return null;
+        }
+
+        // If device has a DeviceModel, try to find device-specific image
+        if ($device->deviceModel) {
+            $model = $device->deviceModel;
+            $extension = $model->mime_type === 'image/bmp' ? 'bmp' : 'png';
+            $filename = "{$model->width}_{$model->height}_{$model->bit_depth}_{$model->rotation}.{$extension}";
+            $deviceSpecificPath = "images/default-screens/{$imageType}_{$filename}";
+
+            if (Storage::disk('public')->exists($deviceSpecificPath)) {
+                return $deviceSpecificPath;
+            }
+        }
+
+        // Fallback to original hardcoded images
+        $fallbackPath = "images/{$imageType}.bmp";
+        if (Storage::disk('public')->exists($fallbackPath)) {
+            return $fallbackPath;
+        }
+
+        // Try PNG fallback
+        $fallbackPathPng = "images/{$imageType}.png";
+        if (Storage::disk('public')->exists($fallbackPathPng)) {
+            return $fallbackPathPng;
+        }
+
+        return null;
+    }
+
+    /**
+     * Generate a default screen image from Blade template
+     */
+    public static function generateDefaultScreenImage(Device $device, string $imageType): string
+    {
+        // Validate image type
+        if (! in_array($imageType, ['setup-logo', 'sleep'])) {
+            throw new InvalidArgumentException("Invalid image type: {$imageType}");
+        }
+
+        $uuid = Uuid::uuid4()->toString();
+
+        try {
+            // Get image generation settings from DeviceModel if available, otherwise use device settings
+            $imageSettings = self::getImageSettings($device);
+
+            $fileExtension = $imageSettings['mime_type'] === 'image/bmp' ? 'bmp' : 'png';
+            $outputPath = Storage::disk('public')->path('/images/generated/'.$uuid.'.'.$fileExtension);
+
+            // Generate HTML from Blade template
+            $html = self::generateDefaultScreenHtml($device, $imageType);
+
+            // Create custom Browsershot instance if using AWS Lambda
+            $browsershotInstance = null;
+            if (config('app.puppeteer_mode') === 'sidecar-aws') {
+                $browsershotInstance = new BrowsershotLambda();
+            }
+
+            $browserStage = new BrowserStage($browsershotInstance);
+            $browserStage->html($html);
+
+            if (config('app.puppeteer_window_size_strategy') === 'v2') {
+                $browserStage
+                    ->width($imageSettings['width'])
+                    ->height($imageSettings['height']);
+            } else {
+                $browserStage->useDefaultDimensions();
+            }
+
+            if (config('app.puppeteer_wait_for_network_idle')) {
+                $browserStage->setBrowsershotOption('waitUntil', 'networkidle0');
+            }
+
+            if (config('app.puppeteer_docker')) {
+                $browserStage->setBrowsershotOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']);
+            }
+
+            $imageStage = new ImageStage();
+            $imageStage->format($fileExtension)
+                ->width($imageSettings['width'])
+                ->height($imageSettings['height'])
+                ->colors($imageSettings['colors'])
+                ->bitDepth($imageSettings['bit_depth'])
+                ->rotation($imageSettings['rotation'])
+                ->offsetX($imageSettings['offset_x'])
+                ->offsetY($imageSettings['offset_y'])
+                ->outputPath($outputPath);
+
+            (new TrmnlPipeline())->pipe($browserStage)
+                ->pipe($imageStage)
+                ->process();
+
+            if (! file_exists($outputPath)) {
+                throw new RuntimeException('Image file was not created: '.$outputPath);
+            }
+
+            if (filesize($outputPath) === 0) {
+                throw new RuntimeException('Image file is empty: '.$outputPath);
+            }
+
+            Log::info("Device $device->id: generated default screen image: $uuid for type: $imageType");
+
+            return $uuid;
+
+        } catch (Exception $e) {
+            Log::error('Failed to generate default screen image: '.$e->getMessage());
+            throw new RuntimeException('Failed to generate default screen image: '.$e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * Generate HTML from Blade template for default screens
+     */
+    private static function generateDefaultScreenHtml(Device $device, string $imageType): string
+    {
+        // Map image type to template name
+        $templateName = match ($imageType) {
+            'setup-logo' => 'default-screens.setup',
+            'sleep' => 'default-screens.sleep',
+            default => throw new InvalidArgumentException("Invalid image type: {$imageType}")
+        };
+
+        // Determine device properties from DeviceModel or device settings
+        $deviceVariant = $device->deviceVariant();
+        $deviceOrientation = $device->rotate > 0 ? 'portrait' : 'landscape';
+        $colorDepth = $device->colorDepth() ?? '1bit';
+        $scaleLevel = $device->scaleLevel();
+        $darkMode = $imageType === 'sleep'; // Sleep mode uses dark mode, setup uses light mode
+
+        // Render the Blade template
+        return view($templateName, [
+            'noBleed' => false,
+            'darkMode' => $darkMode,
+            'deviceVariant' => $deviceVariant,
+            'deviceOrientation' => $deviceOrientation,
+            'colorDepth' => $colorDepth,
+            'scaleLevel' => $scaleLevel,
+        ])->render();
     }
 }

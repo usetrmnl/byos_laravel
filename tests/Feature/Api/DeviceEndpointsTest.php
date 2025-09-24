@@ -812,10 +812,10 @@ test('device in sleep mode returns sleep image and correct refresh rate', functi
         'fw-version' => '1.0.0',
     ])->get('/api/display');
 
-    $response->assertOk()
-        ->assertJson([
-            'filename' => 'sleep.png',
-        ]);
+    $response->assertOk();
+
+    // The filename should be a UUID-based PNG file since we're generating from template
+    expect($response['filename'])->toMatch('/^[a-f0-9-]+\.png$/');
     expect($response['refresh_rate'])->toBeGreaterThan(0);
 
     Carbon\Carbon::setTestNow(); // Clear test time
@@ -867,8 +867,10 @@ test('device returns sleep.png and correct refresh time when paused', function (
 
     $response->assertOk();
     $json = $response->json();
-    expect($json['filename'])->toBe('sleep.png');
-    expect($json['image_url'])->toContain('sleep.png');
+
+    // The filename should be a UUID-based PNG file since we're generating from template
+    expect($json['filename'])->toMatch('/^[a-f0-9-]+\.png$/');
+    expect($json['image_url'])->toContain('images/generated/');
     expect($json['refresh_rate'])->toBeLessThanOrEqual(3600); // ~60 min
 });
 
