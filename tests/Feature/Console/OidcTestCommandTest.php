@@ -10,7 +10,15 @@ test('oidc test command has correct signature', function () {
 });
 
 test('oidc test command runs successfully with disabled oidc', function () {
-    config(['services.oidc.enabled' => false]);
+    config([
+        'app.url' => 'http://localhost',
+        'services.oidc.enabled' => false,
+        'services.oidc.endpoint' => null,
+        'services.oidc.client_id' => null,
+        'services.oidc.client_secret' => null,
+        'services.oidc.redirect' => null,
+        'services.oidc.scopes' => [],
+    ]);
 
     $this->artisan('oidc:test')
         ->expectsOutput('Testing OIDC Configuration...')
@@ -34,6 +42,7 @@ test('oidc test command runs successfully with disabled oidc', function () {
 
 test('oidc test command runs successfully with enabled oidc but missing config', function () {
     config([
+        'app.url' => 'http://localhost',
         'services.oidc.enabled' => true,
         'services.oidc.endpoint' => null,
         'services.oidc.client_id' => null,

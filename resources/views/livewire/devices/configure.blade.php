@@ -383,7 +383,6 @@ new class extends Component {
                             <flux:heading size="lg">Edit TRMNL</flux:heading>
                             <flux:subheading></flux:subheading>
                         </div>
-                        <!-- @dump($device) -->
                         <flux:input label="Name" wire:model="name"/>
 
                         <flux:input label="API Key" icon="key" value="{{ $device->api_key }}" type="password"
