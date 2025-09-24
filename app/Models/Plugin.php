@@ -345,18 +345,18 @@ class Plugin extends Model
             if ($standalone) {
                 if ($size === 'full') {
                     return view('trmnl-layouts.single', [
-                        'colorDepth' => $device?->deviceModel?->color_depth,
-                        'deviceVariant' => $device?->deviceModel->name ?? 'og',
-                        'scaleLevel' => $device?->deviceModel?->scale_level,
+                        'colorDepth' => $device?->colorDepth(),
+                        'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                        'scaleLevel' => $device?->scaleLevel(),
                         'slot' => $renderedContent,
                     ])->render();
                 }
 
                 return view('trmnl-layouts.mashup', [
                     'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
-                    'colorDepth' => $device?->deviceModel?->color_depth,
-                    'deviceVariant' => $device?->deviceModel->name ?? 'og',
-                    'scaleLevel' => $device?->deviceModel?->scale_level,
+                    'colorDepth' => $device?->colorDepth(),
+                    'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                    'scaleLevel' => $device?->scaleLevel(),
                     'slot' => $renderedContent,
                 ])->render();
 
@@ -368,9 +368,9 @@ class Plugin extends Model
         if ($this->render_markup_view) {
             if ($standalone) {
                 return view('trmnl-layouts.single', [
-                    'colorDepth' => $device?->deviceModel?->color_depth,
-                    'deviceVariant' => $device?->deviceModel->name ?? 'og',
-                    'scaleLevel' => $device?->deviceModel?->scale_level,
+                    'colorDepth' => $device?->colorDepth(),
+                    'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                    'scaleLevel' => $device?->scaleLevel(),
                     'slot' => view($this->render_markup_view, [
                         'size' => $size,
                         'data' => $this->data_payload,

@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property-read DeviceModel|null $deviceModel
+ */
 class Device extends Model
 {
     use HasFactory;
@@ -186,6 +189,30 @@ class Device extends Model
     public function deviceModel(): BelongsTo
     {
         return $this->belongsTo(DeviceModel::class);
+    }
+
+    /**
+     * Get the color depth string (e.g., "4bit") for the associated device model.
+     */
+    public function colorDepth(): ?string
+    {
+        return $this->deviceModel?->color_depth;
+    }
+
+    /**
+     * Get the scale level (e.g., large/xlarge/xxlarge) for the associated device model.
+     */
+    public function scaleLevel(): ?string
+    {
+        return $this->deviceModel?->scale_level;
+    }
+
+    /**
+     * Get the device variant name, defaulting to 'og' if not available.
+     */
+    public function deviceVariant(): string
+    {
+        return $this->deviceModel->name ?? 'og';
     }
 
     public function logs(): HasMany
