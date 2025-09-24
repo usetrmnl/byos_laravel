@@ -60,12 +60,22 @@ Route::get('/display', function (Request $request) {
     }
 
     if ($device->isPauseActive()) {
-        $image_path = 'images/sleep.png';
-        $filename = 'sleep.png';
+        $image_path = ImageGenerationService::getDeviceSpecificDefaultImage($device, 'sleep');
+        if (! $image_path) {
+            // Generate from template if no device-specific image exists
+            $image_uuid = ImageGenerationService::generateDefaultScreenImage($device, 'sleep');
+            $image_path = 'images/generated/'.$image_uuid.'.png';
+        }
+        $filename = basename($image_path);
         $refreshTimeOverride = (int) now()->diffInSeconds($device->pause_until);
     } elseif ($device->isSleepModeActive()) {
-        $image_path = 'images/sleep.png';
-        $filename = 'sleep.png';
+        $image_path = ImageGenerationService::getDeviceSpecificDefaultImage($device, 'sleep');
+        if (! $image_path) {
+            // Generate from template if no device-specific image exists
+            $image_uuid = ImageGenerationService::generateDefaultScreenImage($device, 'sleep');
+            $image_path = 'images/generated/'.$image_uuid.'.png';
+        }
+        $filename = basename($image_path);
         $refreshTimeOverride = $device->getSleepModeEndsInSeconds() ?? $device->default_refresh_interval;
     } else {
         // Get current screen image from a mirror device or continue if not available
@@ -125,8 +135,13 @@ Route::get('/display', function (Request $request) {
             $image_uuid = $device->current_screen_image;
         }
         if (! $image_uuid) {
-            $image_path = 'images/setup-logo.bmp';
-            $filename = 'setup-logo.bmp';
+            $image_path = ImageGenerationService::getDeviceSpecificDefaultImage($device, 'setup-logo');
+            if (! $image_path) {
+                // Generate from template if no device-specific image exists
+                $image_uuid = ImageGenerationService::generateDefaultScreenImage($device, 'setup-logo');
+                $image_path = 'images/generated/'.$image_uuid.'.png';
+            }
+            $filename = basename($image_path);
         } else {
             // Determine image format based on device settings
             $preferred_format = 'png'; // Default to PNG for newer firmware
@@ -225,7 +240,7 @@ Route::get('/setup', function (Request $request) {
         'status' => 200,
         'api_key' => $device->api_key,
         'friendly_id' => $device->friendly_id,
-        'image_url' => url('storage/images/setup-logo.png'),
+        'image_url' => url('storage/'.ImageGenerationService::getDeviceSpecificDefaultImage($device, 'setup-logo')),
         'message' => 'Welcome to TRMNL BYOS',
     ]);
 });
@@ -444,8 +459,13 @@ Route::get('/current_screen', function (Request $request) {
     $image_uuid = $device->current_screen_image;
 
     if (! $image_uuid) {
-        $image_path = 'images/setup-logo.bmp';
-        $filename = 'setup-logo.bmp';
+        $image_path = ImageGenerationService::getDeviceSpecificDefaultImage($device, 'setup-logo');
+        if (! $image_path) {
+            // Generate from template if no device-specific image exists
+            $image_uuid = ImageGenerationService::generateDefaultScreenImage($device, 'setup-logo');
+            $image_path = 'images/generated/'.$image_uuid.'.png';
+        }
+        $filename = basename($image_path);
     } else {
         // Determine image format based on device settings
         $preferred_format = 'png'; // Default to PNG for newer firmware
