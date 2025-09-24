@@ -23,7 +23,7 @@ class FetchProxyCloudResponses implements ShouldQueue
      */
     public function handle(): void
     {
-        Device::where('proxy_cloud', true)->each(function ($device) {
+        Device::where('proxy_cloud', true)->each(function ($device): void {
             if (! $device->getNextPlaylistItem()) {
                 try {
                     $response = Http::withHeaders([

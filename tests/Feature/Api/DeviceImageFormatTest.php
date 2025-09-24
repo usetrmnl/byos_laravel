@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Storage;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('public');
     Storage::disk('public')->makeDirectory('/images/generated');
 });
 
-test('device with firmware version 1.5.1 gets bmp format', function () {
+test('device with firmware version 1.5.1 gets bmp format', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -52,7 +52,7 @@ test('device with firmware version 1.5.1 gets bmp format', function () {
         ]);
 });
 
-test('device with firmware version 1.5.2 gets png format', function () {
+test('device with firmware version 1.5.2 gets png format', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -88,7 +88,7 @@ test('device with firmware version 1.5.2 gets png format', function () {
         ]);
 });
 
-test('device falls back to bmp when png does not exist', function () {
+test('device falls back to bmp when png does not exist', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -124,7 +124,7 @@ test('device falls back to bmp when png does not exist', function () {
         ]);
 });
 
-test('device without device_model_id and image_format bmp3_1bit_srgb returns bmp when plugin is rendered', function () {
+test('device without device_model_id and image_format bmp3_1bit_srgb returns bmp when plugin is rendered', function (): void {
     // Create a user with auto-assign enabled
     $user = User::factory()->create([
         'assign_new_devices' => true,

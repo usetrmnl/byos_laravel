@@ -18,12 +18,7 @@ class FirmwareDownloadJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private Firmware $firmware;
-
-    public function __construct(Firmware $firmware)
-    {
-        $this->firmware = $firmware;
-    }
+    public function __construct(private Firmware $firmware) {}
 
     public function handle(): void
     {

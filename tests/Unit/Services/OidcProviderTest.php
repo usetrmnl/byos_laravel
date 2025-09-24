@@ -9,10 +9,10 @@ use GuzzleHttp\Psr7\Response;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Two\User;
 
-test('oidc provider throws exception when endpoint is not configured', function () {
+test('oidc provider throws exception when endpoint is not configured', function (): void {
     config(['services.oidc.endpoint' => null]);
 
-    expect(fn () => new OidcProvider(
+    expect(fn (): OidcProvider => new OidcProvider(
         new Request(),
         'client-id',
         'client-secret',
@@ -20,7 +20,7 @@ test('oidc provider throws exception when endpoint is not configured', function 
     ))->toThrow(Exception::class, 'OIDC endpoint is not configured');
 });
 
-test('oidc provider handles well-known endpoint url', function () {
+test('oidc provider handles well-known endpoint url', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com/.well-known/openid-configuration']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -48,7 +48,7 @@ test('oidc provider handles well-known endpoint url', function () {
     expect($provider)->toBeInstanceOf(OidcProvider::class);
 });
 
-test('oidc provider handles base url endpoint', function () {
+test('oidc provider handles base url endpoint', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -76,7 +76,7 @@ test('oidc provider handles base url endpoint', function () {
     expect($provider)->toBeInstanceOf(OidcProvider::class);
 });
 
-test('oidc provider throws exception when configuration is empty', function () {
+test('oidc provider throws exception when configuration is empty', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -90,7 +90,7 @@ test('oidc provider throws exception when configuration is empty', function () {
 
     $this->app->instance(Client::class, $mockClient);
 
-    expect(fn () => new OidcProvider(
+    expect(fn (): OidcProvider => new OidcProvider(
         new Request(),
         'client-id',
         'client-secret',
@@ -98,7 +98,7 @@ test('oidc provider throws exception when configuration is empty', function () {
     ))->toThrow(Exception::class, 'OIDC configuration is empty or invalid JSON');
 });
 
-test('oidc provider throws exception when authorization endpoint is missing', function () {
+test('oidc provider throws exception when authorization endpoint is missing', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -115,7 +115,7 @@ test('oidc provider throws exception when authorization endpoint is missing', fu
 
     $this->app->instance(Client::class, $mockClient);
 
-    expect(fn () => new OidcProvider(
+    expect(fn (): OidcProvider => new OidcProvider(
         new Request(),
         'client-id',
         'client-secret',
@@ -123,7 +123,7 @@ test('oidc provider throws exception when authorization endpoint is missing', fu
     ))->toThrow(Exception::class, 'authorization_endpoint not found in OIDC configuration');
 });
 
-test('oidc provider throws exception when configuration request fails', function () {
+test('oidc provider throws exception when configuration request fails', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -133,7 +133,7 @@ test('oidc provider throws exception when configuration request fails', function
 
     $this->app->instance(Client::class, $mockClient);
 
-    expect(fn () => new OidcProvider(
+    expect(fn (): OidcProvider => new OidcProvider(
         new Request(),
         'client-id',
         'client-secret',
@@ -141,7 +141,7 @@ test('oidc provider throws exception when configuration request fails', function
     ))->toThrow(Exception::class, 'Failed to load OIDC configuration');
 });
 
-test('oidc provider uses default scopes when none provided', function () {
+test('oidc provider uses default scopes when none provided', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -169,7 +169,7 @@ test('oidc provider uses default scopes when none provided', function () {
     expect($provider)->toBeInstanceOf(OidcProvider::class);
 });
 
-test('oidc provider uses custom scopes when provided', function () {
+test('oidc provider uses custom scopes when provided', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -198,7 +198,7 @@ test('oidc provider uses custom scopes when provided', function () {
     expect($provider)->toBeInstanceOf(OidcProvider::class);
 });
 
-test('oidc provider maps user data correctly', function () {
+test('oidc provider maps user data correctly', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);
@@ -241,7 +241,7 @@ test('oidc provider maps user data correctly', function () {
     expect($user->getAvatar())->toBe('https://example.com/avatar.jpg');
 });
 
-test('oidc provider handles missing user fields gracefully', function () {
+test('oidc provider handles missing user fields gracefully', function (): void {
     config(['services.oidc.endpoint' => 'https://example.com']);
 
     $mockClient = Mockery::mock(Client::class);

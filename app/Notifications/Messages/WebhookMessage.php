@@ -14,13 +14,6 @@ final class WebhookMessage extends Notification
     private $query;
 
     /**
-     * The POST data of the Webhook request.
-     *
-     * @var mixed
-     */
-    private $data;
-
-    /**
      * The headers to send with the request.
      *
      * @var array|null
@@ -36,9 +29,8 @@ final class WebhookMessage extends Notification
 
     /**
      * @param  mixed  $data
-     * @return static
      */
-    public static function create($data = '')
+    public static function create($data = ''): self
     {
         return new self($data);
     }
@@ -46,10 +38,12 @@ final class WebhookMessage extends Notification
     /**
      * @param  mixed  $data
      */
-    public function __construct($data = '')
-    {
-        $this->data = $data;
-    }
+    public function __construct(
+        /**
+         * The POST data of the Webhook request.
+         */
+        private $data = ''
+    ) {}
 
     /**
      * Set the Webhook parameters to be URL encoded.
@@ -57,7 +51,7 @@ final class WebhookMessage extends Notification
      * @param  mixed  $query
      * @return $this
      */
-    public function query($query)
+    public function query($query): self
     {
         $this->query = $query;
 
@@ -70,7 +64,7 @@ final class WebhookMessage extends Notification
      * @param  mixed  $data
      * @return $this
      */
-    public function data($data)
+    public function data($data): self
     {
         $this->data = $data;
 
@@ -84,7 +78,7 @@ final class WebhookMessage extends Notification
      * @param  string  $value
      * @return $this
      */
-    public function header($name, $value)
+    public function header($name, $value): self
     {
         $this->headers[$name] = $value;
 
@@ -97,7 +91,7 @@ final class WebhookMessage extends Notification
      * @param  string  $userAgent
      * @return $this
      */
-    public function userAgent($userAgent)
+    public function userAgent($userAgent): self
     {
         $this->headers['User-Agent'] = $userAgent;
 
@@ -109,17 +103,14 @@ final class WebhookMessage extends Notification
      *
      * @return $this
      */
-    public function verify($value = true)
+    public function verify($value = true): self
     {
         $this->verify = $value;
 
         return $this;
     }
 
-    /**
-     * @return array
-     */
-    public function toArray()
+    public function toArray(): array
     {
         return [
             'query' => $this->query,

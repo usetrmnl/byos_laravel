@@ -5,7 +5,7 @@ use Illuminate\Support\Carbon;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-test('device can be created with basic attributes', function () {
+test('device can be created with basic attributes', function (): void {
     $device = Device::factory()->create([
         'name' => 'Test Device',
     ]);
@@ -14,7 +14,7 @@ test('device can be created with basic attributes', function () {
         ->and($device->name)->toBe('Test Device');
 });
 
-test('battery percentage is calculated correctly', function () {
+test('battery percentage is calculated correctly', function (): void {
     $cases = [
         ['voltage' => 3.0, 'expected' => 0],    // Min voltage
         ['voltage' => 4.2, 'expected' => 100],  // Max voltage
@@ -34,7 +34,7 @@ test('battery percentage is calculated correctly', function () {
     }
 });
 
-test('wifi strength is determined correctly', function () {
+test('wifi strength is determined correctly', function (): void {
     $cases = [
         ['rssi' => 0, 'expected' => 0],     // No signal
         ['rssi' => -90, 'expected' => 1],   // Weak signal
@@ -52,7 +52,7 @@ test('wifi strength is determined correctly', function () {
     }
 });
 
-test('proxy cloud attribute is properly cast to boolean', function () {
+test('proxy cloud attribute is properly cast to boolean', function (): void {
     $device = Device::factory()->create([
         'proxy_cloud' => true,
     ]);
@@ -63,7 +63,7 @@ test('proxy cloud attribute is properly cast to boolean', function () {
     expect($device->proxy_cloud)->toBeFalse();
 });
 
-test('last log request is properly cast to json', function () {
+test('last log request is properly cast to json', function (): void {
     $logData = ['status' => 'success', 'timestamp' => '2024-03-04 12:00:00'];
 
     $device = Device::factory()->create([
@@ -76,7 +76,7 @@ test('last log request is properly cast to json', function () {
         ->toHaveKey('timestamp');
 });
 
-test('getSleepModeEndsInSeconds returns correct value for overnight sleep window', function () {
+test('getSleepModeEndsInSeconds returns correct value for overnight sleep window', function (): void {
     // Set the current time to 12:13
     Carbon::setTestNow(Carbon::create(2024, 1, 1, 12, 13, 0));
 

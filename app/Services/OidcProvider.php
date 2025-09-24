@@ -33,7 +33,7 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
     /**
      * Create a new provider instance.
      */
-    public function __construct($request, $clientId, $clientSecret, $redirectUrl, $scopes = [], $guzzle = [])
+    public function __construct(\Illuminate\Http\Request $request, $clientId, $clientSecret, $redirectUrl, $scopes = [], $guzzle = [])
     {
         parent::__construct($request, $clientId, $clientSecret, $redirectUrl, $guzzle);
 
@@ -43,7 +43,7 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
         }
 
         // Handle both full well-known URL and base URL
-        if (str_ends_with($endpoint, '/.well-known/openid-configuration')) {
+        if (str_ends_with((string) $endpoint, '/.well-known/openid-configuration')) {
             $this->baseUrl = str_replace('/.well-known/openid-configuration', '', $endpoint);
         } else {
             $this->baseUrl = mb_rtrim($endpoint, '/');
@@ -73,7 +73,7 @@ class OidcProvider extends AbstractProvider implements ProviderInterface
             }
 
         } catch (Exception $e) {
-            throw new Exception('Failed to load OIDC configuration: '.$e->getMessage());
+            throw new Exception('Failed to load OIDC configuration: '.$e->getMessage(), $e->getCode(), $e);
         }
     }
 

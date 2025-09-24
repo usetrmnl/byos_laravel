@@ -26,7 +26,7 @@ class OidcTestCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Testing OIDC Configuration...');
         $this->newLine();

@@ -35,7 +35,7 @@ class Device extends Model
         'pause_until' => 'datetime',
     ];
 
-    public function getBatteryPercentAttribute()
+    public function getBatteryPercentAttribute(): int|float
     {
         $volts = $this->last_battery_voltage;
 
@@ -83,7 +83,7 @@ class Device extends Model
         return round($voltage, 2);
     }
 
-    public function getWifiStrengthAttribute()
+    public function getWifiStrengthAttribute(): int
     {
         $rssi = $this->last_rssi_level;
         if ($rssi >= 0) {
@@ -106,11 +106,7 @@ class Device extends Model
             return true;
         }
 
-        if ($this->proxy_cloud_response && $this->proxy_cloud_response['update_firmware']) {
-            return true;
-        }
-
-        return false;
+        return $this->proxy_cloud_response && $this->proxy_cloud_response['update_firmware'];
     }
 
     public function getFirmwareUrlAttribute(): ?string
@@ -231,7 +227,7 @@ class Device extends Model
             return false;
         }
 
-        $now = $now ? Carbon::instance($now) : now();
+        $now = $now instanceof DateTimeInterface ? Carbon::instance($now) : now();
 
         // Handle overnight ranges (e.g. 22:00 to 06:00)
         return $this->sleep_mode_from < $this->sleep_mode_to
@@ -245,7 +241,7 @@ class Device extends Model
             return null;
         }
 
-        $now = $now ? Carbon::instance($now) : now();
+        $now = $now instanceof DateTimeInterface ? Carbon::instance($now) : now();
         $from = $this->sleep_mode_from;
         $to = $this->sleep_mode_to;
 

@@ -8,7 +8,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 
-it('accepts a plugin settings archive and updates the plugin', function () {
+it('accepts a plugin settings archive and updates the plugin', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,

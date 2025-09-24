@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('public');
     Storage::disk('public')->makeDirectory('/images/generated');
     Http::preventStrayRequests();
@@ -18,7 +18,7 @@ beforeEach(function () {
     ]);
 });
 
-test('it fetches and processes proxy cloud responses for devices', function () {
+test('it fetches and processes proxy cloud responses for devices', function (): void {
     config(['services.trmnl.proxy_base_url' => 'https://example.com']);
 
     // Create a test device with proxy cloud enabled
@@ -59,16 +59,14 @@ test('it fetches and processes proxy cloud responses for devices', function () {
     $job->handle();
 
     // Assert HTTP requests were made with correct headers
-    Http::assertSent(function ($request) use ($device) {
-        return $request->hasHeader('id', $device->mac_address) &&
-            $request->hasHeader('access-token', $device->api_key) &&
-            $request->hasHeader('width', 800) &&
-            $request->hasHeader('height', 480) &&
-            $request->hasHeader('rssi', $device->last_rssi_level) &&
-            $request->hasHeader('battery_voltage', $device->last_battery_voltage) &&
-            $request->hasHeader('refresh-rate', $device->default_refresh_interval) &&
-            $request->hasHeader('fw-version', $device->last_firmware_version);
-    });
+    Http::assertSent(fn ($request): bool => $request->hasHeader('id', $device->mac_address) &&
+        $request->hasHeader('access-token', $device->api_key) &&
+        $request->hasHeader('width', 800) &&
+        $request->hasHeader('height', 480) &&
+        $request->hasHeader('rssi', $device->last_rssi_level) &&
+        $request->hasHeader('battery_voltage', $device->last_battery_voltage) &&
+        $request->hasHeader('refresh-rate', $device->default_refresh_interval) &&
+        $request->hasHeader('fw-version', $device->last_firmware_version));
     // Assert the device was updated
     $device->refresh();
 
@@ -82,7 +80,7 @@ test('it fetches and processes proxy cloud responses for devices', function () {
     Storage::disk('public')->assertExists('images/generated/test-image.bmp');
 });
 
-test('it handles log requests when present', function () {
+test('it handles log requests when present', function (): void {
     $device = Device::factory()->create([
         'proxy_cloud' => true,
         'mac_address' => '00:11:22:33:44:55',
@@ -103,18 +101,16 @@ test('it handles log requests when present', function () {
     $job->handle();
 
     // Assert log request was sent
-    Http::assertSent(function ($request) use ($device) {
-        return $request->url() === config('services.trmnl.proxy_base_url').'/api/log' &&
-            $request->hasHeader('id', $device->mac_address) &&
-            $request->body() === json_encode(['message' => 'test log']);
-    });
+    Http::assertSent(fn ($request): bool => $request->url() === config('services.trmnl.proxy_base_url').'/api/log' &&
+        $request->hasHeader('id', $device->mac_address) &&
+        $request->body() === json_encode(['message' => 'test log']));
 
     // Assert log request was cleared
     $device->refresh();
     expect($device->last_log_request)->toBeNull();
 });
 
-test('it handles API errors gracefully', function () {
+test('it handles API errors gracefully', function (): void {
     $device = Device::factory()->create([
         'proxy_cloud' => true,
         'mac_address' => '00:11:22:33:44:55',
@@ -130,7 +126,7 @@ test('it handles API errors gracefully', function () {
     expect(fn () => $job->handle())->not->toThrow(Exception::class);
 });
 
-test('it only processes proxy cloud enabled devices', function () {
+test('it only processes proxy cloud enabled devices', function (): void {
     Http::fake();
     $enabledDevice = Device::factory()->create(['proxy_cloud' => true]);
     $disabledDevice = Device::factory()->create(['proxy_cloud' => false]);
@@ -139,16 +135,12 @@ test('it only processes proxy cloud enabled devices', function () {
     $job->handle();
 
     // Assert request was only made for enabled device
-    Http::assertSent(function ($request) use ($enabledDevice) {
-        return $request->hasHeader('id', $enabledDevice->mac_address);
-    });
+    Http::assertSent(fn ($request) => $request->hasHeader('id', $enabledDevice->mac_address));
 
-    Http::assertNotSent(function ($request) use ($disabledDevice) {
-        return $request->hasHeader('id', $disabledDevice->mac_address);
-    });
+    Http::assertNotSent(fn ($request) => $request->hasHeader('id', $disabledDevice->mac_address));
 });
 
-test('it fetches and processes proxy cloud responses for devices with BMP images', function () {
+test('it fetches and processes proxy cloud responses for devices with BMP images', function (): void {
     config(['services.trmnl.proxy_base_url' => 'https://example.com']);
 
     // Create a test device with proxy cloud enabled
@@ -176,16 +168,14 @@ test('it fetches and processes proxy cloud responses for devices with BMP images
     $job->handle();
 
     // Assert HTTP requests were made with correct headers
-    Http::assertSent(function ($request) use ($device) {
-        return $request->hasHeader('id', $device->mac_address) &&
-            $request->hasHeader('access-token', $device->api_key) &&
-            $request->hasHeader('width', 800) &&
-            $request->hasHeader('height', 480) &&
-            $request->hasHeader('rssi', $device->last_rssi_level) &&
-            $request->hasHeader('battery_voltage', $device->last_battery_voltage) &&
-            $request->hasHeader('refresh-rate', $device->default_refresh_interval) &&
-            $request->hasHeader('fw-version', $device->last_firmware_version);
-    });
+    Http::assertSent(fn ($request): bool => $request->hasHeader('id', $device->mac_address) &&
+        $request->hasHeader('access-token', $device->api_key) &&
+        $request->hasHeader('width', 800) &&
+        $request->hasHeader('height', 480) &&
+        $request->hasHeader('rssi', $device->last_rssi_level) &&
+        $request->hasHeader('battery_voltage', $device->last_battery_voltage) &&
+        $request->hasHeader('refresh-rate', $device->default_refresh_interval) &&
+        $request->hasHeader('fw-version', $device->last_firmware_version));
 
     // Assert the device was updated
     $device->refresh();
@@ -201,7 +191,7 @@ test('it fetches and processes proxy cloud responses for devices with BMP images
     expect(Storage::disk('public')->exists('images/generated/test-image.png'))->toBeFalse();
 });
 
-test('it fetches and processes proxy cloud responses for devices with PNG images', function () {
+test('it fetches and processes proxy cloud responses for devices with PNG images', function (): void {
     config(['services.trmnl.proxy_base_url' => 'https://example.com']);
 
     // Create a test device with proxy cloud enabled
@@ -229,16 +219,14 @@ test('it fetches and processes proxy cloud responses for devices with PNG images
     $job->handle();
 
     // Assert HTTP requests were made with correct headers
-    Http::assertSent(function ($request) use ($device) {
-        return $request->hasHeader('id', $device->mac_address) &&
-            $request->hasHeader('access-token', $device->api_key) &&
-            $request->hasHeader('width', 800) &&
-            $request->hasHeader('height', 480) &&
-            $request->hasHeader('rssi', $device->last_rssi_level) &&
-            $request->hasHeader('battery_voltage', $device->last_battery_voltage) &&
-            $request->hasHeader('refresh-rate', $device->default_refresh_interval) &&
-            $request->hasHeader('fw-version', $device->last_firmware_version);
-    });
+    Http::assertSent(fn ($request): bool => $request->hasHeader('id', $device->mac_address) &&
+        $request->hasHeader('access-token', $device->api_key) &&
+        $request->hasHeader('width', 800) &&
+        $request->hasHeader('height', 480) &&
+        $request->hasHeader('rssi', $device->last_rssi_level) &&
+        $request->hasHeader('battery_voltage', $device->last_battery_voltage) &&
+        $request->hasHeader('refresh-rate', $device->default_refresh_interval) &&
+        $request->hasHeader('fw-version', $device->last_firmware_version));
 
     // Assert the device was updated
     $device->refresh();
@@ -254,7 +242,7 @@ test('it fetches and processes proxy cloud responses for devices with PNG images
     expect(Storage::disk('public')->exists('images/generated/test-image.bmp'))->toBeFalse();
 });
 
-test('it handles missing content type in image URL gracefully', function () {
+test('it handles missing content type in image URL gracefully', function (): void {
     config(['services.trmnl.proxy_base_url' => 'https://example.com']);
 
     // Create a test device with proxy cloud enabled

@@ -8,12 +8,12 @@ use App\Models\PlaylistItem;
 use App\Models\Plugin;
 use App\Models\User;
 
-test('mashup create command has correct signature', function () {
+test('mashup create command has correct signature', function (): void {
     $this->artisan('mashup:create --help')
         ->assertExitCode(0);
 });
 
-test('mashup create command creates mashup successfully', function () {
+test('mashup create command creates mashup successfully', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
     $playlist = Playlist::factory()->create(['device_id' => $device->id]);
@@ -40,13 +40,13 @@ test('mashup create command creates mashup successfully', function () {
     expect($playlistItem->getMashupPluginIds())->toContain($plugin1->id, $plugin2->id);
 });
 
-test('mashup create command exits when no devices found', function () {
+test('mashup create command exits when no devices found', function (): void {
     $this->artisan('mashup:create')
         ->expectsOutput('No devices found. Please create a device first.')
         ->assertExitCode(1);
 });
 
-test('mashup create command exits when no playlists found for device', function () {
+test('mashup create command exits when no playlists found for device', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
 
@@ -56,7 +56,7 @@ test('mashup create command exits when no playlists found for device', function 
         ->assertExitCode(1);
 });
 
-test('mashup create command exits when no plugins found', function () {
+test('mashup create command exits when no plugins found', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
     $playlist = Playlist::factory()->create(['device_id' => $device->id]);
@@ -70,7 +70,7 @@ test('mashup create command exits when no plugins found', function () {
         ->assertExitCode(1);
 });
 
-test('mashup create command validates mashup name length', function () {
+test('mashup create command validates mashup name length', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
     $playlist = Playlist::factory()->create(['device_id' => $device->id]);
@@ -86,7 +86,7 @@ test('mashup create command validates mashup name length', function () {
         ->assertExitCode(1);
 });
 
-test('mashup create command validates mashup name maximum length', function () {
+test('mashup create command validates mashup name maximum length', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
     $playlist = Playlist::factory()->create(['device_id' => $device->id]);
@@ -104,7 +104,7 @@ test('mashup create command validates mashup name maximum length', function () {
         ->assertExitCode(1);
 });
 
-test('mashup create command uses default name when provided', function () {
+test('mashup create command uses default name when provided', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
     $playlist = Playlist::factory()->create(['device_id' => $device->id]);
@@ -128,7 +128,7 @@ test('mashup create command uses default name when provided', function () {
     expect($playlistItem)->not->toBeNull();
 });
 
-test('mashup create command handles 1x1 layout with single plugin', function () {
+test('mashup create command handles 1x1 layout with single plugin', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
     $playlist = Playlist::factory()->create(['device_id' => $device->id]);

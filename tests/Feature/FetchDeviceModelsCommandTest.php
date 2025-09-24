@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
-test('command dispatches fetch device models job', function () {
+test('command dispatches fetch device models job', function (): void {
     Queue::fake();
 
     $this->artisan('device-models:fetch')

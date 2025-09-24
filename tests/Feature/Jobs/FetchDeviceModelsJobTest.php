@@ -14,12 +14,12 @@ beforeEach(function (): void {
     DeviceModel::truncate();
 });
 
-test('fetch device models job can be dispatched', function () {
+test('fetch device models job can be dispatched', function (): void {
     $job = new FetchDeviceModelsJob();
     expect($job)->toBeInstanceOf(FetchDeviceModelsJob::class);
 });
 
-test('fetch device models job handles successful api response', function () {
+test('fetch device models job handles successful api response', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
@@ -65,7 +65,7 @@ test('fetch device models job handles successful api response', function () {
     expect($deviceModel->source)->toBe('api');
 });
 
-test('fetch device models job handles multiple device models', function () {
+test('fetch device models job handles multiple device models', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
@@ -114,7 +114,7 @@ test('fetch device models job handles multiple device models', function () {
     expect(DeviceModel::where('name', 'model-2')->exists())->toBeTrue();
 });
 
-test('fetch device models job handles empty data array', function () {
+test('fetch device models job handles empty data array', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'data' => [],
@@ -131,7 +131,7 @@ test('fetch device models job handles empty data array', function () {
     expect(DeviceModel::count())->toBe(0);
 });
 
-test('fetch device models job handles missing data field', function () {
+test('fetch device models job handles missing data field', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'message' => 'No data available',
@@ -148,7 +148,7 @@ test('fetch device models job handles missing data field', function () {
     expect(DeviceModel::count())->toBe(0);
 });
 
-test('fetch device models job handles non-array data', function () {
+test('fetch device models job handles non-array data', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'data' => 'invalid-data',
@@ -165,7 +165,7 @@ test('fetch device models job handles non-array data', function () {
     expect(DeviceModel::count())->toBe(0);
 });
 
-test('fetch device models job handles api failure', function () {
+test('fetch device models job handles api failure', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'error' => 'Internal Server Error',
@@ -185,9 +185,9 @@ test('fetch device models job handles api failure', function () {
     expect(DeviceModel::count())->toBe(0);
 });
 
-test('fetch device models job handles network exception', function () {
+test('fetch device models job handles network exception', function (): void {
     Http::fake([
-        'usetrmnl.com/api/models' => function () {
+        'usetrmnl.com/api/models' => function (): void {
             throw new Exception('Network connection failed');
         },
     ]);
@@ -202,7 +202,7 @@ test('fetch device models job handles network exception', function () {
     expect(DeviceModel::count())->toBe(0);
 });
 
-test('fetch device models job handles device model with missing name', function () {
+test('fetch device models job handles device model with missing name', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
@@ -228,7 +228,7 @@ test('fetch device models job handles device model with missing name', function 
     expect(DeviceModel::count())->toBe(0);
 });
 
-test('fetch device models job handles device model with partial data', function () {
+test('fetch device models job handles device model with partial data', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
@@ -263,7 +263,7 @@ test('fetch device models job handles device model with partial data', function 
     expect($deviceModel->source)->toBe('api');
 });
 
-test('fetch device models job updates existing device model', function () {
+test('fetch device models job updates existing device model', function (): void {
     // Create an existing device model
     $existingModel = DeviceModel::factory()->create([
         'name' => 'existing-model',
@@ -309,7 +309,7 @@ test('fetch device models job updates existing device model', function () {
     expect($existingModel->source)->toBe('api');
 });
 
-test('fetch device models job handles processing exception for individual model', function () {
+test('fetch device models job handles processing exception for individual model', function (): void {
     Http::fake([
         'usetrmnl.com/api/models' => Http::response([
             'data' => [

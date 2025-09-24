@@ -233,14 +233,14 @@ class ImageGenerationService
         if ($plugin?->id) {
             // Check if any devices have custom dimensions or use non-standard DeviceModels
             $hasCustomDimensions = Device::query()
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->where('width', '!=', 800)
                         ->orWhere('height', '!=', 480)
                         ->orWhere('rotate', '!=', 0);
                 })
-                ->orWhereHas('deviceModel', function ($query) {
+                ->orWhereHas('deviceModel', function ($query): void {
                     // Only allow caching if all device models have standard dimensions (800x480, rotation=0)
-                    $query->where(function ($subQuery) {
+                    $query->where(function ($subQuery): void {
                         $subQuery->where('width', '!=', 800)
                             ->orWhere('height', '!=', 480)
                             ->orWhere('rotation', '!=', 0);

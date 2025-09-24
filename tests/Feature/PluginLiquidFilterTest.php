@@ -14,7 +14,7 @@ use Keepsuit\Liquid\Environment;
  * to:
  * {% assign _temp_xxx = collection | filter: "key", "value" %}{% for item in _temp_xxx %}
  */
-test('where filter works when assigned to variable first', function () {
+test('where filter works when assigned to variable first', function (): void {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',
         'render_markup' => <<<'LIQUID'
@@ -42,7 +42,7 @@ LIQUID
     $this->assertStringNotContainsString('"type":"L"', $result);
 });
 
-test('where filter works directly in for loop with preprocessing', function () {
+test('where filter works directly in for loop with preprocessing', function (): void {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',
         'render_markup' => <<<'LIQUID'
@@ -68,7 +68,7 @@ LIQUID
     $this->assertStringNotContainsString('"type":"L"', $result);
 });
 
-test('where filter works directly in for loop with multiple matches', function () {
+test('where filter works directly in for loop with multiple matches', function (): void {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',
         'render_markup' => <<<'LIQUID'
@@ -95,7 +95,7 @@ LIQUID
     $this->assertStringNotContainsString('"type":"L"', $result);
 });
 
-it('encodes arrays for url_encode as JSON with spaces after commas and then percent-encodes', function () {
+it('encodes arrays for url_encode as JSON with spaces after commas and then percent-encodes', function (): void {
     /** @var Environment $env */
     $env = app('liquid.environment');
     $env->filterRegistry->register(StandardFilters::class);
@@ -109,7 +109,7 @@ it('encodes arrays for url_encode as JSON with spaces after commas and then perc
     expect($output)->toBe('%5B%22common%22%2C%22obscure%22%5D');
 });
 
-it('keeps scalar url_encode behavior intact', function () {
+it('keeps scalar url_encode behavior intact', function (): void {
     /** @var Environment $env */
     $env = app('liquid.environment');
     $env->filterRegistry->register(StandardFilters::class);

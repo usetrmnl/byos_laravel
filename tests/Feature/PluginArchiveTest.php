@@ -9,11 +9,11 @@ use App\Services\PluginImportService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
 });
 
-it('exports plugin to zip file in correct format', function () {
+it('exports plugin to zip file in correct format', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -42,7 +42,7 @@ it('exports plugin to zip file in correct format', function () {
     expect($response->getFile()->getFilename())->toContain('test-plugin-123.zip');
 });
 
-it('exports plugin with polling configuration', function () {
+it('exports plugin with polling configuration', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -63,7 +63,7 @@ it('exports plugin with polling configuration', function () {
     expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
 });
 
-it('exports and imports plugin maintaining all data', function () {
+it('exports and imports plugin maintaining all data', function (): void {
     $user = User::factory()->create();
     $originalPlugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -122,7 +122,7 @@ it('exports and imports plugin maintaining all data', function () {
     expect($importedPlugin->data_payload)->toBe(['items' => [1, 2, 3]]);
 });
 
-it('handles blade templates correctly', function () {
+it('handles blade templates correctly', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -138,7 +138,7 @@ it('handles blade templates correctly', function () {
     expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
 });
 
-it('removes wrapper div from exported markup', function () {
+it('removes wrapper div from exported markup', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -154,7 +154,7 @@ it('removes wrapper div from exported markup', function () {
     expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
 });
 
-it('converts polling headers correctly', function () {
+it('converts polling headers correctly', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -170,7 +170,7 @@ it('converts polling headers correctly', function () {
     expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\BinaryFileResponse::class);
 });
 
-it('api route returns zip file for authenticated user', function () {
+it('api route returns zip file for authenticated user', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -188,7 +188,7 @@ it('api route returns zip file for authenticated user', function () {
     $response->assertHeader('Content-Disposition', 'attachment; filename=plugin_api-test-404.zip');
 });
 
-it('api route returns 404 for non-existent plugin', function () {
+it('api route returns 404 for non-existent plugin', function (): void {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)
@@ -197,13 +197,13 @@ it('api route returns 404 for non-existent plugin', function () {
     $response->assertStatus(404);
 });
 
-it('api route returns 401 for unauthenticated user', function () {
+it('api route returns 401 for unauthenticated user', function (): void {
     $response = $this->getJson('/api/plugin_settings/test-id/archive');
 
     $response->assertStatus(401);
 });
 
-it('api route returns 404 for plugin belonging to different user', function () {
+it('api route returns 404 for plugin belonging to different user', function (): void {
     $user1 = User::factory()->create();
     $user2 = User::factory()->create();
     $plugin = Plugin::factory()->create([
@@ -217,7 +217,7 @@ it('api route returns 404 for plugin belonging to different user', function () {
     $response->assertStatus(404);
 });
 
-it('exports zip with files in root directory', function () {
+it('exports zip with files in root directory', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,
@@ -243,7 +243,7 @@ it('exports zip with files in root directory', function () {
     $zip->close();
 });
 
-it('maintains correct yaml field order', function () {
+it('maintains correct yaml field order', function (): void {
     $user = User::factory()->create();
     $plugin = Plugin::factory()->create([
         'user_id' => $user->id,

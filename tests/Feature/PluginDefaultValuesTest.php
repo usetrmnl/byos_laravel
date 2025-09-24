@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('plugin import extracts default values from custom_fields and stores in configuration', function () {
+test('plugin import extracts default values from custom_fields and stores in configuration', function (): void {
     // Create a user
     $user = User::factory()->create();
 
@@ -74,7 +74,7 @@ test('plugin import extracts default values from custom_fields and stores in con
     expect($plugin->configuration_template['custom_fields'])->toHaveCount(3);
 });
 
-test('plugin import handles custom_fields without default values', function () {
+test('plugin import handles custom_fields without default values', function (): void {
     // Create a user
     $user = User::factory()->create();
 

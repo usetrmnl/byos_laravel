@@ -72,7 +72,7 @@ class PluginImportService
 
             // Check if the file ends with .liquid to set markup language
             $markupLanguage = 'blade';
-            if (pathinfo($filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
+            if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
                 $markupLanguage = 'liquid';
             }
 
@@ -197,7 +197,7 @@ class PluginImportService
 
             // Check if the file ends with .liquid to set markup language
             $markupLanguage = 'blade';
-            if (pathinfo($filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
+            if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
                 $markupLanguage = 'liquid';
             }
 
@@ -352,7 +352,7 @@ class PluginImportService
             // check if they're in the root of the ZIP or in a subfolder
             if ($settingsYamlPath && $fullLiquidPath) {
                 // If the files are in the root of the ZIP, create a src folder and move them there
-                $srcDir = dirname($settingsYamlPath);
+                $srcDir = dirname((string) $settingsYamlPath);
 
                 // If the parent directory is not named 'src', create a src directory
                 if (basename($srcDir) !== 'src') {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Models\DeviceModel;
 
-test('device model has required attributes', function () {
+test('device model has required attributes', function (): void {
     $deviceModel = DeviceModel::factory()->create([
         'name' => 'Test Model',
         'width' => 800,
@@ -28,7 +28,7 @@ test('device model has required attributes', function () {
     expect($deviceModel->offset_y)->toBe(0);
 });
 
-test('device model casts attributes correctly', function () {
+test('device model casts attributes correctly', function (): void {
     $deviceModel = DeviceModel::factory()->create([
         'width' => '800',
         'height' => '480',
@@ -50,61 +50,61 @@ test('device model casts attributes correctly', function () {
     expect($deviceModel->offset_y)->toBeInt();
 });
 
-test('get color depth attribute returns correct format for bit depth 2', function () {
+test('get color depth attribute returns correct format for bit depth 2', function (): void {
     $deviceModel = DeviceModel::factory()->create(['bit_depth' => 2]);
 
     expect($deviceModel->getColorDepthAttribute())->toBe('2bit');
 });
 
-test('get color depth attribute returns correct format for bit depth 4', function () {
+test('get color depth attribute returns correct format for bit depth 4', function (): void {
     $deviceModel = DeviceModel::factory()->create(['bit_depth' => 4]);
 
     expect($deviceModel->getColorDepthAttribute())->toBe('4bit');
 });
 
-test('get color depth attribute returns 4bit for bit depth greater than 4', function () {
+test('get color depth attribute returns 4bit for bit depth greater than 4', function (): void {
     $deviceModel = DeviceModel::factory()->create(['bit_depth' => 8]);
 
     expect($deviceModel->getColorDepthAttribute())->toBe('4bit');
 });
 
-test('get color depth attribute returns null when bit depth is null', function () {
+test('get color depth attribute returns null when bit depth is null', function (): void {
     $deviceModel = new DeviceModel(['bit_depth' => null]);
 
     expect($deviceModel->getColorDepthAttribute())->toBeNull();
 });
 
-test('get scale level attribute returns null for width 800 or less', function () {
+test('get scale level attribute returns null for width 800 or less', function (): void {
     $deviceModel = DeviceModel::factory()->create(['width' => 800]);
 
     expect($deviceModel->getScaleLevelAttribute())->toBeNull();
 });
 
-test('get scale level attribute returns large for width between 801 and 1000', function () {
+test('get scale level attribute returns large for width between 801 and 1000', function (): void {
     $deviceModel = DeviceModel::factory()->create(['width' => 900]);
 
     expect($deviceModel->getScaleLevelAttribute())->toBe('large');
 });
 
-test('get scale level attribute returns xlarge for width between 1001 and 1400', function () {
+test('get scale level attribute returns xlarge for width between 1001 and 1400', function (): void {
     $deviceModel = DeviceModel::factory()->create(['width' => 1200]);
 
     expect($deviceModel->getScaleLevelAttribute())->toBe('xlarge');
 });
 
-test('get scale level attribute returns xxlarge for width greater than 1400', function () {
+test('get scale level attribute returns xxlarge for width greater than 1400', function (): void {
     $deviceModel = DeviceModel::factory()->create(['width' => 1500]);
 
     expect($deviceModel->getScaleLevelAttribute())->toBe('xxlarge');
 });
 
-test('get scale level attribute returns null when width is null', function () {
+test('get scale level attribute returns null when width is null', function (): void {
     $deviceModel = new DeviceModel(['width' => null]);
 
     expect($deviceModel->getScaleLevelAttribute())->toBeNull();
 });
 
-test('device model factory creates valid data', function () {
+test('device model factory creates valid data', function (): void {
     $deviceModel = DeviceModel::factory()->create();
 
     expect($deviceModel->name)->not->toBeEmpty();

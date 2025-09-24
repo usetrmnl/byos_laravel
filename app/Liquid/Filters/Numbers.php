@@ -40,15 +40,11 @@ class Numbers extends FiltersProvider
             $currency = 'GBP';
         }
 
-        if ($delimiter === '.' && $separator === ',') {
-            $locale = 'de';
-        } else {
-            $locale = 'en';
-        }
+        $locale = $delimiter === '.' && $separator === ',' ? 'de' : 'en';
 
         // 2 decimal places for floats, 0 for integers
         $decimal = is_float($value + 0) ? 2 : 0;
 
-        return Number::currency($value, in: $currency, precision: $decimal, locale: $locale);
+        return Number::currency($value, in: $currency, locale: $locale, precision: $decimal);
     }
 }

@@ -5,7 +5,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('renders plugin with inline templates', function () {
+test('renders plugin with inline templates', function (): void {
     $plugin = Plugin::factory()->create([
         'name' => 'Test Plugin',
         'markup_language' => 'liquid',
@@ -61,16 +61,16 @@ LIQUID
     // Should render both templates
     // Check for any of the facts (since random number generation is non-deterministic)
     $this->assertTrue(
-        str_contains($result, 'Fact 1') ||
-        str_contains($result, 'Fact 2') ||
-        str_contains($result, 'Fact 3')
+        str_contains((string) $result, 'Fact 1') ||
+        str_contains((string) $result, 'Fact 2') ||
+        str_contains((string) $result, 'Fact 3')
     );
     $this->assertStringContainsString('Test Plugin', $result);
     $this->assertStringContainsString('Please try to enjoy each fact equally', $result);
     $this->assertStringContainsString('class="view view--full"', $result);
 });
 
-test('renders plugin with inline templates using with syntax', function () {
+test('renders plugin with inline templates using with syntax', function (): void {
     $plugin = Plugin::factory()->create([
         'name' => 'Test Plugin',
         'markup_language' => 'liquid',
@@ -127,16 +127,16 @@ LIQUID
     // Should render both templates
     // Check for any of the facts (since random number generation is non-deterministic)
     $this->assertTrue(
-        str_contains($result, 'Fact 1') ||
-        str_contains($result, 'Fact 2') ||
-        str_contains($result, 'Fact 3')
+        str_contains((string) $result, 'Fact 1') ||
+        str_contains((string) $result, 'Fact 2') ||
+        str_contains((string) $result, 'Fact 3')
     );
     $this->assertStringContainsString('Test Plugin', $result);
     $this->assertStringContainsString('Please try to enjoy each fact equally', $result);
     $this->assertStringContainsString('class="view view--full"', $result);
 });
 
-test('renders plugin with simple inline template', function () {
+test('renders plugin with simple inline template', function (): void {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',
         'render_markup' => <<<'LIQUID'
@@ -162,7 +162,7 @@ LIQUID
     $this->assertStringContainsString('class="simple"', $result);
 });
 
-test('renders plugin with liquid filter find_by', function () {
+test('renders plugin with liquid filter find_by', function (): void {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',
         'render_markup' => <<<'LIQUID'
@@ -194,7 +194,7 @@ LIQUID
     $this->assertStringContainsString('class="user"', $result);
 });
 
-test('renders plugin with liquid filter find_by and fallback', function () {
+test('renders plugin with liquid filter find_by and fallback', function (): void {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',
         'render_markup' => <<<'LIQUID'
@@ -216,7 +216,7 @@ LIQUID
     $this->assertStringContainsString('Not Found', $result);
 });
 
-test('renders plugin with liquid filter group_by', function () {
+test('renders plugin with liquid filter group_by', function (): void {
     $plugin = Plugin::factory()->create([
         'markup_language' => 'liquid',
         'render_markup' => <<<'LIQUID'

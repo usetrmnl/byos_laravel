@@ -47,44 +47,33 @@ class PluginExportService
         $tempDirName = 'temp/'.uniqid('plugin_export_', true);
         Storage::makeDirectory($tempDirName);
         $tempDir = Storage::path($tempDirName);
-
-        try {
-            // Generate settings.yml content
-            $settings = $this->generateSettingsYaml($plugin);
-            $settingsYaml = Yaml::dump($settings, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
-            File::put($tempDir.'/settings.yml', $settingsYaml);
-
-            // Generate full template content
-            $fullTemplate = $this->generateFullTemplate($plugin);
-            $extension = $plugin->markup_language === 'liquid' ? 'liquid' : 'blade.php';
-            File::put($tempDir.'/full.'.$extension, $fullTemplate);
-
-            // Generate shared.liquid if needed (for liquid templates)
-            if ($plugin->markup_language === 'liquid') {
-                $sharedTemplate = $this->generateSharedTemplate($plugin);
-                if ($sharedTemplate) {
-                    File::put($tempDir.'/shared.liquid', $sharedTemplate);
-                }
+        // Generate settings.yml content
+        $settings = $this->generateSettingsYaml($plugin);
+        $settingsYaml = Yaml::dump($settings, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+        File::put($tempDir.'/settings.yml', $settingsYaml);
+        // Generate full template content
+        $fullTemplate = $this->generateFullTemplate($plugin);
+        $extension = $plugin->markup_language === 'liquid' ? 'liquid' : 'blade.php';
+        File::put($tempDir.'/full.'.$extension, $fullTemplate);
+        // Generate shared.liquid if needed (for liquid templates)
+        if ($plugin->markup_language === 'liquid') {
+            $sharedTemplate = $this->generateSharedTemplate();
+            if ($sharedTemplate) {
+                File::put($tempDir.'/shared.liquid', $sharedTemplate);
             }
-
-            // Create ZIP file
-            $zipPath = $tempDir.'/plugin_'.$plugin->trmnlp_id.'.zip';
-            $zip = new ZipArchive();
-
-            if ($zip->open($zipPath, ZipArchive::CREATE) !== true) {
-                throw new Exception('Could not create ZIP file.');
-            }
-
-            // Add files directly to ZIP root
-            $this->addDirectoryToZip($zip, $tempDir, '');
-            $zip->close();
-
-            // Return the ZIP file as a download response
-            return response()->download($zipPath, 'plugin_'.$plugin->trmnlp_id.'.zip');
-
-        } catch (Exception $e) {
-            throw $e;
         }
+        // Create ZIP file
+        $zipPath = $tempDir.'/plugin_'.$plugin->trmnlp_id.'.zip';
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE) !== true) {
+            throw new Exception('Could not create ZIP file.');
+        }
+        // Add files directly to ZIP root
+        $this->addDirectoryToZip($zip, $tempDir, '');
+        $zip->close();
+
+        // Return the ZIP file as a download response
+        return response()->download($zipPath, 'plugin_'.$plugin->trmnlp_id.'.zip');
     }
 
     /**
@@ -150,7 +139,7 @@ class PluginExportService
     /**
      * Generate the shared template content (for liquid templates)
      */
-    private function generateSharedTemplate(Plugin $plugin)
+    private function generateSharedTemplate(): null
     {
         // For now, we don't have a way to store shared templates separately
         // TODO - add support for shared templates
@@ -170,14 +159,10 @@ class PluginExportService
         foreach ($files as $file) {
             if (! $file->isDir()) {
                 $filePath = $file->getRealPath();
-                $fileName = basename($filePath);
+                $fileName = basename((string) $filePath);
 
                 // For root directory, just use the filename
-                if ($zipPath === '') {
-                    $relativePath = $fileName;
-                } else {
-                    $relativePath = $zipPath.'/'.mb_substr($filePath, mb_strlen($dirPath) + 1);
-                }
+                $relativePath = $zipPath === '' ? $fileName : $zipPath.'/'.mb_substr((string) $filePath, mb_strlen($dirPath) + 1);
 
                 $zip->addFile($filePath, $relativePath);
             }

@@ -6,7 +6,7 @@ use Livewire\Volt\Volt;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-test('device management page can be rendered', function () {
+test('device management page can be rendered', function (): void {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)
@@ -15,7 +15,7 @@ test('device management page can be rendered', function () {
     $response->assertOk();
 });
 
-test('user can create a new device', function () {
+test('user can create a new device', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -48,7 +48,7 @@ test('user can create a new device', function () {
     expect($device->user_id)->toBe($user->id);
 });
 
-test('device creation requires required fields', function () {
+test('device creation requires required fields', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -67,7 +67,7 @@ test('device creation requires required fields', function () {
     ]);
 });
 
-test('user can toggle proxy cloud for their device', function () {
+test('user can toggle proxy cloud for their device', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
     $device = Device::factory()->create([
@@ -88,7 +88,7 @@ test('user can toggle proxy cloud for their device', function () {
     expect($device->fresh()->proxy_cloud)->toBeFalse();
 });
 
-test('user cannot toggle proxy cloud for other users devices', function () {
+test('user cannot toggle proxy cloud for other users devices', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 

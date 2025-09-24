@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('example recipes seeder command calls seeder with correct user id', function () {
+test('example recipes seeder command calls seeder with correct user id', function (): void {
     $seeder = Mockery::mock(ExampleRecipesSeeder::class);
     $seeder->shouldReceive('run')
         ->once()
@@ -19,14 +19,14 @@ test('example recipes seeder command calls seeder with correct user id', functio
         ->assertExitCode(0);
 });
 
-test('example recipes seeder command has correct signature', function () {
+test('example recipes seeder command has correct signature', function (): void {
     $command = $this->app->make(App\Console\Commands\ExampleRecipesSeederCommand::class);
 
     expect($command->getName())->toBe('recipes:seed');
     expect($command->getDescription())->toBe('Seed example recipes');
 });
 
-test('example recipes seeder command prompts for missing input', function () {
+test('example recipes seeder command prompts for missing input', function (): void {
     $seeder = Mockery::mock(ExampleRecipesSeeder::class);
     $seeder->shouldReceive('run')
         ->once()

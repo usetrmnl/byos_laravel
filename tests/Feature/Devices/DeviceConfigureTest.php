@@ -10,7 +10,7 @@ use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
 
-test('configure view displays last_refreshed_at timestamp', function () {
+test('configure view displays last_refreshed_at timestamp', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create([
         'user_id' => $user->id,

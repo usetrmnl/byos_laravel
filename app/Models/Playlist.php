@@ -38,10 +38,8 @@ class Playlist extends Model
         }
 
         // Check weekday
-        if ($this->weekdays !== null) {
-            if (! in_array(now()->dayOfWeek, $this->weekdays)) {
-                return false;
-            }
+        if ($this->weekdays !== null && ! in_array(now()->dayOfWeek, $this->weekdays)) {
+            return false;
         }
 
         if ($this->active_from !== null && $this->active_until !== null) {
@@ -53,10 +51,8 @@ class Playlist extends Model
                 if ($now >= $this->active_from || $now <= $this->active_until) {
                     return true;
                 }
-            } else {
-                if ($now >= $this->active_from && $now <= $this->active_until) {
-                    return true;
-                }
+            } elseif ($now >= $this->active_from && $now <= $this->active_until) {
+                return true;
             }
 
             return false;

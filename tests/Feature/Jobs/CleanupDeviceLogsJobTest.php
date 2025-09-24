@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('it keeps only the 50 most recent logs per device', function () {
+test('it keeps only the 50 most recent logs per device', function (): void {
     // Create two devices
     $device1 = Device::factory()->create();
     $device2 = Device::factory()->create();

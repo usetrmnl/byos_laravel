@@ -13,15 +13,10 @@ class BatteryLow extends Notification
 {
     use Queueable;
 
-    private Device $device;
-
     /**
      * Create a new notification instance.
      */
-    public function __construct(Device $device)
-    {
-        $this->device = $device;
-    }
+    public function __construct(private Device $device) {}
 
     /**
      * Get the notification's delivery channels.

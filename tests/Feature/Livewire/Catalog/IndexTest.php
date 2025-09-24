@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Volt;
 use Symfony\Component\Yaml\Yaml;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Cache::flush();
 });
 
-it('can render catalog component', function () {
+it('can render catalog component', function (): void {
     // Mock empty catalog response
     Http::fake([
         config('app.catalog_url') => Http::response('', 200),
@@ -21,7 +21,7 @@ it('can render catalog component', function () {
     $component->assertSee('No plugins available');
 });
 
-it('loads plugins from catalog URL', function () {
+it('loads plugins from catalog URL', function (): void {
     // Clear cache first to ensure fresh data
     Cache::forget('catalog_plugins');
 
@@ -62,7 +62,7 @@ it('loads plugins from catalog URL', function () {
     $component->assertSee('MIT');
 });
 
-it('shows error when plugin not found', function () {
+it('shows error when plugin not found', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user);
@@ -75,7 +75,7 @@ it('shows error when plugin not found', function () {
     $component->assertHasErrors();
 });
 
-it('shows error when zip_url is missing', function () {
+it('shows error when zip_url is missing', function (): void {
     $user = User::factory()->create();
 
     // Mock the HTTP response for the catalog URL without zip_url

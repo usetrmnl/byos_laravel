@@ -28,17 +28,17 @@ class MashupCreateCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         // Select device
         $device = $this->selectDevice();
-        if (! $device) {
+        if (! $device instanceof Device) {
             return 1;
         }
 
         // Select playlist
         $playlist = $this->selectPlaylist($device);
-        if (! $playlist) {
+        if (! $playlist instanceof Playlist) {
             return 1;
         }
 
@@ -87,7 +87,7 @@ class MashupCreateCommand extends Command
 
         $deviceId = $this->choice(
             'Select a device',
-            $devices->mapWithKeys(fn ($device) => [$device->id => $device->name])->toArray()
+            $devices->mapWithKeys(fn ($device): array => [$device->id => $device->name])->toArray()
         );
 
         return $devices->firstWhere('id', $deviceId);
@@ -105,7 +105,7 @@ class MashupCreateCommand extends Command
 
         $playlistId = $this->choice(
             'Select a playlist',
-            $playlists->mapWithKeys(fn (Playlist $playlist) => [$playlist->id => $playlist->name])->toArray()
+            $playlists->mapWithKeys(fn (Playlist $playlist): array => [$playlist->id => $playlist->name])->toArray()
         );
 
         return $playlists->firstWhere('id', $playlistId);
@@ -123,13 +123,13 @@ class MashupCreateCommand extends Command
     {
         $name = $this->ask('Enter a name for this mashup', 'Mashup');
 
-        if (mb_strlen($name) < 2) {
+        if (mb_strlen((string) $name) < 2) {
             $this->error('The name must be at least 2 characters.');
 
             return null;
         }
 
-        if (mb_strlen($name) > 50) {
+        if (mb_strlen((string) $name) > 50) {
             $this->error('The name must not exceed 50 characters.');
 
             return null;
@@ -150,7 +150,7 @@ class MashupCreateCommand extends Command
         }
 
         $selectedPlugins = collect();
-        $availablePlugins = $plugins->mapWithKeys(fn ($plugin) => [$plugin->id => $plugin->name])->toArray();
+        $availablePlugins = $plugins->mapWithKeys(fn ($plugin): array => [$plugin->id => $plugin->name])->toArray();
 
         for ($i = 0; $i < $requiredCount; ++$i) {
             $position = match ($i) {

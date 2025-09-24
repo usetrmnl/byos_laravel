@@ -23,7 +23,7 @@ class FirmwareCheckCommand extends Command
         );
 
         $latestFirmware = Firmware::getLatest();
-        if ($latestFirmware) {
+        if ($latestFirmware instanceof Firmware) {
             table(
                 rows: [
                     ['Latest Version', $latestFirmware->version_tag],

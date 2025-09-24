@@ -9,7 +9,7 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-test('device auto join component can be rendered', function () {
+test('device auto join component can be rendered', function (): void {
     $user = User::factory()->create(['assign_new_devices' => false]);
 
     Livewire::actingAs($user)
@@ -19,7 +19,7 @@ test('device auto join component can be rendered', function () {
         ->assertSet('isFirstUser', true);
 });
 
-test('device auto join component initializes with user settings', function () {
+test('device auto join component initializes with user settings', function (): void {
     $user = User::factory()->create(['assign_new_devices' => true]);
 
     Livewire::actingAs($user)
@@ -28,7 +28,7 @@ test('device auto join component initializes with user settings', function () {
         ->assertSet('isFirstUser', true);
 });
 
-test('device auto join component identifies first user correctly', function () {
+test('device auto join component identifies first user correctly', function (): void {
     $firstUser = User::factory()->create(['id' => 1, 'assign_new_devices' => false]);
     $otherUser = User::factory()->create(['id' => 2, 'assign_new_devices' => false]);
 
@@ -41,7 +41,7 @@ test('device auto join component identifies first user correctly', function () {
         ->assertSet('isFirstUser', false);
 });
 
-test('device auto join component updates user setting when toggled', function () {
+test('device auto join component updates user setting when toggled', function (): void {
     $user = User::factory()->create(['assign_new_devices' => false]);
 
     Livewire::actingAs($user)
@@ -55,7 +55,7 @@ test('device auto join component updates user setting when toggled', function ()
 
 // Validation test removed - Livewire automatically handles boolean conversion
 
-test('device auto join component handles false value correctly', function () {
+test('device auto join component handles false value correctly', function (): void {
     $user = User::factory()->create(['assign_new_devices' => true]);
 
     Livewire::actingAs($user)
@@ -67,7 +67,7 @@ test('device auto join component handles false value correctly', function () {
     expect($user->assign_new_devices)->toBeFalse();
 });
 
-test('device auto join component only updates when deviceAutojoin property changes', function () {
+test('device auto join component only updates when deviceAutojoin property changes', function (): void {
     $user = User::factory()->create(['assign_new_devices' => false]);
 
     $component = Livewire::actingAs($user)
@@ -80,7 +80,7 @@ test('device auto join component only updates when deviceAutojoin property chang
     expect($user->assign_new_devices)->toBeFalse();
 });
 
-test('device auto join component renders correct view', function () {
+test('device auto join component renders correct view', function (): void {
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
@@ -88,7 +88,7 @@ test('device auto join component renders correct view', function () {
         ->assertViewIs('livewire.actions.device-auto-join');
 });
 
-test('device auto join component works with authenticated user', function () {
+test('device auto join component works with authenticated user', function (): void {
     $user = User::factory()->create(['assign_new_devices' => true]);
 
     $component = Livewire::actingAs($user)
@@ -98,7 +98,7 @@ test('device auto join component works with authenticated user', function () {
     expect($component->instance()->isFirstUser)->toBe($user->id === 1);
 });
 
-test('device auto join component handles multiple updates correctly', function () {
+test('device auto join component handles multiple updates correctly', function (): void {
     $user = User::factory()->create(['assign_new_devices' => false]);
 
     $component = Livewire::actingAs($user)

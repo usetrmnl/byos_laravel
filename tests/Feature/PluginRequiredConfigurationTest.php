@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('hasMissingRequiredConfigurationFields returns true when required field is null', function () {
+test('hasMissingRequiredConfigurationFields returns true when required field is null', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -39,7 +39,7 @@ test('hasMissingRequiredConfigurationFields returns true when required field is 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
 });
 
-test('hasMissingRequiredConfigurationFields returns false when all required fields are set', function () {
+test('hasMissingRequiredConfigurationFields returns false when all required fields are set', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -73,7 +73,7 @@ test('hasMissingRequiredConfigurationFields returns false when all required fiel
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
 });
 
-test('hasMissingRequiredConfigurationFields returns false when no custom fields exist', function () {
+test('hasMissingRequiredConfigurationFields returns false when no custom fields exist', function (): void {
     $user = User::factory()->create();
 
     $plugin = Plugin::factory()->create([
@@ -85,7 +85,7 @@ test('hasMissingRequiredConfigurationFields returns false when no custom fields 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
 });
 
-test('hasMissingRequiredConfigurationFields returns true when explicitly required field is null', function () {
+test('hasMissingRequiredConfigurationFields returns true when explicitly required field is null', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -111,7 +111,7 @@ test('hasMissingRequiredConfigurationFields returns true when explicitly require
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
 });
 
-test('hasMissingRequiredConfigurationFields returns true when required field is empty string', function () {
+test('hasMissingRequiredConfigurationFields returns true when required field is empty string', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -137,7 +137,7 @@ test('hasMissingRequiredConfigurationFields returns true when required field is 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
 });
 
-test('hasMissingRequiredConfigurationFields returns true when required array field is empty', function () {
+test('hasMissingRequiredConfigurationFields returns true when required array field is empty', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -164,7 +164,7 @@ test('hasMissingRequiredConfigurationFields returns true when required array fie
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
 });
 
-test('hasMissingRequiredConfigurationFields returns false when author_bio field is present but other required field is set', function () {
+test('hasMissingRequiredConfigurationFields returns false when author_bio field is present but other required field is set', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -193,7 +193,7 @@ test('hasMissingRequiredConfigurationFields returns false when author_bio field 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
 });
 
-test('hasMissingRequiredConfigurationFields returns false when field has default value', function () {
+test('hasMissingRequiredConfigurationFields returns false when field has default value', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -217,7 +217,7 @@ test('hasMissingRequiredConfigurationFields returns false when field has default
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
 });
 
-test('hasMissingRequiredConfigurationFields returns true when required xhrSelect field is missing', function () {
+test('hasMissingRequiredConfigurationFields returns true when required xhrSelect field is missing', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [
@@ -242,7 +242,7 @@ test('hasMissingRequiredConfigurationFields returns true when required xhrSelect
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
 });
 
-test('hasMissingRequiredConfigurationFields returns false when required xhrSelect field is set', function () {
+test('hasMissingRequiredConfigurationFields returns false when required xhrSelect field is set', function (): void {
     $user = User::factory()->create();
 
     $configurationTemplate = [

@@ -15,8 +15,6 @@ class NotifyDeviceBatteryLowJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct() {}
-
     public function handle(): void
     {
         $devices = Device::all();
@@ -32,9 +30,11 @@ class NotifyDeviceBatteryLowJob implements ShouldQueue
 
                 continue;
             }
-
             // Skip if battery is not low or notification was already sent
-            if ($batteryPercent > $batteryThreshold || $device->battery_notification_sent) {
+            if ($batteryPercent > $batteryThreshold) {
+                continue;
+            }
+            if ($device->battery_notification_sent) {
                 continue;
             }
 

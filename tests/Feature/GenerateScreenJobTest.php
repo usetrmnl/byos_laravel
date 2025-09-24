@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Storage;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     TrmnlPipeline::fake();
     Storage::fake('public');
     Storage::disk('public')->makeDirectory('/images/generated');
 });
 
-test('it generates screen images and updates device', function () {
+test('it generates screen images and updates device', function (): void {
     $device = Device::factory()->create();
     $job = new GenerateScreenJob($device->id, null, view('trmnl')->render());
     $job->handle();
@@ -27,7 +27,7 @@ test('it generates screen images and updates device', function () {
     Storage::disk('public')->assertExists("/images/generated/{$uuid}.png");
 });
 
-test('it cleans up unused images', function () {
+test('it cleans up unused images', function (): void {
     // Create some test devices with images
     $activeDevice = Device::factory()->create([
         'current_screen_image' => 'uuid-to-be-replaced',
@@ -49,7 +49,7 @@ test('it cleans up unused images', function () {
     Storage::disk('public')->assertMissing('/images/generated/inactive-uuid.bmp');
 });
 
-test('it preserves gitignore file during cleanup', function () {
+test('it preserves gitignore file during cleanup', function (): void {
     Storage::disk('public')->put('/images/generated/.gitignore', '*');
 
     $device = Device::factory()->create();

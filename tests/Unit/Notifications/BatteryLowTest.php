@@ -8,14 +8,14 @@ use App\Notifications\BatteryLow;
 use App\Notifications\Channels\WebhookChannel;
 use Illuminate\Notifications\Messages\MailMessage;
 
-test('battery low notification has correct via channels', function () {
+test('battery low notification has correct via channels', function (): void {
     $device = Device::factory()->create();
     $notification = new BatteryLow($device);
 
     expect($notification->via(new User()))->toBe(['mail', WebhookChannel::class]);
 });
 
-test('battery low notification creates correct mail message', function () {
+test('battery low notification creates correct mail message', function (): void {
     $device = Device::factory()->create([
         'name' => 'Test Device',
         'last_battery_voltage' => 3.0,
@@ -29,7 +29,7 @@ test('battery low notification creates correct mail message', function () {
     expect($mailMessage->viewData['device'])->toBe($device);
 });
 
-test('battery low notification creates correct webhook message', function () {
+test('battery low notification creates correct webhook message', function (): void {
     config([
         'services.webhook.notifications.topic' => 'battery.low',
         'app.name' => 'Test App',
@@ -60,7 +60,7 @@ test('battery low notification creates correct webhook message', function () {
     ]);
 });
 
-test('battery low notification creates correct array representation', function () {
+test('battery low notification creates correct array representation', function (): void {
     $device = Device::factory()->create([
         'name' => 'Test Device',
         'last_battery_voltage' => 3.0,

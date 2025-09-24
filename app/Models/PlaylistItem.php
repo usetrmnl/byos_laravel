@@ -153,9 +153,7 @@ class PlaylistItem extends Model
         $plugins = Plugin::whereIn('id', $pluginIds)->get();
 
         // Sort the collection to match plugin_ids order
-        $plugins = $plugins->sortBy(function ($plugin) use ($pluginIds) {
-            return array_search($plugin->id, $pluginIds);
-        })->values();
+        $plugins = $plugins->sortBy(fn ($plugin): int|string|false => array_search($plugin->id, $pluginIds))->values();
 
         foreach ($plugins as $index => $plugin) {
             $size = $this->getLayoutSize($index);

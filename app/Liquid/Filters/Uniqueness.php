@@ -35,7 +35,7 @@ class Uniqueness extends FiltersProvider
         $randomString = '';
 
         for ($i = 0; $i < $length; ++$i) {
-            $randomString .= $characters[rand(0, mb_strlen($characters) - 1)];
+            $randomString .= $characters[random_int(0, mb_strlen($characters) - 1)];
         }
 
         return $randomString;

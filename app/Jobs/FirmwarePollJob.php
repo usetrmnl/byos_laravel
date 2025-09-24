@@ -17,12 +17,7 @@ class FirmwarePollJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private bool $download;
-
-    public function __construct(bool $download = false)
-    {
-        $this->download = $download;
-    }
+    public function __construct(private bool $download = false) {}
 
     public function handle(): void
     {

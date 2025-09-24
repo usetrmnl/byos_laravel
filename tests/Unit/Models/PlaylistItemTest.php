@@ -4,7 +4,7 @@ use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Plugin;
 
-test('playlist item belongs to playlist', function () {
+test('playlist item belongs to playlist', function (): void {
     $playlist = Playlist::factory()->create();
     $playlistItem = PlaylistItem::factory()->create(['playlist_id' => $playlist->id]);
 
@@ -13,7 +13,7 @@ test('playlist item belongs to playlist', function () {
         ->id->toBe($playlist->id);
 });
 
-test('playlist item belongs to plugin', function () {
+test('playlist item belongs to plugin', function (): void {
     $plugin = Plugin::factory()->create();
     $playlistItem = PlaylistItem::factory()->create(['plugin_id' => $plugin->id]);
 
@@ -22,7 +22,7 @@ test('playlist item belongs to plugin', function () {
         ->id->toBe($plugin->id);
 });
 
-test('playlist item can check if it is a mashup', function () {
+test('playlist item can check if it is a mashup', function (): void {
     $plugin = Plugin::factory()->create();
     $regularItem = PlaylistItem::factory()->create([
         'mashup' => null,
@@ -44,7 +44,7 @@ test('playlist item can check if it is a mashup', function () {
         ->and($mashupItem->isMashup())->toBeTrue();
 });
 
-test('playlist item can get mashup name', function () {
+test('playlist item can get mashup name', function (): void {
     $plugin1 = Plugin::factory()->create();
     $plugin2 = Plugin::factory()->create();
     $mashupItem = PlaylistItem::factory()->create([
@@ -59,7 +59,7 @@ test('playlist item can get mashup name', function () {
     expect($mashupItem->getMashupName())->toBe('Test Mashup');
 });
 
-test('playlist item can get mashup layout type', function () {
+test('playlist item can get mashup layout type', function (): void {
     $plugin1 = Plugin::factory()->create();
     $plugin2 = Plugin::factory()->create();
     $mashupItem = PlaylistItem::factory()->create([
@@ -74,7 +74,7 @@ test('playlist item can get mashup layout type', function () {
     expect($mashupItem->getMashupLayoutType())->toBe('1Lx1R');
 });
 
-test('playlist item can get mashup plugin ids', function () {
+test('playlist item can get mashup plugin ids', function (): void {
     $plugin1 = Plugin::factory()->create();
     $plugin2 = Plugin::factory()->create();
     $mashupItem = PlaylistItem::factory()->create([
@@ -89,7 +89,7 @@ test('playlist item can get mashup plugin ids', function () {
     expect($mashupItem->getMashupPluginIds())->toBe([$plugin1->id, $plugin2->id]);
 });
 
-test('playlist item can get required plugin count for different layouts', function () {
+test('playlist item can get required plugin count for different layouts', function (): void {
     $layouts = [
         '1Lx1R' => 2,
         '1Tx1B' => 2,
@@ -117,7 +117,7 @@ test('playlist item can get required plugin count for different layouts', functi
     }
 });
 
-test('playlist item can get layout type', function () {
+test('playlist item can get layout type', function (): void {
     $layoutTypes = [
         '1Lx1R' => 'vertical',
         '1Lx2R' => 'vertical',
@@ -144,7 +144,7 @@ test('playlist item can get layout type', function () {
     }
 });
 
-test('playlist item can get layout size for different positions', function () {
+test('playlist item can get layout size for different positions', function (): void {
     $plugin1 = Plugin::factory()->create();
     $plugin2 = Plugin::factory()->create();
     $plugin3 = Plugin::factory()->create();
@@ -163,7 +163,7 @@ test('playlist item can get layout size for different positions', function () {
         ->and($mashupItem->getLayoutSize(2))->toBe('half_vertical');
 });
 
-test('playlist item can get available layouts', function () {
+test('playlist item can get available layouts', function (): void {
     $layouts = PlaylistItem::getAvailableLayouts();
 
     expect($layouts)->toBeArray()
@@ -171,7 +171,7 @@ test('playlist item can get available layouts', function () {
         ->and($layouts['1Lx1R'])->toBe('1 Left - 1 Right (2 plugins)');
 });
 
-test('playlist item can get required plugin count for layout', function () {
+test('playlist item can get required plugin count for layout', function (): void {
     $layouts = [
         '1Lx1R' => 2,
         '1Tx1B' => 2,
@@ -187,7 +187,7 @@ test('playlist item can get required plugin count for layout', function () {
     }
 });
 
-test('playlist item can create mashup', function () {
+test('playlist item can create mashup', function (): void {
     $playlist = Playlist::factory()->create();
     $plugins = Plugin::factory()->count(3)->create();
     $pluginIds = $plugins->pluck('id')->toArray();

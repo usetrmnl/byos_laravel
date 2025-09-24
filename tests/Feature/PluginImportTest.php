@@ -9,11 +9,11 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
 });
 
-it('imports plugin from valid zip file', function () {
+it('imports plugin from valid zip file', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file with the required structure
@@ -38,7 +38,7 @@ it('imports plugin from valid zip file', function () {
         ->and($plugin->configuration['api_key'])->toBe('default-api-key');
 });
 
-it('imports plugin with shared.liquid file', function () {
+it('imports plugin with shared.liquid file', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
@@ -56,7 +56,7 @@ it('imports plugin with shared.liquid file', function () {
         ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">');
 });
 
-it('imports plugin with files in root directory', function () {
+it('imports plugin with files in root directory', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
@@ -73,17 +73,17 @@ it('imports plugin with files in root directory', function () {
         ->and($plugin->name)->toBe('Test Plugin');
 });
 
-it('throws exception for invalid zip file', function () {
+it('throws exception for invalid zip file', function (): void {
     $user = User::factory()->create();
 
     $zipFile = UploadedFile::fake()->createWithContent('invalid.zip', 'not a zip file');
 
     $pluginImportService = new PluginImportService();
-    expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
         ->toThrow(Exception::class, 'Could not open the ZIP file.');
 });
 
-it('throws exception for missing required files', function () {
+it('throws exception for missing required files', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
@@ -94,11 +94,11 @@ it('throws exception for missing required files', function () {
     $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
 
     $pluginImportService = new PluginImportService();
-    expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
         ->toThrow(Exception::class, 'Invalid ZIP structure. Required files settings.yml and full.liquid are missing.');
 });
 
-it('sets default values when settings are missing', function () {
+it('sets default values when settings are missing', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
@@ -117,7 +117,7 @@ it('sets default values when settings are missing', function () {
         ->and($plugin->polling_verb)->toBe('get'); // default value
 });
 
-it('handles blade markup language correctly', function () {
+it('handles blade markup language correctly', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
@@ -133,7 +133,7 @@ it('handles blade markup language correctly', function () {
     expect($plugin->markup_language)->toBe('blade');
 });
 
-it('imports plugin from monorepo with zip_entry_path parameter', function () {
+it('imports plugin from monorepo with zip_entry_path parameter', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file with plugin in a subdirectory
@@ -152,7 +152,7 @@ it('imports plugin from monorepo with zip_entry_path parameter', function () {
         ->and($plugin->name)->toBe('Test Plugin');
 });
 
-it('imports plugin from monorepo with src subdirectory', function () {
+it('imports plugin from monorepo with src subdirectory', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file with plugin in a subdirectory with src folder
@@ -171,7 +171,7 @@ it('imports plugin from monorepo with src subdirectory', function () {
         ->and($plugin->name)->toBe('Test Plugin');
 });
 
-it('imports plugin from monorepo with shared.liquid in subdirectory', function () {
+it('imports plugin from monorepo with shared.liquid in subdirectory', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
@@ -189,7 +189,7 @@ it('imports plugin from monorepo with shared.liquid in subdirectory', function (
         ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">');
 });
 
-it('imports plugin from URL with zip_entry_path parameter', function () {
+it('imports plugin from URL with zip_entry_path parameter', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file with plugin in a subdirectory
@@ -214,12 +214,10 @@ it('imports plugin from URL with zip_entry_path parameter', function () {
         ->and($plugin->user_id)->toBe($user->id)
         ->and($plugin->name)->toBe('Test Plugin');
 
-    Http::assertSent(function ($request) {
-        return $request->url() === 'https://github.com/example/repo/archive/refs/heads/main.zip';
-    });
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://github.com/example/repo/archive/refs/heads/main.zip');
 });
 
-it('imports plugin from URL with zip_entry_path and src subdirectory', function () {
+it('imports plugin from URL with zip_entry_path and src subdirectory', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file with plugin in a subdirectory with src folder
@@ -245,7 +243,7 @@ it('imports plugin from URL with zip_entry_path and src subdirectory', function 
         ->and($plugin->name)->toBe('Test Plugin');
 });
 
-it('imports plugin from GitHub monorepo with repository-named directory', function () {
+it('imports plugin from GitHub monorepo with repository-named directory', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file that simulates GitHub's ZIP structure with repository-named directory
@@ -273,7 +271,7 @@ it('imports plugin from GitHub monorepo with repository-named directory', functi
         ->and($plugin->name)->toBe('Test Plugin'); // Should be from example-plugin, not other-plugin
 });
 
-it('finds required files in simple ZIP structure', function () {
+it('finds required files in simple ZIP structure', function (): void {
     $user = User::factory()->create();
 
     // Create a simple ZIP file with just one plugin
@@ -292,7 +290,7 @@ it('finds required files in simple ZIP structure', function () {
         ->and($plugin->name)->toBe('Test Plugin');
 });
 
-it('finds required files in GitHub monorepo structure with zip_entry_path', function () {
+it('finds required files in GitHub monorepo structure with zip_entry_path', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file that simulates GitHub's ZIP structure
@@ -313,7 +311,7 @@ it('finds required files in GitHub monorepo structure with zip_entry_path', func
         ->and($plugin->name)->toBe('Test Plugin'); // Should be from example-plugin, not other-plugin
 });
 
-it('imports specific plugin from monorepo zip with zip_entry_path parameter', function () {
+it('imports specific plugin from monorepo zip with zip_entry_path parameter', function (): void {
     $user = User::factory()->create();
 
     // Create a mock ZIP file with 2 plugins in a monorepo structure

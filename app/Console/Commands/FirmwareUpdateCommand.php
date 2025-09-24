@@ -42,15 +42,14 @@ class FirmwareUpdateCommand extends Command
             label: 'Which devices should be updated?',
             options: [
                 'all' => 'ALL Devices',
-                ...Device::all()->mapWithKeys(function ($device) {
+                ...Device::all()->mapWithKeys(fn ($device): array =>
                     // without _ returns index
-                    return ["_$device->id" => "$device->name (Current version: $device->last_firmware_version)"];
-                })->toArray(),
+                    ["_$device->id" => "$device->name (Current version: $device->last_firmware_version)"])->toArray(),
             ],
             scroll: 10
         );
 
-        if (empty($devices)) {
+        if ($devices === []) {
             $this->error('No devices selected. Aborting.');
 
             return;
@@ -59,9 +58,7 @@ class FirmwareUpdateCommand extends Command
         if (in_array('all', $devices)) {
             $devices = Device::pluck('id')->toArray();
         } else {
-            $devices = array_map(function ($selected) {
-                return (int) str_replace('_', '', $selected);
-            }, $devices);
+            $devices = array_map(fn ($selected): int => (int) str_replace('_', '', $selected), $devices);
         }
 
         foreach ($devices as $deviceId) {

@@ -3,7 +3,7 @@
 use App\Models\Plugin;
 use Illuminate\Support\Str;
 
-test('webhook updates plugin data for webhook strategy', function () {
+test('webhook updates plugin data for webhook strategy', function (): void {
     // Create a plugin with webhook strategy
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'webhook',
@@ -26,7 +26,7 @@ test('webhook updates plugin data for webhook strategy', function () {
     ]);
 });
 
-test('webhook returns 400 for non-webhook strategy plugins', function () {
+test('webhook returns 400 for non-webhook strategy plugins', function (): void {
     // Create a plugin with non-webhook strategy
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',
@@ -43,7 +43,7 @@ test('webhook returns 400 for non-webhook strategy plugins', function () {
         ->assertJson(['error' => 'Plugin does not use webhook strategy']);
 });
 
-test('webhook returns 400 when merge_variables is missing', function () {
+test('webhook returns 400 when merge_variables is missing', function (): void {
     // Create a plugin with webhook strategy
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'webhook',
@@ -58,7 +58,7 @@ test('webhook returns 400 when merge_variables is missing', function () {
         ->assertJson(['error' => 'Request must contain merge_variables key']);
 });
 
-test('webhook returns 404 for non-existent plugin', function () {
+test('webhook returns 404 for non-existent plugin', function (): void {
     // Make request with non-existent plugin UUID
     $response = $this->postJson('/api/custom_plugins/'.Str::uuid(), [
         'merge_variables' => ['new' => 'data'],

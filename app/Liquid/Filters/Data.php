@@ -72,7 +72,7 @@ class Data extends FiltersProvider
      */
     public function sample(array $array): mixed
     {
-        if (empty($array)) {
+        if ($array === []) {
             return null;
         }
 

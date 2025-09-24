@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     TrmnlPipeline::fake();
 });
 
@@ -37,7 +37,6 @@ it('get_image_settings returns device model settings when available', function (
     // Use reflection to access private method
     $reflection = new ReflectionClass(ImageGenerationService::class);
     $method = $reflection->getMethod('getImageSettings');
-    $method->setAccessible(true);
 
     $settings = $method->invoke(null, $device);
 
@@ -66,7 +65,6 @@ it('get_image_settings falls back to device settings when no device model', func
     // Use reflection to access private method
     $reflection = new ReflectionClass(ImageGenerationService::class);
     $method = $reflection->getMethod('getImageSettings');
-    $method->setAccessible(true);
 
     $settings = $method->invoke(null, $device);
 
@@ -90,7 +88,6 @@ it('get_image_settings uses defaults for missing device properties', function ()
     // Use reflection to access private method
     $reflection = new ReflectionClass(ImageGenerationService::class);
     $method = $reflection->getMethod('getImageSettings');
-    $method->setAccessible(true);
 
     $settings = $method->invoke(null, $device);
 
@@ -112,7 +109,6 @@ it('determine_image_format_from_model returns correct formats', function (): voi
     // Use reflection to access private method
     $reflection = new ReflectionClass(ImageGenerationService::class);
     $method = $reflection->getMethod('determineImageFormatFromModel');
-    $method->setAccessible(true);
 
     // Test BMP format
     $bmpModel = DeviceModel::factory()->create([

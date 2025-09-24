@@ -5,11 +5,11 @@ use App\Models\Firmware;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Http::preventStrayRequests();
 });
 
-test('it creates new firmware record when polling', function () {
+test('it creates new firmware record when polling', function (): void {
     Http::fake([
         'https://usetrmnl.com/api/firmware/latest' => Http::response([
             'version' => '1.0.0',
@@ -25,7 +25,7 @@ test('it creates new firmware record when polling', function () {
         ->latest->toBeTrue();
 });
 
-test('it updates existing firmware record when polling', function () {
+test('it updates existing firmware record when polling', function (): void {
     $existingFirmware = Firmware::factory()->create([
         'version_tag' => '1.0.0',
         'url' => 'https://old-url.com/firmware.bin',
@@ -46,7 +46,7 @@ test('it updates existing firmware record when polling', function () {
         ->latest->toBeTrue();
 });
 
-test('it marks previous firmware as not latest when new version is found', function () {
+test('it marks previous firmware as not latest when new version is found', function (): void {
     $oldFirmware = Firmware::factory()->create([
         'version_tag' => '1.0.0',
         'latest' => true,
@@ -65,9 +65,9 @@ test('it marks previous firmware as not latest when new version is found', funct
         ->and(Firmware::where('version_tag', '1.1.0')->first()->latest)->toBeTrue();
 });
 
-test('it handles connection exception gracefully', function () {
+test('it handles connection exception gracefully', function (): void {
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => function () {
+        'https://usetrmnl.com/api/firmware/latest' => function (): void {
             throw new ConnectionException('Connection failed');
         },
     ]);
@@ -78,7 +78,7 @@ test('it handles connection exception gracefully', function () {
     expect(Firmware::count())->toBe(0);
 });
 
-test('it handles invalid response gracefully', function () {
+test('it handles invalid response gracefully', function (): void {
     Http::fake([
         'https://usetrmnl.com/api/firmware/latest' => Http::response(null, 200),
     ]);
@@ -89,7 +89,7 @@ test('it handles invalid response gracefully', function () {
     expect(Firmware::count())->toBe(0);
 });
 
-test('it handles missing version in response gracefully', function () {
+test('it handles missing version in response gracefully', function (): void {
     Http::fake([
         'https://usetrmnl.com/api/firmware/latest' => Http::response([
             'url' => 'https://example.com/firmware.bin',
@@ -102,7 +102,7 @@ test('it handles missing version in response gracefully', function () {
     expect(Firmware::count())->toBe(0);
 });
 
-test('it handles missing url in response gracefully', function () {
+test('it handles missing url in response gracefully', function (): void {
     Http::fake([
         'https://usetrmnl.com/api/firmware/latest' => Http::response([
             'version' => '1.0.0',

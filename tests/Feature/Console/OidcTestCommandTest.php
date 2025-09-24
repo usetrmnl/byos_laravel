@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use function Pest\Laravel\mock;
 
-test('oidc test command has correct signature', function () {
+test('oidc test command has correct signature', function (): void {
     $this->artisan('oidc:test --help')
         ->assertExitCode(0);
 });
 
-test('oidc test command runs successfully with disabled oidc', function () {
+test('oidc test command runs successfully with disabled oidc', function (): void {
     config([
         'app.url' => 'http://localhost',
         'services.oidc.enabled' => false,
@@ -40,7 +40,7 @@ test('oidc test command runs successfully with disabled oidc', function () {
         ->assertExitCode(0);
 });
 
-test('oidc test command runs successfully with enabled oidc but missing config', function () {
+test('oidc test command runs successfully with enabled oidc but missing config', function (): void {
     config([
         'app.url' => 'http://localhost',
         'services.oidc.enabled' => true,
@@ -70,7 +70,7 @@ test('oidc test command runs successfully with enabled oidc but missing config',
         ->assertExitCode(0);
 });
 
-test('oidc test command runs successfully with partial config', function () {
+test('oidc test command runs successfully with partial config', function (): void {
     config([
         'services.oidc.enabled' => true,
         'services.oidc.endpoint' => 'https://example.com',
@@ -95,9 +95,9 @@ test('oidc test command runs successfully with partial config', function () {
         ->assertExitCode(0);
 });
 
-test('oidc test command runs successfully with full config but disabled', function () {
+test('oidc test command runs successfully with full config but disabled', function (): void {
     // Mock the HTTP client to return fake OIDC configuration
-    mock(GuzzleHttp\Client::class, function ($mock) {
+    mock(GuzzleHttp\Client::class, function ($mock): void {
         $mock->shouldReceive('get')
             ->with('https://example.com/.well-known/openid-configuration')
             ->andReturn(new GuzzleHttp\Psr7\Response(200, [], json_encode([
@@ -129,9 +129,9 @@ test('oidc test command runs successfully with full config but disabled', functi
         ->assertExitCode(0);
 });
 
-test('oidc test command runs successfully with full config and enabled', function () {
+test('oidc test command runs successfully with full config and enabled', function (): void {
     // Mock the HTTP client to return fake OIDC configuration
-    mock(GuzzleHttp\Client::class, function ($mock) {
+    mock(GuzzleHttp\Client::class, function ($mock): void {
         $mock->shouldReceive('get')
             ->with('https://example.com/.well-known/openid-configuration')
             ->andReturn(new GuzzleHttp\Psr7\Response(200, [], json_encode([
@@ -164,9 +164,9 @@ test('oidc test command runs successfully with full config and enabled', functio
         ->assertExitCode(0);
 });
 
-test('oidc test command handles empty scopes', function () {
+test('oidc test command handles empty scopes', function (): void {
     // Mock the HTTP client to return fake OIDC configuration
-    mock(GuzzleHttp\Client::class, function ($mock) {
+    mock(GuzzleHttp\Client::class, function ($mock): void {
         $mock->shouldReceive('get')
             ->with('https://example.com/.well-known/openid-configuration')
             ->andReturn(new GuzzleHttp\Psr7\Response(200, [], json_encode([

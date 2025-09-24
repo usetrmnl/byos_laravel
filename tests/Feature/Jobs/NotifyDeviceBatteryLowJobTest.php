@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Notifications\BatteryLow;
 use Illuminate\Support\Facades\Notification;
 
-test('it sends battery low notification when battery is below threshold', function () {
+test('it sends battery low notification when battery is below threshold', function (): void {
     Notification::fake();
 
     config(['app.notifications.battery_low.warn_at_percent' => 20]);
@@ -29,7 +29,7 @@ test('it sends battery low notification when battery is below threshold', functi
     expect($device->battery_notification_sent)->toBeTrue();
 });
 
-test('it does not send notification when battery is above threshold', function () {
+test('it does not send notification when battery is above threshold', function (): void {
     Notification::fake();
 
     config(['app.notifications.battery_low.warn_at_percent' => 20]);
@@ -50,7 +50,7 @@ test('it does not send notification when battery is above threshold', function (
     expect($device->battery_notification_sent)->toBeFalse();
 });
 
-test('it does not send notification when already sent', function () {
+test('it does not send notification when already sent', function (): void {
     Notification::fake();
 
     config(['app.notifications.battery_low.warn_at_percent' => 20]);
@@ -68,7 +68,7 @@ test('it does not send notification when already sent', function () {
     Notification::assertNotSentTo($user, BatteryLow::class);
 });
 
-test('it resets notification flag when battery is above threshold', function () {
+test('it resets notification flag when battery is above threshold', function (): void {
     Notification::fake();
 
     config(['app.notifications.battery_low.warn_at_percent' => 20]);
@@ -89,7 +89,7 @@ test('it resets notification flag when battery is above threshold', function () 
     expect($device->battery_notification_sent)->toBeFalse();
 });
 
-test('it skips devices without associated user', function () {
+test('it skips devices without associated user', function (): void {
     Notification::fake();
 
     config(['app.notifications.battery_low.warn_at_percent' => 20]);
@@ -106,7 +106,7 @@ test('it skips devices without associated user', function () {
     Notification::assertNothingSent();
 });
 
-test('it processes multiple devices correctly', function () {
+test('it processes multiple devices correctly', function (): void {
     Notification::fake();
 
     config(['app.notifications.battery_low.warn_at_percent' => 20]);

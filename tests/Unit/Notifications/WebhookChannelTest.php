@@ -11,13 +11,13 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Notifications\Notification;
 
-test('webhook channel returns null when no webhook url is configured', function () {
+test('webhook channel returns null when no webhook url is configured', function (): void {
     $client = Mockery::mock(Client::class);
     $channel = new WebhookChannel($client);
 
     $user = new class extends User
     {
-        public function routeNotificationFor($driver, $notification = null)
+        public function routeNotificationFor($driver, $notification = null): null
         {
             return null; // No webhook URL configured
         }
@@ -30,13 +30,13 @@ test('webhook channel returns null when no webhook url is configured', function 
     expect($result)->toBeNull();
 });
 
-test('webhook channel throws exception when notification does not implement toWebhook', function () {
+test('webhook channel throws exception when notification does not implement toWebhook', function (): void {
     $client = Mockery::mock(Client::class);
     $channel = new WebhookChannel($client);
 
     $user = new class extends User
     {
-        public function routeNotificationFor($driver, $notification = null)
+        public function routeNotificationFor($driver, $notification = null): string
         {
             return 'https://example.com/webhook';
         }
@@ -44,23 +44,23 @@ test('webhook channel throws exception when notification does not implement toWe
 
     $notification = new class extends Notification
     {
-        public function via($notifiable)
+        public function via($notifiable): array
         {
             return [];
         }
     };
 
-    expect(fn () => $channel->send($user, $notification))
+    expect(fn (): ?\GuzzleHttp\Psr7\Response => $channel->send($user, $notification))
         ->toThrow(Exception::class, 'Notification does not implement toWebhook method.');
 });
 
-test('webhook channel sends successful webhook request', function () {
+test('webhook channel sends successful webhook request', function (): void {
     $client = Mockery::mock(Client::class);
     $channel = new WebhookChannel($client);
 
     $user = new class extends User
     {
-        public function routeNotificationFor($driver, $notification = null)
+        public function routeNotificationFor($driver, $notification = null): string
         {
             return 'https://example.com/webhook';
         }
@@ -86,13 +86,13 @@ test('webhook channel sends successful webhook request', function () {
     expect($result)->toBe($expectedResponse);
 });
 
-test('webhook channel throws exception when response status is not successful', function () {
+test('webhook channel throws exception when response status is not successful', function (): void {
     $client = Mockery::mock(Client::class);
     $channel = new WebhookChannel($client);
 
     $user = new class extends User
     {
-        public function routeNotificationFor($driver, $notification = null)
+        public function routeNotificationFor($driver, $notification = null): string
         {
             return 'https://example.com/webhook';
         }
@@ -107,17 +107,17 @@ test('webhook channel throws exception when response status is not successful', 
         ->once()
         ->andReturn($errorResponse);
 
-    expect(fn () => $channel->send($user, $notification))
+    expect(fn (): ?\GuzzleHttp\Psr7\Response => $channel->send($user, $notification))
         ->toThrow(Exception::class, 'Webhook request failed with status code: 400');
 });
 
-test('webhook channel handles guzzle exceptions', function () {
+test('webhook channel handles guzzle exceptions', function (): void {
     $client = Mockery::mock(Client::class);
     $channel = new WebhookChannel($client);
 
     $user = new class extends User
     {
-        public function routeNotificationFor($driver, $notification = null)
+        public function routeNotificationFor($driver, $notification = null): string
         {
             return 'https://example.com/webhook';
         }
@@ -130,6 +130,6 @@ test('webhook channel handles guzzle exceptions', function () {
         ->once()
         ->andThrow(new class extends Exception implements GuzzleException {});
 
-    expect(fn () => $channel->send($user, $notification))
+    expect(fn (): ?\GuzzleHttp\Psr7\Response => $channel->send($user, $notification))
         ->toThrow(Exception::class);
 });

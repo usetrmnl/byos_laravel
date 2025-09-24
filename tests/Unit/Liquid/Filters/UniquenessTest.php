@@ -2,7 +2,7 @@
 
 use App\Liquid\Filters\Uniqueness;
 
-test('append_random appends a random string with 4 characters', function () {
+test('append_random appends a random string with 4 characters', function (): void {
     $filter = new Uniqueness();
     $result = $filter->append_random('chart-');
 

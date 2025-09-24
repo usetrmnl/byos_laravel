@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('dashboard shows device image with correct rotation', function () {
+test('dashboard shows device image with correct rotation', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create([
         'user_id' => $user->id,
@@ -28,7 +28,7 @@ test('dashboard shows device image with correct rotation', function () {
     $response->assertSee('origin-center');
 });
 
-test('device configure page shows device image with correct rotation', function () {
+test('device configure page shows device image with correct rotation', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create([
         'user_id' => $user->id,
@@ -48,7 +48,7 @@ test('device configure page shows device image with correct rotation', function 
     $response->assertSee('origin-center');
 });
 
-test('device with no rotation shows no transform style', function () {
+test('device with no rotation shows no transform style', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create([
         'user_id' => $user->id,
@@ -67,7 +67,7 @@ test('device with no rotation shows no transform style', function () {
     $response->assertSee('-rotate-[0deg]');
 });
 
-test('device with null rotation defaults to 0', function () {
+test('device with null rotation defaults to 0', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create([
         'user_id' => $user->id,

@@ -14,13 +14,13 @@ use Laravel\Sanctum\Sanctum;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     TrmnlPipeline::fake();
     Storage::fake('public');
     Storage::disk('public')->makeDirectory('/images/generated');
 });
 
-test('device can fetch display data with valid credentials', function () {
+test('device can fetch display data with valid credentials', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -52,7 +52,7 @@ test('device can fetch display data with valid credentials', function () {
         ->last_firmware_version->toBe('1.0.0');
 });
 
-test('display endpoint includes image_url_timeout when configured', function () {
+test('display endpoint includes image_url_timeout when configured', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -74,7 +74,7 @@ test('display endpoint includes image_url_timeout when configured', function () 
         ]);
 });
 
-test('display endpoint omits image_url_timeout when not configured', function () {
+test('display endpoint omits image_url_timeout when not configured', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -94,7 +94,7 @@ test('display endpoint omits image_url_timeout when not configured', function ()
         ->assertJsonMissing(['image_url_timeout']);
 });
 
-test('new device is auto-assigned to user with auto-assign enabled', function () {
+test('new device is auto-assigned to user with auto-assign enabled', function (): void {
     $user = User::factory()->create(['assign_new_devices' => true]);
 
     $response = $this->withHeaders([
@@ -114,7 +114,7 @@ test('new device is auto-assigned to user with auto-assign enabled', function ()
         ->api_key->toBe('new-device-key');
 });
 
-test('new device is auto-assigned and mirrors specified device', function () {
+test('new device is auto-assigned and mirrors specified device', function (): void {
     // Create a source device that will be mirrored
     $sourceDevice = Device::factory()->create([
         'mac_address' => 'AA:BB:CC:DD:EE:FF',
@@ -153,7 +153,7 @@ test('new device is auto-assigned and mirrors specified device', function () {
     ]);
 });
 
-test('device setup endpoint returns correct data', function () {
+test('device setup endpoint returns correct data', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -172,7 +172,7 @@ test('device setup endpoint returns correct data', function () {
         ]);
 });
 
-test('device can submit logs', function () {
+test('device can submit logs', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -200,7 +200,7 @@ test('device can submit logs', function () {
     expect($device->logs()->count())->toBe(1);
 });
 
-test('device can submit logs in revised format', function () {
+test('device can submit logs in revised format', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -240,7 +240,7 @@ test('device can submit logs in revised format', function () {
 //    $response->assertOk();
 // });
 
-test('user cannot update display for devices they do not own', function () {
+test('user cannot update display for devices they do not own', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $otherUser->id]);
@@ -255,7 +255,7 @@ test('user cannot update display for devices they do not own', function () {
     $response->assertForbidden();
 });
 
-test('invalid device credentials return error', function () {
+test('invalid device credentials return error', function (): void {
     $response = $this->withHeaders([
         'id' => 'invalid-mac',
         'access-token' => 'invalid-token',
@@ -265,7 +265,7 @@ test('invalid device credentials return error', function () {
         ->assertJson(['message' => 'MAC Address not registered or invalid access token']);
 });
 
-test('log endpoint requires valid device credentials', function () {
+test('log endpoint requires valid device credentials', function (): void {
     $response = $this->withHeaders([
         'id' => 'invalid-mac',
         'access-token' => 'invalid-token',
@@ -275,7 +275,7 @@ test('log endpoint requires valid device credentials', function () {
         ->assertJson(['message' => 'Device not found or invalid access token']);
 });
 
-test('update_firmware flag is only returned once', function () {
+test('update_firmware flag is only returned once', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -320,7 +320,7 @@ test('update_firmware flag is only returned once', function () {
     expect($device->proxy_cloud_response['update_firmware'])->toBeFalse();
 });
 
-test('authenticated user can fetch device status', function () {
+test('authenticated user can fetch device status', function (): void {
     $user = User::factory()->create();
     $device = Device::factory()->create([
         'user_id' => $user->id,
@@ -354,7 +354,7 @@ test('authenticated user can fetch device status', function () {
         ]);
 });
 
-test('user cannot fetch status for devices they do not own', function () {
+test('user cannot fetch status for devices they do not own', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $otherUser->id]);
@@ -366,7 +366,7 @@ test('user cannot fetch status for devices they do not own', function () {
     $response->assertForbidden();
 });
 
-test('display status endpoint requires device_id parameter', function () {
+test('display status endpoint requires device_id parameter', function (): void {
     $user = User::factory()->create();
     Sanctum::actingAs($user);
 
@@ -376,7 +376,7 @@ test('display status endpoint requires device_id parameter', function () {
         ->assertJsonValidationErrors(['device_id']);
 });
 
-test('display status endpoint requires valid device_id', function () {
+test('display status endpoint requires valid device_id', function (): void {
     $user = User::factory()->create();
     Sanctum::actingAs($user);
 
@@ -386,7 +386,7 @@ test('display status endpoint requires valid device_id', function () {
         ->assertJsonValidationErrors(['device_id']);
 });
 
-test('device can mirror another device', function () {
+test('device can mirror another device', function (): void {
     // Create source device with a playlist and image
     $sourceDevice = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
@@ -428,7 +428,7 @@ test('device can mirror another device', function () {
         ->last_firmware_version->toBe('1.0.0');
 });
 
-test('device can fetch current screen data', function () {
+test('device can fetch current screen data', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -451,7 +451,7 @@ test('device can fetch current screen data', function () {
         ]);
 });
 
-test('current_screen endpoint requires valid device credentials', function () {
+test('current_screen endpoint requires valid device credentials', function (): void {
     $response = $this->withHeaders([
         'access-token' => 'invalid-token',
     ])->get('/api/current_screen');
@@ -460,7 +460,7 @@ test('current_screen endpoint requires valid device credentials', function () {
         ->assertJson(['message' => 'Device not found or invalid access token']);
 });
 
-test('authenticated user can fetch their devices', function () {
+test('authenticated user can fetch their devices', function (): void {
     $user = User::factory()->create();
     $devices = Device::factory()->count(2)->create([
         'user_id' => $user->id,
@@ -502,7 +502,7 @@ test('authenticated user can fetch their devices', function () {
     ]);
 });
 
-test('plugin caches image until data is stale', function () {
+test('plugin caches image until data is stale', function (): void {
     // Create source device with a playlist
     $device = Device::factory()->create([
         'mac_address' => '55:11:22:33:44:55',
@@ -577,7 +577,7 @@ test('plugin caches image until data is stale', function () {
         ->not->toBe($firstResponse['filename']);
 });
 
-test('plugins in playlist are rendered in order', function () {
+test('plugins in playlist are rendered in order', function (): void {
     // Create source device with a playlist
     $device = Device::factory()->create([
         'mac_address' => '55:11:22:33:44:55',
@@ -681,7 +681,7 @@ test('plugins in playlist are rendered in order', function () {
         ->not->toBe($secondResponse['filename']);
 });
 
-test('display endpoint updates last_refreshed_at timestamp', function () {
+test('display endpoint updates last_refreshed_at timestamp', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -702,7 +702,7 @@ test('display endpoint updates last_refreshed_at timestamp', function () {
         ->and($device->last_refreshed_at->diffInSeconds(now()))->toBeLessThan(2);
 });
 
-test('display endpoint updates last_refreshed_at timestamp for mirrored devices', function () {
+test('display endpoint updates last_refreshed_at timestamp for mirrored devices', function (): void {
     // Create source device
     $sourceDevice = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
@@ -731,7 +731,7 @@ test('display endpoint updates last_refreshed_at timestamp for mirrored devices'
         ->and($mirrorDevice->last_refreshed_at->diffInSeconds(now()))->toBeLessThan(2);
 });
 
-test('display endpoint handles mashup playlist items correctly', function () {
+test('display endpoint handles mashup playlist items correctly', function (): void {
     // Create a device
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
@@ -791,7 +791,7 @@ test('display endpoint handles mashup playlist items correctly', function () {
     expect($playlistItem->last_displayed_at)->not->toBeNull();
 });
 
-test('device in sleep mode returns sleep image and correct refresh rate', function () {
+test('device in sleep mode returns sleep image and correct refresh rate', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -821,7 +821,7 @@ test('device in sleep mode returns sleep image and correct refresh rate', functi
     Carbon\Carbon::setTestNow(); // Clear test time
 });
 
-test('device not in sleep mode returns normal image', function () {
+test('device not in sleep mode returns normal image', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -850,7 +850,7 @@ test('device not in sleep mode returns normal image', function () {
     Carbon\Carbon::setTestNow(); // Clear test time
 });
 
-test('device returns sleep.png and correct refresh time when paused', function () {
+test('device returns sleep.png and correct refresh time when paused', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
@@ -872,7 +872,7 @@ test('device returns sleep.png and correct refresh time when paused', function (
     expect($json['refresh_rate'])->toBeLessThanOrEqual(3600); // ~60 min
 });
 
-test('screens endpoint accepts nullable file_name', function () {
+test('screens endpoint accepts nullable file_name', function (): void {
     Queue::fake();
 
     $device = Device::factory()->create([
@@ -894,7 +894,7 @@ test('screens endpoint accepts nullable file_name', function () {
     Queue::assertPushed(GenerateScreenJob::class);
 });
 
-test('screens endpoint returns 404 for invalid device credentials', function () {
+test('screens endpoint returns 404 for invalid device credentials', function (): void {
     $response = $this->withHeaders([
         'id' => 'invalid-mac',
         'access-token' => 'invalid-key',
@@ -911,7 +911,7 @@ test('screens endpoint returns 404 for invalid device credentials', function () 
         ]);
 });
 
-test('setup endpoint assigns device model when model-id header is provided', function () {
+test('setup endpoint assigns device model when model-id header is provided', function (): void {
     $user = User::factory()->create(['assign_new_devices' => true]);
     $deviceModel = DeviceModel::factory()->create([
         'name' => 'test-model',
@@ -934,7 +934,7 @@ test('setup endpoint assigns device model when model-id header is provided', fun
         ->and($device->device_model_id)->toBe($deviceModel->id);
 });
 
-test('setup endpoint handles non-existent device model gracefully', function () {
+test('setup endpoint handles non-existent device model gracefully', function (): void {
     $user = User::factory()->create(['assign_new_devices' => true]);
 
     $response = $this->withHeaders([

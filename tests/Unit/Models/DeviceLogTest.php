@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('device log belongs to a device', function () {
+test('device log belongs to a device', function (): void {
     $device = Device::factory()->create();
     $log = DeviceLog::factory()->create(['device_id' => $device->id]);
 
@@ -14,7 +14,7 @@ test('device log belongs to a device', function () {
         ->and($log->device->id)->toBe($device->id);
 });
 
-test('device log casts log_entry to array', function () {
+test('device log casts log_entry to array', function (): void {
     Device::factory()->create();
     $log = DeviceLog::factory()->create([
         'log_entry' => [
@@ -29,7 +29,7 @@ test('device log casts log_entry to array', function () {
         ->and($log->log_entry['level'])->toBe('info');
 });
 
-test('device log casts device_timestamp to datetime', function () {
+test('device log casts device_timestamp to datetime', function (): void {
     Device::factory()->create();
     $timestamp = now();
     $log = DeviceLog::factory()->create([
@@ -40,7 +40,7 @@ test('device log casts device_timestamp to datetime', function () {
         ->and($log->device_timestamp->timestamp)->toBe($timestamp->timestamp);
 });
 
-test('device log factory creates valid data', function () {
+test('device log factory creates valid data', function (): void {
     Device::factory()->create();
     $log = DeviceLog::factory()->create();
 
@@ -50,7 +50,7 @@ test('device log factory creates valid data', function () {
         ->and($log->log_entry)->toHaveKeys(['creation_timestamp', 'device_status_stamp', 'log_id', 'log_message', 'log_codeline', 'log_sourcefile', 'additional_info']);
 });
 
-test('device log can be created with minimal required fields', function () {
+test('device log can be created with minimal required fields', function (): void {
     $device = Device::factory()->create();
     $log = DeviceLog::create([
         'device_id' => $device->id,

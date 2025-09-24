@@ -11,13 +11,7 @@ use Illuminate\Support\Arr;
 
 class WebhookChannel extends Notification
 {
-    /** @var Client */
-    protected $client;
-
-    public function __construct(Client $client)
-    {
-        $this->client = $client;
-    }
+    public function __construct(protected Client $client) {}
 
     /**
      * Send the given notification.

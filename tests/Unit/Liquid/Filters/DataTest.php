@@ -2,14 +2,14 @@
 
 use App\Liquid\Filters\Data;
 
-test('json filter converts arrays to JSON', function () {
+test('json filter converts arrays to JSON', function (): void {
     $filter = new Data();
     $array = ['foo' => 'bar', 'baz' => 'qux'];
 
     expect($filter->json($array))->toBe('{"foo":"bar","baz":"qux"}');
 });
 
-test('json filter converts objects to JSON', function () {
+test('json filter converts objects to JSON', function (): void {
     $filter = new Data();
     $object = new stdClass();
     $object->foo = 'bar';
@@ -18,7 +18,7 @@ test('json filter converts objects to JSON', function () {
     expect($filter->json($object))->toBe('{"foo":"bar","baz":"qux"}');
 });
 
-test('json filter handles nested structures', function () {
+test('json filter handles nested structures', function (): void {
     $filter = new Data();
     $nested = [
         'foo' => 'bar',
@@ -31,7 +31,7 @@ test('json filter handles nested structures', function () {
     expect($filter->json($nested))->toBe('{"foo":"bar","nested":{"baz":"qux","items":[1,2,3]}}');
 });
 
-test('json filter handles scalar values', function () {
+test('json filter handles scalar values', function (): void {
     $filter = new Data();
 
     expect($filter->json('string'))->toBe('"string"');
@@ -40,21 +40,21 @@ test('json filter handles scalar values', function () {
     expect($filter->json(null))->toBe('null');
 });
 
-test('json filter preserves unicode characters', function () {
+test('json filter preserves unicode characters', function (): void {
     $filter = new Data();
     $data = ['message' => 'Hello, 世界'];
 
     expect($filter->json($data))->toBe('{"message":"Hello, 世界"}');
 });
 
-test('json filter does not escape slashes', function () {
+test('json filter does not escape slashes', function (): void {
     $filter = new Data();
     $data = ['url' => 'https://example.com/path'];
 
     expect($filter->json($data))->toBe('{"url":"https://example.com/path"}');
 });
 
-test('find_by filter finds object by key-value pair', function () {
+test('find_by filter finds object by key-value pair', function (): void {
     $filter = new Data();
     $collection = [
         ['name' => 'Ryan', 'age' => 35],
@@ -66,7 +66,7 @@ test('find_by filter finds object by key-value pair', function () {
     expect($result)->toBe(['name' => 'Ryan', 'age' => 35]);
 });
 
-test('find_by filter returns null when no match found', function () {
+test('find_by filter returns null when no match found', function (): void {
     $filter = new Data();
     $collection = [
         ['name' => 'Ryan', 'age' => 35],
@@ -78,7 +78,7 @@ test('find_by filter returns null when no match found', function () {
     expect($result)->toBeNull();
 });
 
-test('find_by filter returns fallback when no match found', function () {
+test('find_by filter returns fallback when no match found', function (): void {
     $filter = new Data();
     $collection = [
         ['name' => 'Ryan', 'age' => 35],
@@ -90,7 +90,7 @@ test('find_by filter returns fallback when no match found', function () {
     expect($result)->toBe('Not Found');
 });
 
-test('find_by filter finds by age', function () {
+test('find_by filter finds by age', function (): void {
     $filter = new Data();
     $collection = [
         ['name' => 'Ryan', 'age' => 35],
@@ -102,7 +102,7 @@ test('find_by filter finds by age', function () {
     expect($result)->toBe(['name' => 'Sara', 'age' => 29]);
 });
 
-test('find_by filter handles empty collection', function () {
+test('find_by filter handles empty collection', function (): void {
     $filter = new Data();
     $collection = [];
 
@@ -110,7 +110,7 @@ test('find_by filter handles empty collection', function () {
     expect($result)->toBeNull();
 });
 
-test('find_by filter handles collection with non-array items', function () {
+test('find_by filter handles collection with non-array items', function (): void {
     $filter = new Data();
     $collection = [
         'not an array',
@@ -122,7 +122,7 @@ test('find_by filter handles collection with non-array items', function () {
     expect($result)->toBe(['name' => 'Ryan', 'age' => 35]);
 });
 
-test('find_by filter handles items without the specified key', function () {
+test('find_by filter handles items without the specified key', function (): void {
     $filter = new Data();
     $collection = [
         ['age' => 35],
@@ -134,7 +134,7 @@ test('find_by filter handles items without the specified key', function () {
     expect($result)->toBe(['name' => 'Ryan', 'age' => 35]);
 });
 
-test('group_by filter groups collection by age', function () {
+test('group_by filter groups collection by age', function (): void {
     $filter = new Data();
     $collection = [
         ['name' => 'Ryan', 'age' => 35],
@@ -153,7 +153,7 @@ test('group_by filter groups collection by age', function () {
     ]);
 });
 
-test('group_by filter groups collection by name', function () {
+test('group_by filter groups collection by name', function (): void {
     $filter = new Data();
     $collection = [
         ['name' => 'Ryan', 'age' => 35],
@@ -172,7 +172,7 @@ test('group_by filter groups collection by name', function () {
     ]);
 });
 
-test('group_by filter handles empty collection', function () {
+test('group_by filter handles empty collection', function (): void {
     $filter = new Data();
     $collection = [];
 
@@ -180,7 +180,7 @@ test('group_by filter handles empty collection', function () {
     expect($result)->toBe([]);
 });
 
-test('group_by filter handles collection with non-array items', function () {
+test('group_by filter handles collection with non-array items', function (): void {
     $filter = new Data();
     $collection = [
         'not an array',
@@ -197,7 +197,7 @@ test('group_by filter handles collection with non-array items', function () {
     ]);
 });
 
-test('group_by filter handles items without the specified key', function () {
+test('group_by filter handles items without the specified key', function (): void {
     $filter = new Data();
     $collection = [
         ['age' => 35],
@@ -217,7 +217,7 @@ test('group_by filter handles items without the specified key', function () {
     ]);
 });
 
-test('group_by filter handles mixed data types as keys', function () {
+test('group_by filter handles mixed data types as keys', function (): void {
     $filter = new Data();
     $collection = [
         ['name' => 'Ryan', 'active' => true],
@@ -238,7 +238,7 @@ test('group_by filter handles mixed data types as keys', function () {
     ]);
 });
 
-test('sample filter returns a random element from array', function () {
+test('sample filter returns a random element from array', function (): void {
     $filter = new Data();
     $array = ['1', '2', '3', '4', '5'];
 
@@ -246,7 +246,7 @@ test('sample filter returns a random element from array', function () {
     expect($result)->toBeIn($array);
 });
 
-test('sample filter returns a random element from string array', function () {
+test('sample filter returns a random element from string array', function (): void {
     $filter = new Data();
     $array = ['cat', 'dog'];
 
@@ -254,7 +254,7 @@ test('sample filter returns a random element from string array', function () {
     expect($result)->toBeIn($array);
 });
 
-test('sample filter returns null for empty array', function () {
+test('sample filter returns null for empty array', function (): void {
     $filter = new Data();
     $array = [];
 
@@ -262,7 +262,7 @@ test('sample filter returns null for empty array', function () {
     expect($result)->toBeNull();
 });
 
-test('sample filter returns the only element from single element array', function () {
+test('sample filter returns the only element from single element array', function (): void {
     $filter = new Data();
     $array = ['single'];
 
@@ -270,7 +270,7 @@ test('sample filter returns the only element from single element array', functio
     expect($result)->toBe('single');
 });
 
-test('sample filter works with mixed data types', function () {
+test('sample filter works with mixed data types', function (): void {
     $filter = new Data();
     $array = [1, 'string', true, null, ['nested']];
 
@@ -278,7 +278,7 @@ test('sample filter works with mixed data types', function () {
     expect($result)->toBeIn($array);
 });
 
-test('parse_json filter parses JSON string to array', function () {
+test('parse_json filter parses JSON string to array', function (): void {
     $filter = new Data();
     $jsonString = '[{"a":1,"b":"c"},"d"]';
 
@@ -286,7 +286,7 @@ test('parse_json filter parses JSON string to array', function () {
     expect($result)->toBe([['a' => 1, 'b' => 'c'], 'd']);
 });
 
-test('parse_json filter parses simple JSON object', function () {
+test('parse_json filter parses simple JSON object', function (): void {
     $filter = new Data();
     $jsonString = '{"name":"John","age":30,"city":"New York"}';
 
@@ -294,7 +294,7 @@ test('parse_json filter parses simple JSON object', function () {
     expect($result)->toBe(['name' => 'John', 'age' => 30, 'city' => 'New York']);
 });
 
-test('parse_json filter parses JSON array', function () {
+test('parse_json filter parses JSON array', function (): void {
     $filter = new Data();
     $jsonString = '["apple","banana","cherry"]';
 
@@ -302,7 +302,7 @@ test('parse_json filter parses JSON array', function () {
     expect($result)->toBe(['apple', 'banana', 'cherry']);
 });
 
-test('parse_json filter parses nested JSON structure', function () {
+test('parse_json filter parses nested JSON structure', function (): void {
     $filter = new Data();
     $jsonString = '{"users":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}],"total":2}';
 
@@ -316,7 +316,7 @@ test('parse_json filter parses nested JSON structure', function () {
     ]);
 });
 
-test('parse_json filter handles primitive values', function () {
+test('parse_json filter handles primitive values', function (): void {
     $filter = new Data();
 
     expect($filter->parse_json('"hello"'))->toBe('hello');

@@ -42,7 +42,7 @@ class Plugin extends Model
     {
         parent::boot();
 
-        static::creating(function ($model) {
+        static::creating(function ($model): void {
             if (empty($model->uuid)) {
                 $model->uuid = Str::uuid();
             }
@@ -83,7 +83,7 @@ class Plugin extends Model
                 $currentValue = $this->configuration[$fieldKey] ?? null;
 
                 // If the field has a default value and no current value is set, it's not missing
-                if (($currentValue === null || $currentValue === '' || (is_array($currentValue) && empty($currentValue))) && ! isset($field['default'])) {
+                if (($currentValue === null || $currentValue === '' || ($currentValue === [])) && ! isset($field['default'])) {
                     return true; // Found a required field that is not set and has no default
                 }
             }
@@ -126,7 +126,7 @@ class Plugin extends Model
             // Split URLs by newline and filter out empty lines
             $urls = array_filter(
                 array_map('trim', explode("\n", $this->polling_url)),
-                fn ($url) => ! empty($url)
+                fn ($url): bool => ! empty($url)
             );
 
             // If only one URL, use the original logic without nesting
@@ -237,7 +237,7 @@ class Plugin extends Model
         // Converts to: {% assign temp_filtered = collection | filter: "key", "value" %}{% for item in temp_filtered %}
         $template = preg_replace_callback(
             '/{%\s*for\s+(\w+)\s+in\s+([^|%}]+)\s*\|\s*([^%}]+)%}/',
-            function ($matches) {
+            function ($matches): string {
                 $variableName = mb_trim($matches[1]);
                 $collection = mb_trim($matches[2]);
                 $filter = mb_trim($matches[3]);
@@ -245,7 +245,7 @@ class Plugin extends Model
 
                 return "{% assign {$tempVarName} = {$collection} | {$filter} %}{% for {$variableName} in {$tempVarName} %}";
             },
-            $template
+            (string) $template
         );
 
         return $template;

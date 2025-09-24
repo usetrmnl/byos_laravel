@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
-test('playlist scheduling works correctly for time ranges spanning midnight', function () {
+test('playlist scheduling works correctly for time ranges spanning midnight', function (): void {
     // Create a user and device
     $user = User::factory()->create();
     $device = Device::factory()->create(['user_id' => $user->id]);
@@ -85,7 +85,7 @@ test('playlist scheduling works correctly for time ranges spanning midnight', fu
     expect($nextItem->playlist->name)->toBe('Day until Deep Night Playlist');
 });
 
-test('playlist isActiveNow handles midnight spanning correctly', function () {
+test('playlist isActiveNow handles midnight spanning correctly', function (): void {
     $playlist = Playlist::factory()->create([
         'is_active' => true,
         'active_from' => '09:01',
@@ -110,7 +110,7 @@ test('playlist isActiveNow handles midnight spanning correctly', function () {
     expect($playlist->isActiveNow())->toBeFalse();
 });
 
-test('playlist isActiveNow handles normal time ranges correctly', function () {
+test('playlist isActiveNow handles normal time ranges correctly', function (): void {
     $playlist = Playlist::factory()->create([
         'is_active' => true,
         'active_from' => '09:00',

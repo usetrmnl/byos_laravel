@@ -5,12 +5,12 @@ use App\Models\Firmware;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('public');
     Storage::disk('public')->makeDirectory('/firmwares');
 });
 
-test('it creates firmwares directory if it does not exist', function () {
+test('it creates firmwares directory if it does not exist', function (): void {
     $firmware = Firmware::factory()->create([
         'url' => 'https://example.com/firmware.bin',
         'version_tag' => '1.0.0',
@@ -26,7 +26,7 @@ test('it creates firmwares directory if it does not exist', function () {
     expect(Storage::disk('public')->exists('firmwares'))->toBeTrue();
 });
 
-test('it downloads firmware and updates storage location', function () {
+test('it downloads firmware and updates storage location', function (): void {
     Http::fake([
         'https://example.com/firmware.bin' => Http::response('fake firmware content', 200),
     ]);
@@ -42,7 +42,7 @@ test('it downloads firmware and updates storage location', function () {
     expect($firmware->fresh()->storage_location)->toBe('firmwares/FW1.0.0.bin');
 });
 
-test('it handles connection exception gracefully', function () {
+test('it handles connection exception gracefully', function (): void {
     $firmware = Firmware::factory()->create([
         'url' => 'https://example.com/firmware.bin',
         'version_tag' => '1.0.0',
@@ -50,7 +50,7 @@ test('it handles connection exception gracefully', function () {
     ]);
 
     Http::fake([
-        'https://example.com/firmware.bin' => function () {
+        'https://example.com/firmware.bin' => function (): void {
             throw new Illuminate\Http\Client\ConnectionException('Connection failed');
         },
     ]);
@@ -65,7 +65,7 @@ test('it handles connection exception gracefully', function () {
     expect($firmware->fresh()->storage_location)->toBeNull();
 });
 
-test('it handles general exception gracefully', function () {
+test('it handles general exception gracefully', function (): void {
     $firmware = Firmware::factory()->create([
         'url' => 'https://example.com/firmware.bin',
         'version_tag' => '1.0.0',
@@ -73,7 +73,7 @@ test('it handles general exception gracefully', function () {
     ]);
 
     Http::fake([
-        'https://example.com/firmware.bin' => function () {
+        'https://example.com/firmware.bin' => function (): void {
             throw new Exception('Unexpected error');
         },
     ]);
@@ -88,7 +88,7 @@ test('it handles general exception gracefully', function () {
     expect($firmware->fresh()->storage_location)->toBeNull();
 });
 
-test('it handles firmware with special characters in version tag', function () {
+test('it handles firmware with special characters in version tag', function (): void {
     Http::fake([
         'https://example.com/firmware.bin' => Http::response('fake firmware content', 200),
     ]);
@@ -103,7 +103,7 @@ test('it handles firmware with special characters in version tag', function () {
     expect($firmware->fresh()->storage_location)->toBe('firmwares/FW1.0.0-beta.bin');
 });
 
-test('it handles firmware with long version tag', function () {
+test('it handles firmware with long version tag', function (): void {
     Http::fake([
         'https://example.com/firmware.bin' => Http::response('fake firmware content', 200),
     ]);
@@ -118,7 +118,7 @@ test('it handles firmware with long version tag', function () {
     expect($firmware->fresh()->storage_location)->toBe('firmwares/FW1.0.0.1234.5678.90.bin');
 });
 
-test('it creates firmwares directory even when it already exists', function () {
+test('it creates firmwares directory even when it already exists', function (): void {
     $firmware = Firmware::factory()->create([
         'url' => 'https://example.com/firmware.bin',
         'version_tag' => '1.0.0',
@@ -138,7 +138,7 @@ test('it creates firmwares directory even when it already exists', function () {
     expect($firmware->fresh()->storage_location)->toBe('firmwares/FW1.0.0.bin');
 });
 
-test('it handles http error response', function () {
+test('it handles http error response', function (): void {
     $firmware = Firmware::factory()->create([
         'url' => 'https://example.com/firmware.bin',
         'version_tag' => '1.0.0',

@@ -18,7 +18,7 @@ class CleanupDeviceLogsJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Device::each(function ($device) {
+        Device::each(function ($device): void {
             $keepIds = $device->logs()->latest('device_timestamp')->take(50)->pluck('id');
 
             // Delete all other logs for this device

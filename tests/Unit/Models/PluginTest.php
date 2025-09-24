@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Http;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-test('plugin has required attributes', function () {
+test('plugin has required attributes', function (): void {
     $plugin = Plugin::factory()->create([
         'name' => 'Test Plugin',
         'data_payload' => ['key' => 'value'],
@@ -18,7 +18,7 @@ test('plugin has required attributes', function () {
         ->uuid->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
 });
 
-test('plugin automatically generates uuid on creation', function () {
+test('plugin automatically generates uuid on creation', function (): void {
     $plugin = Plugin::factory()->create();
 
     expect($plugin->uuid)
@@ -26,14 +26,14 @@ test('plugin automatically generates uuid on creation', function () {
         ->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
 });
 
-test('plugin can have custom uuid', function () {
+test('plugin can have custom uuid', function (): void {
     $uuid = Illuminate\Support\Str::uuid();
     $plugin = Plugin::factory()->create(['uuid' => $uuid]);
 
     expect($plugin->uuid)->toBe($uuid);
 });
 
-test('plugin data_payload is cast to array', function () {
+test('plugin data_payload is cast to array', function (): void {
     $data = ['key' => 'value'];
     $plugin = Plugin::factory()->create(['data_payload' => $data]);
 
@@ -42,7 +42,7 @@ test('plugin data_payload is cast to array', function () {
         ->toBe($data);
 });
 
-test('plugin can have polling body for POST requests', function () {
+test('plugin can have polling body for POST requests', function (): void {
     $plugin = Plugin::factory()->create([
         'polling_verb' => 'post',
         'polling_body' => '{"query": "query { user { id name } }"}',
@@ -51,7 +51,7 @@ test('plugin can have polling body for POST requests', function () {
     expect($plugin->polling_body)->toBe('{"query": "query { user { id name } }"}');
 });
 
-test('updateDataPayload sends POST request with body when polling_verb is post', function () {
+test('updateDataPayload sends POST request with body when polling_verb is post', function (): void {
     Http::fake([
         'https://example.com/api' => Http::response(['success' => true], 200),
     ]);
@@ -65,14 +65,12 @@ test('updateDataPayload sends POST request with body when polling_verb is post',
 
     $plugin->updateDataPayload();
 
-    Http::assertSent(function ($request) {
-        return $request->url() === 'https://example.com/api' &&
-               $request->method() === 'POST' &&
-               $request->body() === '{"query": "query { user { id name } }"}';
-    });
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://example.com/api' &&
+           $request->method() === 'POST' &&
+           $request->body() === '{"query": "query { user { id name } }"}');
 });
 
-test('updateDataPayload handles multiple URLs with IDX_ prefixes', function () {
+test('updateDataPayload handles multiple URLs with IDX_ prefixes', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',
         'polling_url' => "https://api1.example.com/data\nhttps://api2.example.com/weather\nhttps://api3.example.com/news",
@@ -99,7 +97,7 @@ test('updateDataPayload handles multiple URLs with IDX_ prefixes', function () {
     expect($plugin->data_payload['IDX_2'])->toBe(['headline' => 'test']);
 });
 
-test('updateDataPayload handles single URL without nesting', function () {
+test('updateDataPayload handles single URL without nesting', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',
         'polling_url' => 'https://api.example.com/data',
@@ -120,7 +118,7 @@ test('updateDataPayload handles single URL without nesting', function () {
     expect($plugin->data_payload)->not->toHaveKey('IDX_0');
 });
 
-test('updateDataPayload resolves Liquid variables in polling_header', function () {
+test('updateDataPayload resolves Liquid variables in polling_header', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',
         'polling_url' => 'https://api.example.com/data',
@@ -139,15 +137,13 @@ test('updateDataPayload resolves Liquid variables in polling_header', function (
 
     $plugin->updateDataPayload();
 
-    Http::assertSent(function ($request) {
-        return $request->url() === 'https://api.example.com/data' &&
-               $request->method() === 'GET' &&
-               $request->header('Authorization')[0] === 'Bearer test123' &&
-               $request->header('X-Custom-Header')[0] === 'custom_header_value';
-    });
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://api.example.com/data' &&
+           $request->method() === 'GET' &&
+           $request->header('Authorization')[0] === 'Bearer test123' &&
+           $request->header('X-Custom-Header')[0] === 'custom_header_value');
 });
 
-test('updateDataPayload resolves Liquid variables in polling_body', function () {
+test('updateDataPayload resolves Liquid variables in polling_body', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',
         'polling_url' => 'https://api.example.com/data',
@@ -166,7 +162,7 @@ test('updateDataPayload resolves Liquid variables in polling_body', function () 
 
     $plugin->updateDataPayload();
 
-    Http::assertSent(function ($request) {
+    Http::assertSent(function ($request): bool {
         $expectedBody = '{"query": "query { user { id name } }", "api_key": "test123", "user_id": "456"}';
 
         return $request->url() === 'https://api.example.com/data' &&
@@ -175,7 +171,7 @@ test('updateDataPayload resolves Liquid variables in polling_body', function () 
     });
 });
 
-test('webhook plugin is stale if webhook event occurred', function () {
+test('webhook plugin is stale if webhook event occurred', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'webhook',
         'data_payload_updated_at' => now()->subMinutes(10),
@@ -186,7 +182,7 @@ test('webhook plugin is stale if webhook event occurred', function () {
 
 });
 
-test('webhook plugin data not stale if no webhook event occurred for 1 hour', function () {
+test('webhook plugin data not stale if no webhook event occurred for 1 hour', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'webhook',
         'data_payload_updated_at' => now()->subMinutes(60),
@@ -197,7 +193,7 @@ test('webhook plugin data not stale if no webhook event occurred for 1 hour', fu
 
 });
 
-test('plugin configuration is cast to array', function () {
+test('plugin configuration is cast to array', function (): void {
     $config = ['timezone' => 'UTC', 'refresh_interval' => 30];
     $plugin = Plugin::factory()->create(['configuration' => $config]);
 
@@ -206,7 +202,7 @@ test('plugin configuration is cast to array', function () {
         ->toBe($config);
 });
 
-test('plugin can get configuration value by key', function () {
+test('plugin can get configuration value by key', function (): void {
     $config = ['timezone' => 'UTC', 'refresh_interval' => 30];
     $plugin = Plugin::factory()->create(['configuration' => $config]);
 
@@ -215,7 +211,7 @@ test('plugin can get configuration value by key', function () {
     expect($plugin->getConfiguration('nonexistent', 'default'))->toBe('default');
 });
 
-test('plugin configuration template is cast to array', function () {
+test('plugin configuration template is cast to array', function (): void {
     $template = [
         'custom_fields' => [
             [
@@ -233,7 +229,7 @@ test('plugin configuration template is cast to array', function () {
         ->toBe($template);
 });
 
-test('resolveLiquidVariables resolves variables from configuration', function () {
+test('resolveLiquidVariables resolves variables from configuration', function (): void {
     $plugin = Plugin::factory()->create([
         'configuration' => [
             'api_key' => '12345',
@@ -263,7 +259,7 @@ test('resolveLiquidVariables resolves variables from configuration', function ()
     expect($result)->toBe('High');
 });
 
-test('resolveLiquidVariables handles invalid Liquid syntax gracefully', function () {
+test('resolveLiquidVariables handles invalid Liquid syntax gracefully', function (): void {
     $plugin = Plugin::factory()->create([
         'configuration' => [
             'api_key' => '12345',
@@ -277,7 +273,7 @@ test('resolveLiquidVariables handles invalid Liquid syntax gracefully', function
         ->toThrow(Keepsuit\Liquid\Exceptions\SyntaxException::class);
 });
 
-test('plugin can extract default values from custom fields configuration template', function () {
+test('plugin can extract default values from custom fields configuration template', function (): void {
     $configurationTemplate = [
         'custom_fields' => [
             [
@@ -323,7 +319,7 @@ test('plugin can extract default values from custom fields configuration templat
     expect($plugin->getConfiguration('timezone'))->toBeNull();
 });
 
-test('resolveLiquidVariables resolves configuration variables correctly', function () {
+test('resolveLiquidVariables resolves configuration variables correctly', function (): void {
     $plugin = Plugin::factory()->create([
         'configuration' => [
             'Latitude' => '48.2083',
@@ -338,7 +334,7 @@ test('resolveLiquidVariables resolves configuration variables correctly', functi
     expect($plugin->resolveLiquidVariables($template))->toBe($expected);
 });
 
-test('resolveLiquidVariables handles missing variables gracefully', function () {
+test('resolveLiquidVariables handles missing variables gracefully', function (): void {
     $plugin = Plugin::factory()->create([
         'configuration' => [
             'Latitude' => '48.2083',
@@ -351,7 +347,7 @@ test('resolveLiquidVariables handles missing variables gracefully', function () 
     expect($plugin->resolveLiquidVariables($template))->toBe($expected);
 });
 
-test('resolveLiquidVariables handles empty configuration', function () {
+test('resolveLiquidVariables handles empty configuration', function (): void {
     $plugin = Plugin::factory()->create([
         'configuration' => [],
     ]);
