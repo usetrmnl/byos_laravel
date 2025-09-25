@@ -68,12 +68,11 @@ class PluginImportService
                 $fullLiquid = $sharedLiquid."\n".$fullLiquid;
             }
 
-            $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
-
             // Check if the file ends with .liquid to set markup language
             $markupLanguage = 'blade';
             if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
                 $markupLanguage = 'liquid';
+                $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
             }
 
             // Ensure custom_fields is properly formatted
@@ -193,12 +192,11 @@ class PluginImportService
                 $fullLiquid = $sharedLiquid."\n".$fullLiquid;
             }
 
-            $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
-
             // Check if the file ends with .liquid to set markup language
             $markupLanguage = 'blade';
             if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
                 $markupLanguage = 'liquid';
+                $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
             }
 
             // Ensure custom_fields is properly formatted

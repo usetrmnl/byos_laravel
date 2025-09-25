@@ -130,7 +130,9 @@ it('handles blade markup language correctly', function (): void {
     $pluginImportService = new PluginImportService();
     $plugin = $pluginImportService->importFromZip($zipFile, $user);
 
-    expect($plugin->markup_language)->toBe('blade');
+    expect($plugin->markup_language)->toBe('blade')
+        ->and($plugin->render_markup)->not->toContain('<div class="view view--{{ size }}">')
+        ->and($plugin->render_markup)->toBe('<div>Blade template</div>');
 });
 
 it('imports plugin from monorepo with zip_entry_path parameter', function (): void {
