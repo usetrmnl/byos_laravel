@@ -212,6 +212,12 @@ You can dynamically update screens by sending a POST request.
 }
 ```
 
+### Releated Work
+* [bnussbau/laravel-trmnl-blade](https://github.com/bnussbau/laravel-trmnl-blade) – Blade Components on top of the TRMNL Design System
+* [bnussbau/trmnl-pipeline-php](https://github.com/bnussbau/trmnl-pipeline-php) – Browser Rendering and Image Conversion Pipeline with support for TRMNL Models API
+* [bnussbau/trmnl-recipe-catalog](https://github.com/bnussbau/trmnl-recipe-catalog) – A community-driven catalog of public repositories containing trmnlp-compatible recipes.
+
+
 ### 🤝 Contribution
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
