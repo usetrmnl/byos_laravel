@@ -19,6 +19,8 @@ new class extends Component {
     public array $plugins;
     public $zipFile;
 
+    public string $sortBy = 'date_asc';
+
     public array $native_plugins = [
         'markup' =>
             ['name' => 'Markup', 'flux_icon_name' => 'code-bracket', 'detail_view_route' => 'plugins.markup'],
@@ -39,12 +41,64 @@ new class extends Component {
     public function refreshPlugins(): void
     {
         $userPlugins = auth()->user()?->plugins?->makeHidden(['render_markup', 'data_payload'])->toArray();
-        $this->plugins = array_merge($this->native_plugins, $userPlugins ?? []);
+        $allPlugins = array_merge($this->native_plugins, $userPlugins ?? []);
+        $allPlugins = array_values($allPlugins);
+        $allPlugins = $this->sortPlugins($allPlugins);
+        $this->plugins = $allPlugins;
+    }
+
+    protected function sortPlugins(array $plugins): array
+    {
+        $pluginsToSort = array_values($plugins);
+
+        switch ($this->sortBy) {
+            case 'name_asc':
+                usort($pluginsToSort, function($a, $b) {
+                    return strcasecmp($a['name'] ?? '', $b['name'] ?? '');
+                });
+                break;
+
+            case 'name_desc':
+                usort($pluginsToSort, function($a, $b) {
+                    return strcasecmp($b['name'] ?? '', $a['name'] ?? '');
+                });
+                break;
+
+            case 'date_desc':
+                usort($pluginsToSort, function($a, $b) {
+                    $aDate = $a['created_at'] ?? '1970-01-01';
+                    $bDate = $b['created_at'] ?? '1970-01-01';
+                    return strcmp($bDate, $aDate);
+                });
+                break;
+
+            case 'date_asc':
+                usort($pluginsToSort, function($a, $b) {
+                    $aDate = $a['created_at'] ?? '1970-01-01';
+                    $bDate = $b['created_at'] ?? '1970-01-01';
+                    return strcmp($aDate, $bDate);
+                });
+                break;
+        }
+
+        return $pluginsToSort;
     }
 
     public function mount(): void
     {
         $this->refreshPlugins();
+    }
+
+    public function updatedSortBy(): void
+    {
+        $this->refreshPlugins();
+    }
+
+    public function getListeners(): array
+    {
+        return [
+            'plugin-installed' => 'refreshPlugins',
+        ];
     }
 
     public function addPlugin(): void
@@ -74,7 +128,6 @@ new class extends Component {
     {
         Artisan::call(ExampleRecipesSeederCommand::class, ['user_id' => auth()->id()]);
         $this->refreshPlugins();
-
     }
 
 
@@ -101,7 +154,14 @@ new class extends Component {
 };
 ?>
 
-<div class="py-12">
+<div class="py-12" x-data="{
+    searchTerm: '',
+    filterPlugins(plugins) {
+        if (this.searchTerm.length <= 1) return plugins;
+        const search = this.searchTerm.toLowerCase();
+        return plugins.filter(p => p.name.toLowerCase().includes(search));
+    }
+}">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold dark:text-gray-100">Plugins &amp; Recipes</h2>
@@ -124,8 +184,30 @@ new class extends Component {
                     </flux:menu>
                 </flux:dropdown>
             </flux:button.group>
+        </div>
 
+        <div class="mb-6 flex flex-col sm:flex-row gap-4">
+            <div class="flex-1">
+                <flux:input
+                    x-model="searchTerm"
+                    placeholder="Search plugins by name (min. 2 characters)..."
+                    icon="magnifying-glass"
+                />
+            </div>
+            <div class="sm:w-64">
+                <flux:select wire:model.live="sortBy">
+                    <option value="date_asc">Oldest First</option>
+                    <option value="date_desc">Newest First</option>
+                    <option value="name_asc">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                </flux:select>
+            </div>
+        </div>
 
+        <div x-show="searchTerm.length > 1" class="mb-4" style="display: none;">
+            <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                <span x-text="'Showing results for: ' + searchTerm"></span>
+            </p>
         </div>
 
         <flux:modal name="import-zip" class="md:w-96">
@@ -194,7 +276,7 @@ new class extends Component {
                     </flux:heading>
                     <flux:subheading>Browse and install Recipes from the community. Add yours <a href="https://github.com/bnussbau/trmnl-recipe-catalog" class="underline" target="_blank">here</a>.</flux:subheading>
                 </div>
-                <livewire:catalog.index @plugin-installed="refreshPlugins" />
+                <livewire:catalog.index />
             </div>
         </flux:modal>
 
@@ -265,9 +347,16 @@ new class extends Component {
             </div>
         </flux:modal>
 
+        @php
+            $allPlugins = $this->plugins;
+        @endphp
+
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            @foreach($plugins as $plugin)
+            @foreach($allPlugins as $index => $plugin)
                 <div
+                    wire:key="plugin-{{ $plugin['id'] ?? $plugin['name'] ?? $index }}"
+                    x-data="{ pluginName: {{ json_encode(strtolower($plugin['name'] ?? '')) }} }"
+                    x-show="searchTerm.length <= 1 || pluginName.includes(searchTerm.toLowerCase())"
                     class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
                     <a href="{{ ($plugin['detail_view_route']) ? route($plugin['detail_view_route']) : route('plugins.recipe', ['plugin' => $plugin['id']]) }}"
                        class="block">
