@@ -3,7 +3,7 @@
 [![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
 
 TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
-It allows you to manage TRMNL devices, generate screens using native plugins, recipes (45+ from the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)), or the API, and can also act as a proxy for the native cloud service (Core).
+It allows you to manage TRMNL devices, generate screens using native plugins, recipes (45+ from the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)), or the API, and can also act as a proxy for the native cloud service (Core). With over 15k downloads and 100+ stars, it’s the most popular community-driven BYOS.
 
 ![Screenshot](README_byos-screenshot.png)
 ![Screenshot](README_byos-screenshot-dark.png)
@@ -28,6 +28,7 @@ It allows you to manage TRMNL devices, generate screens using native plugins, re
     * This enables a hybrid setup – for example, you can update your custom Train Monitor every 5 minutes in the morning, while displaying native TRMNL plugins throughout the day.
 * 🌙 Dark Mode – Switch between light and dark mode.
 * 🐳 Deployment – Dockerized setup for easier hosting (Dockerfile, docker-compose).
+* 💾 Flexible Database configuration – uses SQLite by default, also compatible with MySQL or PostgreSQL 
 * 🛠️ Devcontainer support for easier development.
 
 ![Devices](README_byos-devices.jpeg)
@@ -42,8 +43,6 @@ or
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/bnussbau)
 
 [GitHub Sponsors](https://github.com/sponsors/bnussbau/)
-
-If you are looking for a Laravel package designed to streamline the development of both public and private TRMNL plugins, check out [bnussbau/trmnl-laravel](https://github.com/bnussbau/laravel-trmnl).
 
 ### Hosting
 
