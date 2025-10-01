@@ -325,3 +325,173 @@ test('parse_json filter handles primitive values', function (): void {
     expect($filter->parse_json('false'))->toBe(false);
     expect($filter->parse_json('null'))->toBe(null);
 });
+
+test('map_to_i filter converts string numbers to integers', function (): void {
+    $filter = new Data();
+    $input = ['1', '2', '3', '4', '5'];
+
+    expect($filter->map_to_i($input))->toBe([1, 2, 3, 4, 5]);
+});
+
+test('map_to_i filter handles mixed string numbers', function (): void {
+    $filter = new Data();
+    $input = ['5', '4', '3', '2', '1'];
+
+    expect($filter->map_to_i($input))->toBe([5, 4, 3, 2, 1]);
+});
+
+test('map_to_i filter handles decimal strings', function (): void {
+    $filter = new Data();
+    $input = ['1.5', '2.7', '3.0'];
+
+    expect($filter->map_to_i($input))->toBe([1, 2, 3]);
+});
+
+test('map_to_i filter handles empty array', function (): void {
+    $filter = new Data();
+    $input = [];
+
+    expect($filter->map_to_i($input))->toBe([]);
+});
+
+test('where_exp filter returns string as array when input is string', function (): void {
+    $filter = new Data();
+    $input = 'just a string';
+
+    expect($filter->where_exp($input, 'la', 'le'))->toBe(['just a string']);
+});
+
+test('where_exp filter filters numbers with comparison', function (): void {
+    $filter = new Data();
+    $input = [1, 2, 3, 4, 5];
+
+    expect($filter->where_exp($input, 'n', 'n >= 3'))->toBe([3, 4, 5]);
+});
+
+test('where_exp filter filters numbers with greater than', function (): void {
+    $filter = new Data();
+    $input = [1, 2, 3, 4, 5];
+
+    expect($filter->where_exp($input, 'n', 'n > 2'))->toBe([3, 4, 5]);
+});
+
+test('where_exp filter filters numbers with less than', function (): void {
+    $filter = new Data();
+    $input = [1, 2, 3, 4, 5];
+
+    expect($filter->where_exp($input, 'n', 'n < 4'))->toBe([1, 2, 3]);
+});
+
+test('where_exp filter filters numbers with equality', function (): void {
+    $filter = new Data();
+    $input = [1, 2, 3, 4, 5];
+
+    expect($filter->where_exp($input, 'n', 'n == 3'))->toBe([3]);
+});
+
+test('where_exp filter filters numbers with not equal', function (): void {
+    $filter = new Data();
+    $input = [1, 2, 3, 4, 5];
+
+    expect($filter->where_exp($input, 'n', 'n != 3'))->toBe([1, 2, 4, 5]);
+});
+
+test('where_exp filter filters objects by property', function (): void {
+    $filter = new Data();
+    $input = [
+        ['name' => 'Alice', 'age' => 25],
+        ['name' => 'Bob', 'age' => 30],
+        ['name' => 'Charlie', 'age' => 35],
+    ];
+
+    expect($filter->where_exp($input, 'person', 'person.age >= 30'))->toBe([
+        ['name' => 'Bob', 'age' => 30],
+        ['name' => 'Charlie', 'age' => 35],
+    ]);
+});
+
+test('where_exp filter filters objects by string property', function (): void {
+    $filter = new Data();
+    $input = [
+        ['name' => 'Alice', 'role' => 'admin'],
+        ['name' => 'Bob', 'role' => 'user'],
+        ['name' => 'Charlie', 'role' => 'admin'],
+    ];
+
+    expect($filter->where_exp($input, 'user', 'user.role == "admin"'))->toBe([
+        ['name' => 'Alice', 'role' => 'admin'],
+        ['name' => 'Charlie', 'role' => 'admin'],
+    ]);
+});
+
+test('where_exp filter handles and operator', function (): void {
+    $filter = new Data();
+    $input = [
+        ['name' => 'Alice', 'age' => 25, 'active' => true],
+        ['name' => 'Bob', 'age' => 30, 'active' => false],
+        ['name' => 'Charlie', 'age' => 35, 'active' => true],
+    ];
+
+    expect($filter->where_exp($input, 'person', 'person.age >= 30 and person.active == true'))->toBe([
+        ['name' => 'Charlie', 'age' => 35, 'active' => true],
+    ]);
+});
+
+test('where_exp filter handles or operator', function (): void {
+    $filter = new Data();
+    $input = [
+        ['name' => 'Alice', 'age' => 25, 'role' => 'admin'],
+        ['name' => 'Bob', 'age' => 30, 'role' => 'user'],
+        ['name' => 'Charlie', 'age' => 35, 'role' => 'user'],
+    ];
+
+    expect($filter->where_exp($input, 'person', 'person.age < 30 or person.role == "admin"'))->toBe([
+        ['name' => 'Alice', 'age' => 25, 'role' => 'admin'],
+    ]);
+});
+
+test('where_exp filter handles simple boolean expressions', function (): void {
+    $filter = new Data();
+    $input = [
+        ['name' => 'Alice', 'active' => true],
+        ['name' => 'Bob', 'active' => false],
+        ['name' => 'Charlie', 'active' => true],
+    ];
+
+    expect($filter->where_exp($input, 'person', 'person.active'))->toBe([
+        ['name' => 'Alice', 'active' => true],
+        ['name' => 'Charlie', 'active' => true],
+    ]);
+});
+
+test('where_exp filter handles empty array', function (): void {
+    $filter = new Data();
+    $input = [];
+
+    expect($filter->where_exp($input, 'n', 'n >= 3'))->toBe([]);
+});
+
+test('where_exp filter handles associative array', function (): void {
+    $filter = new Data();
+    $input = [
+        'a' => 1,
+        'b' => 2,
+        'c' => 3,
+    ];
+
+    expect($filter->where_exp($input, 'n', 'n >= 2'))->toBe([2, 3]);
+});
+
+test('where_exp filter handles non-array input', function (): void {
+    $filter = new Data();
+    $input = 123;
+
+    expect($filter->where_exp($input, 'n', 'n >= 3'))->toBe([]);
+});
+
+test('where_exp filter handles null input', function (): void {
+    $filter = new Data();
+    $input = null;
+
+    expect($filter->where_exp($input, 'n', 'n >= 3'))->toBe([]);
+});

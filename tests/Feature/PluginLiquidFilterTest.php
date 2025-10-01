@@ -29,7 +29,6 @@ assign collection = json_string | parse_json
   {{ tide | json  }}
 {%- endfor %}
 LIQUID
-        ,
     ]);
 
     $result = $plugin->render('full');
@@ -55,7 +54,6 @@ assign collection = json_string | parse_json
   {{ tide | json }}
 {%- endfor %}
 LIQUID
-        ,
     ]);
 
     $result = $plugin->render('full');
@@ -81,7 +79,6 @@ assign collection = json_string | parse_json
   {{ tide | json }}
 {%- endfor %}
 LIQUID
-        ,
     ]);
 
     $result = $plugin->render('full');
@@ -121,4 +118,59 @@ it('keeps scalar url_encode behavior intact', function (): void {
     ]));
 
     expect($output)->toBe('hello+world');
+});
+
+test('where_exp filter works in liquid template', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => <<<'LIQUID'
+{% liquid
+assign nums = "1, 2, 3, 4, 5" | split: ", " | map_to_i
+assign filtered = nums | where_exp: "n", "n >= 3"
+%}
+
+{% for num in filtered %}
+  {{ num }}
+{%- endfor %}
+LIQUID
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Debug: Let's see what the actual output is
+    // The issue might be that the HTML contains "1" in other places
+    // Let's check if the filtered numbers are actually in the content
+    $this->assertStringContainsString('3', $result);
+    $this->assertStringContainsString('4', $result);
+    $this->assertStringContainsString('5', $result);
+
+    // Instead of checking for absence of 1 and 2, let's verify the count
+    // The filtered result should only contain 3, 4, 5
+    $filteredContent = strip_tags($result);
+    $this->assertStringNotContainsString('1', $filteredContent);
+    $this->assertStringNotContainsString('2', $filteredContent);
+});
+
+test('where_exp filter works with object properties', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => <<<'LIQUID'
+{% liquid
+assign users = '[{"name":"Alice","age":25},{"name":"Bob","age":30},{"name":"Charlie","age":35}]' | parse_json
+assign adults = users | where_exp: "user", "user.age >= 30"
+%}
+
+{% for user in adults %}
+  {{ user.name }} ({{ user.age }})
+{%- endfor %}
+LIQUID
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should output users >= 30
+    $this->assertStringContainsString('Bob (30)', $result);
+    $this->assertStringContainsString('Charlie (35)', $result);
+    // Should not contain users < 30
+    $this->assertStringNotContainsString('Alice (25)', $result);
 });

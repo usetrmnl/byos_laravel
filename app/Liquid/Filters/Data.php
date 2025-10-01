@@ -2,6 +2,7 @@
 
 namespace App\Liquid\Filters;
 
+use App\Liquid\Utils\ExpressionUtils;
 use Keepsuit\Liquid\Filters\FiltersProvider;
 
 /**
@@ -88,5 +89,48 @@ class Data extends FiltersProvider
     public function parse_json(string $json): mixed
     {
         return json_decode($json, true);
+    }
+
+    /**
+     * Filter a collection using an expression
+     *
+     * @param  mixed  $input  The collection to filter
+     * @param  string  $variable  The variable name to use in the expression
+     * @param  string  $expression  The expression to evaluate
+     * @return array The filtered collection
+     */
+    public function where_exp(mixed $input, string $variable, string $expression): array
+    {
+        // Return input as-is if it's not an array or doesn't have values method
+        if (! is_array($input)) {
+            return is_string($input) ? [$input] : [];
+        }
+
+        // Convert hash to array of values if needed
+        if (ExpressionUtils::isAssociativeArray($input)) {
+            $input = array_values($input);
+        }
+
+        $condition = ExpressionUtils::parseCondition($expression);
+        $result = [];
+
+        foreach ($input as $object) {
+            if (ExpressionUtils::evaluateCondition($condition, $variable, $object)) {
+                $result[] = $object;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Convert array of strings to integers
+     *
+     * @param  array  $input  Array of string numbers
+     * @return array Array of integers
+     */
+    public function map_to_i(array $input): array
+    {
+        return array_map('intval', $input);
     }
 }
