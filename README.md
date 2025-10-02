@@ -15,6 +15,7 @@ It allows you to manage TRMNL devices, generate screens using native plugins, re
 * 📡 Device Information – Display battery status, WiFi strength, firmware version, and more.
 * 🔍 Auto-Join – Automatically detects and adds devices from your local network.
 * 🖥️ Screen Generation – Supports Plugins (including Mashups), Recipes, API, Markup, or updates via Code.
+  * Support for TRMNL [Design Framework](https://usetrmnl.com/framework)
   * Over 45 compatible open-source recipes are available in the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)
   * Supported Devices
     * TRMNL OG (1-bit & 2-bit)
@@ -22,8 +23,12 @@ It allows you to manage TRMNL devices, generate screens using native plugins, re
     * Seeed Studio (XIAO 7.5" ePaper Panel)
     * reTerminal E1001 Monochrome ePaper Display
     * Custom ESP32 with TRMNL firmware
-    * Kindle Devices with [trmnl-kindle](https://github.com/usetrmnl/byos_laravel/pull/27)
+    * E-Reader Devices
+      * Kindle ([trmnl-kindle](https://github.com/usetrmnl/byos_laravel/pull/27))
+      * Nook ([trmnl-nook](https://github.com/usetrmnl/trmnl-nook))
+      * Kobo ([trmnl-kobo](https://github.com/usetrmnl/trmnl-kobo))
     * Android Devices with [trmnl-android](https://github.com/usetrmnl/trmnl-android)
+    * Raspberry Pi (HDMI output) [trmnl-display](https://github.com/usetrmnl/trmnl-display)
 * 🔄 TRMNL API Proxy – Can act as a proxy for the native cloud service (requires TRMNL Developer Edition).
     * This enables a hybrid setup – for example, you can update your custom Train Monitor every 5 minutes in the morning, while displaying native TRMNL plugins throughout the day.
 * 🌙 Dark Mode – Switch between light and dark mode.
