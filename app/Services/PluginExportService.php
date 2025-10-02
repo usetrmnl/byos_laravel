@@ -58,6 +58,7 @@ class PluginExportService
         // Generate shared.liquid if needed (for liquid templates)
         if ($plugin->markup_language === 'liquid') {
             $sharedTemplate = $this->generateSharedTemplate();
+            /** @phpstan-ignore-next-line */
             if ($sharedTemplate) {
                 File::put($tempDir.'/shared.liquid', $sharedTemplate);
             }

@@ -17,7 +17,7 @@ beforeEach(function (): void {
     Storage::disk('public')->put('/images/sleep.bmp', 'fake-bmp-content');
 });
 
-test('command transforms default images for all device models', function () {
+test('command transforms default images for all device models', function (): void {
     // Ensure we have device models
     $deviceModels = DeviceModel::all();
     expect($deviceModels)->not->toBeEmpty();
@@ -42,7 +42,7 @@ test('command transforms default images for all device models', function () {
     }
 });
 
-test('getDeviceSpecificDefaultImage falls back to original images for device without model', function () {
+test('getDeviceSpecificDefaultImage falls back to original images for device without model', function (): void {
     $device = new Device();
     $device->deviceModel = null;
 
@@ -53,7 +53,7 @@ test('getDeviceSpecificDefaultImage falls back to original images for device wit
     expect($sleepImage)->toBe('images/sleep.bmp');
 });
 
-test('generateDefaultScreenImage creates images from Blade templates', function () {
+test('generateDefaultScreenImage creates images from Blade templates', function (): void {
     $device = Device::factory()->create();
 
     $setupUuid = ImageGenerationService::generateDefaultScreenImage($device, 'setup-logo');
@@ -71,14 +71,14 @@ test('generateDefaultScreenImage creates images from Blade templates', function 
     expect(Storage::disk('public')->exists($sleepPath))->toBeTrue();
 })->skipOnCI();
 
-test('generateDefaultScreenImage throws exception for invalid image type', function () {
+test('generateDefaultScreenImage throws exception for invalid image type', function (): void {
     $device = Device::factory()->create();
 
-    expect(fn () => ImageGenerationService::generateDefaultScreenImage($device, 'invalid-type'))
+    expect(fn (): string => ImageGenerationService::generateDefaultScreenImage($device, 'invalid-type'))
         ->toThrow(InvalidArgumentException::class);
 });
 
-test('getDeviceSpecificDefaultImage returns null for invalid image type', function () {
+test('getDeviceSpecificDefaultImage returns null for invalid image type', function (): void {
     $device = new Device();
     $device->deviceModel = DeviceModel::first();
 

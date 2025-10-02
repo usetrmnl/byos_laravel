@@ -12,7 +12,7 @@ class ExpressionUtils
      */
     public static function isAssociativeArray(array $array): bool
     {
-        if (empty($array)) {
+        if ($array === []) {
             return false;
         }
 
@@ -81,8 +81,10 @@ class ExpressionUtils
                        self::evaluateCondition($condition['right'], $variable, $object);
 
             case 'or':
-                return self::evaluateCondition($condition['left'], $variable, $object) ||
-                       self::evaluateCondition($condition['right'], $variable, $object);
+                if (self::evaluateCondition($condition['left'], $variable, $object)) {
+                    return true;
+                }
+                return self::evaluateCondition($condition['right'], $variable, $object);
 
             case 'comparison':
                 $leftValue = self::resolveValue($condition['left'], $variable, $object);

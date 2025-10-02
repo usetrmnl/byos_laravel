@@ -146,7 +146,7 @@ LIQUID
 
     // Instead of checking for absence of 1 and 2, let's verify the count
     // The filtered result should only contain 3, 4, 5
-    $filteredContent = strip_tags($result);
+    $filteredContent = strip_tags((string) $result);
     $this->assertStringNotContainsString('1', $filteredContent);
     $this->assertStringNotContainsString('2', $filteredContent);
 });
