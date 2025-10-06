@@ -256,13 +256,26 @@ class Plugin extends Model
      */
     private function convertDateFormats(string $template): string
     {
-        // Handle date filter formats: date: "format"
+        // Handle date filter formats: date: "format" or date: 'format'
         $template = preg_replace_callback(
-            '/date:\s*"([^"]+)"/',
+            '/date:\s*(["\'])([^"\']+)\1/',
             function ($matches): string {
-                $format = $matches[1];
+                $quote = $matches[1];
+                $format = $matches[2];
                 $convertedFormat = \App\Liquid\Utils\ExpressionUtils::strftimeToPhpFormat($format);
-                return 'date: "'.$convertedFormat.'"';
+                return 'date: '.$quote.$convertedFormat.$quote;
+            },
+            $template
+        );
+
+        // Handle l_date filter formats: l_date: "format" or l_date: 'format'
+        $template = preg_replace_callback(
+            '/l_date:\s*(["\'])([^"\']+)\1/',
+            function ($matches): string {
+                $quote = $matches[1];
+                $format = $matches[2];
+                $convertedFormat = \App\Liquid\Utils\ExpressionUtils::strftimeToPhpFormat($format);
+                return 'l_date: '.$quote.$convertedFormat.$quote;
             },
             $template
         );
