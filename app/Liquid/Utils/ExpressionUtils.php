@@ -168,6 +168,19 @@ class ExpressionUtils
     public static function strftimeToPhpFormat(string $strftimeFormat): string
     {
         $conversions = [
+            // Special Ruby format cases
+            '%N' => 'u',        // Microseconds (Ruby) -> microseconds (PHP)
+            '%u' => 'u',        // Microseconds (Ruby) -> microseconds (PHP)
+            '%-m' => 'n',       // Month without leading zero (Ruby) -> month without leading zero (PHP)
+            '%-d' => 'j',       // Day without leading zero (Ruby) -> day without leading zero (PHP)
+            '%-H' => 'G',       // Hour without leading zero (Ruby) -> hour without leading zero (PHP)
+            '%-I' => 'g',       // Hour 12h without leading zero (Ruby) -> hour 12h without leading zero (PHP)
+            '%-M' => 'i',       // Minute without leading zero (Ruby) -> minute without leading zero (PHP)
+            '%-S' => 's',       // Second without leading zero (Ruby) -> second without leading zero (PHP)
+            '%z' => 'O',        // Timezone offset (Ruby) -> timezone offset (PHP)
+            '%Z' => 'T',        // Timezone name (Ruby) -> timezone name (PHP)
+            
+            // Standard strftime conversions
             '%A' => 'l',     // Full weekday name
             '%a' => 'D',     // Abbreviated weekday name
             '%B' => 'F',     // Full month name

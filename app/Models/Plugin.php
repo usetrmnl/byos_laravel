@@ -216,14 +216,14 @@ class Plugin extends Model
      */
     private function applyLiquidReplacements(string $template): string
     {
-        $replacements = [
-            'date: "%N"' => 'date: "u"',
-            'date: "%u"' => 'date: "u"',
-            '%-m/%-d/%Y' => 'm/d/Y',
-        ];
+
+        $replacements = [];
 
         // Apply basic replacements
         $template = str_replace(array_keys($replacements), array_values($replacements), $template);
+        
+        // Convert Ruby/strftime date formats to PHP date formats
+        $template = $this->convertDateFormats($template);
 
         // Convert {% render "template" with %} syntax to {% render "template", %} syntax
         $template = preg_replace(
@@ -246,6 +246,25 @@ class Plugin extends Model
                 return "{% assign {$tempVarName} = {$collection} | {$filter} %}{% for {$variableName} in {$tempVarName} %}";
             },
             (string) $template
+        );
+
+        return $template;
+    }
+
+    /**
+     * Convert Ruby/strftime date formats to PHP date formats in Liquid templates
+     */
+    private function convertDateFormats(string $template): string
+    {
+        // Handle date filter formats: date: "format"
+        $template = preg_replace_callback(
+            '/date:\s*"([^"]+)"/',
+            function ($matches): string {
+                $format = $matches[1];
+                $convertedFormat = \App\Liquid\Utils\ExpressionUtils::strftimeToPhpFormat($format);
+                return 'date: "'.$convertedFormat.'"';
+            },
+            $template
         );
 
         return $template;
