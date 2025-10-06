@@ -221,7 +221,7 @@ class Plugin extends Model
 
         // Apply basic replacements
         $template = str_replace(array_keys($replacements), array_values($replacements), $template);
-        
+
         // Convert Ruby/strftime date formats to PHP date formats
         $template = $this->convertDateFormats($template);
 
@@ -345,6 +345,9 @@ class Plugin extends Model
                         'config' => $this->configuration ?? [],
                         ...(is_array($this->data_payload) ? $this->data_payload : []),
                         'trmnl' => [
+                            'system' => [
+                                'timestamp_utc' => now()->utc()->timestamp,
+                            ],
                             'user' => [
                                 'utc_offset' => '0',
                                 'name' => $this->user->name ?? 'Unknown User',
