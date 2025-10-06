@@ -158,4 +158,39 @@ class ExpressionUtils
 
         return $expression;
     }
+
+    /**
+     * Convert strftime format string to PHP date format string
+     *
+     * @param  string  $strftimeFormat  The strftime format string
+     * @return string The PHP date format string
+     */
+    public static function strftimeToPhpFormat(string $strftimeFormat): string
+    {
+        $conversions = [
+            '%A' => 'l',     // Full weekday name
+            '%a' => 'D',     // Abbreviated weekday name
+            '%B' => 'F',     // Full month name
+            '%b' => 'M',     // Abbreviated month name
+            '%Y' => 'Y',     // Full year (4 digits)
+            '%y' => 'y',     // Year without century (2 digits)
+            '%m' => 'm',     // Month as decimal number (01-12)
+            '%d' => 'd',     // Day of month as decimal number (01-31)
+            '%H' => 'H',     // Hour in 24-hour format (00-23)
+            '%I' => 'h',     // Hour in 12-hour format (01-12)
+            '%M' => 'i',     // Minute as decimal number (00-59)
+            '%S' => 's',     // Second as decimal number (00-59)
+            '%p' => 'A',     // AM/PM
+            '%P' => 'a',     // am/pm
+            '%j' => 'z',     // Day of year as decimal number (001-366)
+            '%w' => 'w',     // Weekday as decimal number (0-6, Sunday is 0)
+            '%U' => 'W',     // Week number of year (00-53, Sunday is first day)
+            '%W' => 'W',     // Week number of year (00-53, Monday is first day)
+            '%c' => 'D M j H:i:s Y', // Date and time representation
+            '%x' => 'm/d/Y', // Date representation
+            '%X' => 'H:i:s', // Time representation
+        ];
+
+        return str_replace(array_keys($conversions), array_values($conversions), $strftimeFormat);
+    }
 }
