@@ -237,7 +237,7 @@ class Plugin extends Model
         // Converts to: {% assign temp_filtered = collection | filter: "key", "value" %}{% for item in temp_filtered %}
         $template = preg_replace_callback(
             '/{%\s*for\s+(\w+)\s+in\s+([^|%}]+)\s*\|\s*([^%}]+)%}/',
-            function ($matches): string {
+            function (array $matches): string {
                 $variableName = mb_trim($matches[1]);
                 $collection = mb_trim($matches[2]);
                 $filter = mb_trim($matches[3]);
@@ -259,10 +259,11 @@ class Plugin extends Model
         // Handle date filter formats: date: "format" or date: 'format'
         $template = preg_replace_callback(
             '/date:\s*(["\'])([^"\']+)\1/',
-            function ($matches): string {
+            function (array $matches): string {
                 $quote = $matches[1];
                 $format = $matches[2];
                 $convertedFormat = \App\Liquid\Utils\ExpressionUtils::strftimeToPhpFormat($format);
+
                 return 'date: '.$quote.$convertedFormat.$quote;
             },
             $template
@@ -271,13 +272,14 @@ class Plugin extends Model
         // Handle l_date filter formats: l_date: "format" or l_date: 'format'
         $template = preg_replace_callback(
             '/l_date:\s*(["\'])([^"\']+)\1/',
-            function ($matches): string {
+            function (array $matches): string {
                 $quote = $matches[1];
                 $format = $matches[2];
                 $convertedFormat = \App\Liquid\Utils\ExpressionUtils::strftimeToPhpFormat($format);
+
                 return 'l_date: '.$quote.$convertedFormat.$quote;
             },
-            $template
+            (string) $template
         );
 
         return $template;

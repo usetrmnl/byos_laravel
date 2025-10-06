@@ -36,7 +36,7 @@ class BatteryLow extends Notification
         return (new MailMessage)->markdown('mail.battery-low', ['device' => $this->device]);
     }
 
-    public function toWebhook(object $notifiable): \App\Notifications\Messages\WebhookMessage
+    public function toWebhook(object $notifiable): WebhookMessage
     {
         return WebhookMessage::create()
             ->data([

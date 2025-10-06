@@ -84,6 +84,7 @@ class ExpressionUtils
                 if (self::evaluateCondition($condition['left'], $variable, $object)) {
                     return true;
                 }
+
                 return self::evaluateCondition($condition['right'], $variable, $object);
 
             case 'comparison':
@@ -179,7 +180,7 @@ class ExpressionUtils
             '%-S' => 's',       // Second without leading zero (Ruby) -> second without leading zero (PHP)
             '%z' => 'O',        // Timezone offset (Ruby) -> timezone offset (PHP)
             '%Z' => 'T',        // Timezone name (Ruby) -> timezone name (PHP)
-            
+
             // Standard strftime conversions
             '%A' => 'l',     // Full weekday name
             '%a' => 'D',     // Abbreviated weekday name

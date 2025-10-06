@@ -35,21 +35,21 @@ class Date extends FiltersProvider
     {
         $date = Carbon::parse($dateStr);
         $ordinalDay = $date->ordinal('day');
-        
+
         // Convert strftime format to PHP date format
         $phpFormat = ExpressionUtils::strftimeToPhpFormat($strftimeExp);
-        
+
         // Split the format string by the ordinal day placeholder
         $parts = explode('<<ordinal_day>>', $phpFormat);
-        
+
         if (count($parts) === 2) {
             $before = $date->format($parts[0]);
             $after = $date->format($parts[1]);
-            return $before . $ordinalDay . $after;
+
+            return $before.$ordinalDay.$after;
         }
-        
+
         // Fallback: if no placeholder found, just format normally
         return $date->format($phpFormat);
     }
-
 }
