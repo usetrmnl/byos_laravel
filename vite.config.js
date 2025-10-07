@@ -15,4 +15,18 @@ export default defineConfig({
     server: {
         cors: true,
     },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: (id) => {
+                    // Create a separate chunk for CodeMirror
+                    if (id.includes('codemirror') ||
+                        id.includes('@codemirror/') ||
+                        id.includes('@fsegurai/codemirror-theme-github-light')) {
+                        return 'codemirror';
+                    }
+                }
+            }
+        }
+    },
 });

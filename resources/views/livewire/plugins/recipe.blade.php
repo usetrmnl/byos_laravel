@@ -1022,14 +1022,48 @@ HTML;
                 </form>
             </div>
             <div>
-                <flux:label>Data Payload</flux:label>
-                @isset($this->data_payload_updated_at)
-                    <flux:badge icon="clock" size="sm" variant="pill" class="ml-2">{{ $this->data_payload_updated_at?->diffForHumans() ?? 'Never' }}</flux:badge>
-                @endisset
+                <div class="mb-1">
+                    <flux:label>Data Payload</flux:label>
+                    @isset($this->data_payload_updated_at)
+                        <flux:badge icon="clock" size="sm" variant="pill" class="ml-2">{{ $this->data_payload_updated_at?->diffForHumans() ?? 'Never' }}</flux:badge>
+                    @endisset
+                </div>
                 <flux:error name="data_payload"/>
-                <flux:textarea wire:model="data_payload" id="data_payload"
-                               class="block mt-1 w-full font-mono" type="text" name="data_payload"
-                               :readonly="$data_strategy !== 'static'" rows="24"/>
+                <flux:field>
+                    @php
+                        $textareaId = 'payload-' . uniqid();
+                    @endphp
+                    <flux:textarea
+                        wire:model="data_payload"
+                        id="{{ $textareaId }}"
+                        placeholder="Enter your HTML code here..."
+                        rows="12"
+                        hidden
+                    />
+                    <div
+                        x-data="codeEditorFormComponent({
+                                isDisabled: @js($data_strategy !== 'static'),
+                                language: 'json',
+                                state: $wire.entangle('data_payload'),
+                                textareaId: @js($textareaId)
+                            })"
+                        wire:ignore
+                        wire:key="cm-{{ $textareaId }}"
+                        class="max-w-2xl min-h-[300px] h-[500px] overflow-hidden resize-y"
+                    >
+                        <!-- Loading state -->
+                        <div x-show="isLoading" class="flex items-center justify-center h-full">
+                            <div class="flex items-center space-x-2 ">
+                                <flux:icon.loading />
+                            </div>
+                        </div>
+
+                        <!-- Editor container -->
+                        <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                    </div>
+                </flux:field>
+
+
             </div>
         </div>
         <flux:separator class="my-5"/>
@@ -1041,15 +1075,44 @@ HTML;
                     <span class="font-mono text-accent mb-4">{{ $plugin->render_markup_view }}</span> to update.
                 </div>
                 <div class="mb-4 mt-4">
-                    <flux:textarea
-                        label="File Content"
-                        class="font-mono"
-                        wire:model="view_content"
-                        id="view_content"
-                        name="view_content"
-                        rows="15"
-                        readonly
-                    />
+                    <flux:field>
+                        @php
+                            $textareaId = 'code-view-' . uniqid();
+                        @endphp
+                        <flux:label>{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}</flux:label>
+                        <flux:textarea
+                            wire:model="view_content"
+                            id="{{ $textareaId }}"
+                            placeholder="Enter your HTML code here..."
+                            rows="25"
+                            hidden
+                        />
+                        <div
+                            x-data="codeEditorFormComponent({
+                                isDisabled: false,
+                                language: 'liquid',
+                                state: $wire.entangle('markup_code'),
+                                textareaId: @js($textareaId)
+                            })"
+                            wire:ignore
+                            wire:key="cm-{{ $textareaId }}"
+                            class="min-h-[300px] h-[300px] overflow-hidden resize-y"
+                        >
+                            <!-- Loading state -->
+                            <div x-show="isLoading" class="flex items-center justify-center h-full">
+                                <div class="flex items-center space-x-2">
+                                    <flux:icon.loading />
+                                </div>
+                            </div>
+
+                            <!-- Editor container -->
+                            <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                        </div>
+                    </flux:field>
+
+
+
+
                 </div>
             @else
             <div class="flex items-center gap-6 mb-4 mt-4">
@@ -1071,15 +1134,41 @@ HTML;
         @if(!$plugin->render_markup_view)
             <form wire:submit="saveMarkup">
                 <div class="mb-4">
-                    <flux:textarea
-                        label="{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}"
-                        class="font-mono"
-                        wire:model="markup_code"
-                        id="markup_code"
-                        name="markup_code"
-                        rows="15"
-                        placeholder="{{ $markup_language === 'liquid' ? 'Enter your liquid code here...' : 'Enter your blade code here...' }}"
-                    />
+                    <flux:field>
+                        @php
+                            $textareaId = 'code-' . uniqid();
+                        @endphp
+                        <flux:label>{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}</flux:label>
+                        <flux:textarea
+                            wire:model="markup_code"
+                            id="{{ $textareaId }}"
+                            placeholder="Enter your HTML code here..."
+                            rows="25"
+                            hidden
+                        />
+                        <div
+                            x-data="codeEditorFormComponent({
+                                isDisabled: false,
+                                language: 'liquid',
+                                state: $wire.entangle('markup_code'),
+                                textareaId: @js($textareaId)
+                            })"
+                            wire:ignore
+                            wire:key="cm-{{ $textareaId }}"
+                            class="min-h-[300px] h-[300px] overflow-hidden resize-y"
+                        >
+                            <!-- Loading state -->
+                            <div x-show="isLoading" class="flex items-center justify-center h-full">
+                                <div class="flex items-center space-x-2">
+                                    <flux:icon.loading />
+                                </div>
+                            </div>
+
+                            <!-- Editor container -->
+                            <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                        </div>
+                    </flux:field>
+
                 </div>
 
                 <div class="flex">
