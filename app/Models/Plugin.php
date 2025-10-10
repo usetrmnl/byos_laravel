@@ -14,6 +14,7 @@ use App\Liquid\Tags\TemplateTag;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
@@ -22,6 +23,7 @@ use Illuminate\Support\Str;
 use Keepsuit\LaravelLiquid\LaravelLiquidExtension;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Keepsuit\Liquid\Extensions\StandardExtension;
+use SimpleXMLElement;
 
 class Plugin extends Model
 {
@@ -83,7 +85,7 @@ class Plugin extends Model
                 $currentValue = $this->configuration[$fieldKey] ?? null;
 
                 // If the field has a default value and no current value is set, it's not missing
-                if (($currentValue === null || $currentValue === '' || ($currentValue === [])) && ! isset($field['default'])) {
+                if ((in_array($currentValue, [null, '', []], true)) && ! isset($field['default'])) {
                     return true; // Found a required field that is not set and has no default
                 }
             }
@@ -145,11 +147,9 @@ class Plugin extends Model
 
                 try {
                     // Make the request based on the verb
-                    if ($this->polling_verb === 'post') {
-                        $response = $httpRequest->post($resolvedUrl)->json();
-                    } else {
-                        $response = $httpRequest->get($resolvedUrl)->json();
-                    }
+                    $httpResponse = $this->polling_verb === 'post' ? $httpRequest->post($resolvedUrl) : $httpRequest->get($resolvedUrl);
+
+                    $response = $this->parseResponse($httpResponse);
 
                     $this->update([
                         'data_payload' => $response,
@@ -183,14 +183,12 @@ class Plugin extends Model
 
                 try {
                     // Make the request based on the verb
-                    if ($this->polling_verb === 'post') {
-                        $response = $httpRequest->post($resolvedUrl)->json();
-                    } else {
-                        $response = $httpRequest->get($resolvedUrl)->json();
-                    }
+                    $httpResponse = $this->polling_verb === 'post' ? $httpRequest->post($resolvedUrl) : $httpRequest->get($resolvedUrl);
+
+                    $response = $this->parseResponse($httpResponse);
 
                     // Check if response is an array at root level
-                    if (is_array($response) && array_keys($response) === range(0, count($response) - 1)) {
+                    if (array_keys($response) === range(0, count($response) - 1)) {
                         // Response is a sequential array, nest under .data
                         $combinedResponse["IDX_{$index}"] = ['data' => $response];
                     } else {
@@ -209,6 +207,56 @@ class Plugin extends Model
                 'data_payload_updated_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * Parse HTTP response, handling both JSON and XML content types
+     */
+    private function parseResponse(Response $httpResponse): array
+    {
+        if ($httpResponse->header('Content-Type') && str_contains($httpResponse->header('Content-Type'), 'xml')) {
+            try {
+                // Convert XML to array and wrap under 'rss' key
+                $xml = simplexml_load_string($httpResponse->body());
+                if ($xml === false) {
+                    throw new Exception('Invalid XML content');
+                }
+
+                // Convert SimpleXML directly to array
+                $xmlArray = $this->xmlToArray($xml);
+
+                return ['rss' => $xmlArray];
+            } catch (Exception $e) {
+                Log::warning('Failed to parse XML response: '.$e->getMessage());
+
+                return ['error' => 'Failed to parse XML response'];
+            }
+        }
+
+        // Default to JSON parsing
+        try {
+            return $httpResponse->json() ?? [];
+        } catch (Exception $e) {
+            Log::warning('Failed to parse JSON response: '.$e->getMessage());
+
+            return ['error' => 'Failed to parse JSON response'];
+        }
+    }
+
+    /**
+     * Convert SimpleXML object to array recursively
+     */
+    private function xmlToArray(SimpleXMLElement $xml): array
+    {
+        $array = (array) $xml;
+
+        foreach ($array as $key => $value) {
+            if ($value instanceof SimpleXMLElement) {
+                $array[$key] = $this->xmlToArray($value);
+            }
+        }
+
+        return $array;
     }
 
     /**

@@ -12,6 +12,7 @@
     "require": {
         "php": "^8.2",
         "ext-imagick": "*",
+        "ext-simplexml": "*",
         "ext-zip": "*",
         "bnussbau/laravel-trmnl-blade": "2.0.*",
         "bnussbau/trmnl-pipeline-php": "^0.3.0",
