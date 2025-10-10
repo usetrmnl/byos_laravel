@@ -1088,7 +1088,6 @@ HTML;
                         @php
                             $textareaId = 'code-view-' . uniqid();
                         @endphp
-                        <flux:label>{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}</flux:label>
                         <flux:textarea
                             wire:model="view_content"
                             id="{{ $textareaId }}"
