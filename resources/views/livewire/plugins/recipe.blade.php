@@ -839,6 +839,15 @@ HTML;
                                                     </flux:select>
                                                 @endif
                                             </div>
+                                        @elseif($field['field_type'] === 'multi_string')
+                                            <flux:input
+                                                label="{{ $field['name'] }}"
+                                                description="{{ $field['description'] ?? '' }}"
+                                                descriptionTrailing="{{ $field['help_text'] ?? 'Enter multiple values separated by commas' }}"
+                                                wire:model="configuration.{{ $fieldKey }}"
+                                                value="{{ $currentValue }}"
+                                                placeholder="{{ $field['placeholder'] ?? 'value1,value2' }}"
+                                            />
                                         @else
                                             <flux:callout variant="warning">Field type "{{ $field['field_type'] }}" not yet supported</flux:callout>
                                         @endif

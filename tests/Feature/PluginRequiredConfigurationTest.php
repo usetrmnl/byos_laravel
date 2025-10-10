@@ -268,3 +268,79 @@ test('hasMissingRequiredConfigurationFields returns false when required xhrSelec
 
     expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
 });
+
+test('hasMissingRequiredConfigurationFields returns true when required multi_string field is missing', function (): void {
+    $user = User::factory()->create();
+
+    $configurationTemplate = [
+        'custom_fields' => [
+            [
+                'keyname' => 'tags',
+                'field_type' => 'multi_string',
+                'name' => 'Tags',
+                'description' => 'Enter tags separated by commas',
+                // Not marked as optional, so it's required
+            ],
+        ],
+    ];
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => $configurationTemplate,
+        'configuration' => [], // Empty configuration
+    ]);
+
+    expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
+});
+
+test('hasMissingRequiredConfigurationFields returns false when required multi_string field is set', function (): void {
+    $user = User::factory()->create();
+
+    $configurationTemplate = [
+        'custom_fields' => [
+            [
+                'keyname' => 'tags',
+                'field_type' => 'multi_string',
+                'name' => 'Tags',
+                'description' => 'Enter tags separated by commas',
+                // Not marked as optional, so it's required
+            ],
+        ],
+    ];
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => $configurationTemplate,
+        'configuration' => [
+            'tags' => 'tag1, tag2, tag3', // Required field is set with comma-separated values
+        ],
+    ]);
+
+    expect($plugin->hasMissingRequiredConfigurationFields())->toBeFalse();
+});
+
+test('hasMissingRequiredConfigurationFields returns true when required multi_string field is empty string', function (): void {
+    $user = User::factory()->create();
+
+    $configurationTemplate = [
+        'custom_fields' => [
+            [
+                'keyname' => 'tags',
+                'field_type' => 'multi_string',
+                'name' => 'Tags',
+                'description' => 'Enter tags separated by commas',
+                // Not marked as optional, so it's required
+            ],
+        ],
+    ];
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => $configurationTemplate,
+        'configuration' => [
+            'tags' => '', // Empty string
+        ],
+    ]);
+
+    expect($plugin->hasMissingRequiredConfigurationFields())->toBeTrue();
+});
