@@ -178,7 +178,10 @@ new class extends Component {
                             <flux:menu.item icon="archive-box">Import Recipe Archive</flux:menu.item>
                         </flux:modal.trigger>
                         <flux:modal.trigger name="import-from-catalog">
-                            <flux:menu.item icon="book-open">Import from Catalog</flux:menu.item>
+                            <flux:menu.item icon="book-open">Import from OSS Catalog</flux:menu.item>
+                        </flux:modal.trigger>
+                        <flux:modal.trigger name="import-from-trmnl-catalog">
+                            <flux:menu.item icon="book-open">Import from TRMNL Catalog</flux:menu.item>
                         </flux:modal.trigger>
                         <flux:menu.item icon="beaker" wire:click="seedExamplePlugins">Seed Example Recipes</flux:menu.item>
                     </flux:menu>
@@ -277,6 +280,18 @@ new class extends Component {
                     <flux:subheading>Browse and install Recipes from the community. Add yours <a href="https://github.com/bnussbau/trmnl-recipe-catalog" class="underline" target="_blank">here</a>.</flux:subheading>
                 </div>
                 <livewire:catalog.index />
+            </div>
+        </flux:modal>
+
+        <flux:modal name="import-from-trmnl-catalog">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Import from TRMNL Recipe Catalog
+                        <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
+                    </flux:heading>
+                </div>
+{{--                IMPLEMENT p--}}
+{{--                <livewire:catalog.trmnl />--}}
             </div>
         </flux:modal>
 
