@@ -290,8 +290,7 @@ new class extends Component {
                         <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
                     </flux:heading>
                 </div>
-{{--                IMPLEMENT p--}}
-{{--                <livewire:catalog.trmnl />--}}
+                <livewire:catalog.trmnl />
             </div>
         </flux:modal>
 
