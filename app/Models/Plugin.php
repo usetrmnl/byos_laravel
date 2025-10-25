@@ -11,6 +11,7 @@ use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
+use App\Services\PluginImportService;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Keepsuit\LaravelLiquid\LaravelLiquidExtension;
 use Keepsuit\Liquid\Exceptions\LiquidException;
@@ -40,6 +42,7 @@ class Plugin extends Model
         'configuration_template' => 'json',
         'no_bleed' => 'boolean',
         'dark_mode' => 'boolean',
+        'preferred_renderer' => 'string',
     ];
 
     protected static function boot()
@@ -364,6 +367,53 @@ class Plugin extends Model
     }
 
     /**
+     * Render template using external Ruby liquid renderer
+     *
+     * @param  string  $template  The liquid template string
+     * @param  array  $context  The render context data
+     * @return string The rendered HTML
+     *
+     * @throws Exception
+     */
+    private function renderWithExternalLiquidRenderer(string $template, array $context): string
+    {
+        $liquidPath = config('services.trmnl.liquid_path');
+
+        if (empty($liquidPath)) {
+            throw new Exception('External liquid renderer path is not configured');
+        }
+
+        // HTML encode the template
+        $encodedTemplate = htmlspecialchars($template, ENT_QUOTES, 'UTF-8');
+
+        // Encode context as JSON
+        $jsonContext = json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if ($jsonContext === false) {
+            throw new Exception('Failed to encode render context as JSON: '.json_last_error_msg());
+        }
+
+        // Validate argument sizes
+        app(PluginImportService::class)->validateExternalRendererArguments($encodedTemplate, $jsonContext, $liquidPath);
+
+        // Execute the external renderer
+        $process = Process::run([
+            $liquidPath,
+            '--template',
+            $encodedTemplate,
+            '--context',
+            $jsonContext,
+        ]);
+        
+        if (! $process->successful()) {
+            $errorOutput = $process->errorOutput() ?: $process->output();
+            throw new Exception('External liquid renderer failed: '.$errorOutput);
+        }
+
+        return $process->output();
+    }
+
+    /**
      * Render the plugin's markup
      *
      * @throws LiquidException
@@ -374,59 +424,67 @@ class Plugin extends Model
             $renderedContent = '';
 
             if ($this->markup_language === 'liquid') {
-                // Create a custom environment with inline templates support
-                $inlineFileSystem = new InlineTemplatesFileSystem();
-                $environment = new \Keepsuit\Liquid\Environment(
-                    fileSystem: $inlineFileSystem,
-                    extensions: [new StandardExtension(), new LaravelLiquidExtension()]
-                );
-
-                // Register all custom filters
-                $environment->filterRegistry->register(Data::class);
-                $environment->filterRegistry->register(Date::class);
-                $environment->filterRegistry->register(Localization::class);
-                $environment->filterRegistry->register(Numbers::class);
-                $environment->filterRegistry->register(StringMarkup::class);
-                $environment->filterRegistry->register(Uniqueness::class);
-
-                // Register the template tag for inline templates
-                $environment->tagRegistry->register(TemplateTag::class);
-
-                // Apply Liquid replacements (including 'with' syntax conversion)
-                $processedMarkup = $this->applyLiquidReplacements($this->render_markup);
-
-                $template = $environment->parseString($processedMarkup);
-                $context = $environment->newRenderContext(
-                    data: [
-                        'size' => $size,
-                        'data' => $this->data_payload,
-                        'config' => $this->configuration ?? [],
-                        ...(is_array($this->data_payload) ? $this->data_payload : []),
-                        'trmnl' => [
-                            'system' => [
-                                'timestamp_utc' => now()->utc()->timestamp,
-                            ],
-                            'user' => [
-                                'utc_offset' => '0',
-                                'name' => $this->user->name ?? 'Unknown User',
-                                'locale' => 'en',
-                                'time_zone_iana' => config('app.timezone'),
-                            ],
-                            'plugin_settings' => [
-                                'instance_name' => $this->name,
-                                'strategy' => $this->data_strategy,
-                                'dark_mode' => $this->dark_mode ? 'yes' : 'no',
-                                'no_screen_padding' => $this->no_bleed ? 'yes' : 'no',
-                                'polling_headers' => $this->polling_header,
-                                'polling_url' => $this->polling_url,
-                                'custom_fields_values' => [
-                                    ...(is_array($this->configuration) ? $this->configuration : []),
-                                ],
+                // Build render context
+                $context = [
+                    'size' => $size,
+                    'data' => $this->data_payload,
+                    'config' => $this->configuration ?? [],
+                    ...(is_array($this->data_payload) ? $this->data_payload : []),
+                    'trmnl' => [
+                        'system' => [
+                            'timestamp_utc' => now()->utc()->timestamp,
+                        ],
+                        'user' => [
+                            'utc_offset' => '0',
+                            'name' => $this->user->name ?? 'Unknown User',
+                            'locale' => 'en',
+                            'time_zone_iana' => config('app.timezone'),
+                        ],
+                        'plugin_settings' => [
+                            'instance_name' => $this->name,
+                            'strategy' => $this->data_strategy,
+                            'dark_mode' => $this->dark_mode ? 'yes' : 'no',
+                            'no_screen_padding' => $this->no_bleed ? 'yes' : 'no',
+                            'polling_headers' => $this->polling_header,
+                            'polling_url' => $this->polling_url,
+                            'custom_fields_values' => [
+                                ...(is_array($this->configuration) ? $this->configuration : []),
                             ],
                         ],
-                    ]
-                );
-                $renderedContent = $template->render($context);
+                    ],
+                ];
+
+                // Check if external renderer should be used
+                if ($this->preferred_renderer === 'trmnl-liquid' && config('services.trmnl.liquid_enabled')) {
+                    // Use external Ruby renderer - pass raw template without preprocessing
+                    $renderedContent = $this->renderWithExternalLiquidRenderer($this->render_markup, $context);
+                } else {
+                    // Use PHP keepsuit/liquid renderer
+                    // Create a custom environment with inline templates support
+                    $inlineFileSystem = new InlineTemplatesFileSystem();
+                    $environment = new \Keepsuit\Liquid\Environment(
+                        fileSystem: $inlineFileSystem,
+                        extensions: [new StandardExtension(), new LaravelLiquidExtension()]
+                    );
+
+                    // Register all custom filters
+                    $environment->filterRegistry->register(Data::class);
+                    $environment->filterRegistry->register(Date::class);
+                    $environment->filterRegistry->register(Localization::class);
+                    $environment->filterRegistry->register(Numbers::class);
+                    $environment->filterRegistry->register(StringMarkup::class);
+                    $environment->filterRegistry->register(Uniqueness::class);
+
+                    // Register the template tag for inline templates
+                    $environment->tagRegistry->register(TemplateTag::class);
+
+                    // Apply Liquid replacements (including 'with' syntax conversion)
+                    $processedMarkup = $this->applyLiquidReplacements($this->render_markup);
+
+                    $template = $environment->parseString($processedMarkup);
+                    $liquidContext = $environment->newRenderContext(data: $context);
+                    $renderedContent = $template->render($liquidContext);
+                }
             } else {
                 $renderedContent = Blade::render($this->render_markup, [
                     'size' => $size,

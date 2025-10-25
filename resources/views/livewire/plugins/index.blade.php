@@ -156,6 +156,7 @@ new class extends Component {
 
 <div class="py-12" x-data="{
     searchTerm: '',
+    showFilters: false,
     filterPlugins(plugins) {
         if (this.searchTerm.length <= 1) return plugins;
         const search = this.searchTerm.toLowerCase();
@@ -166,6 +167,7 @@ new class extends Component {
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold dark:text-gray-100">Plugins &amp; Recipes</h2>
 
+            <flux:button icon="funnel" variant="primary" @click="showFilters = !showFilters"></flux:button>
             <flux:button.group>
                 <flux:modal.trigger name="add-plugin">
                     <flux:button icon="plus" variant="primary">Add Recipe</flux:button>
@@ -174,19 +176,26 @@ new class extends Component {
                 <flux:dropdown>
                     <flux:button icon="chevron-down" variant="primary"></flux:button>
                     <flux:menu>
+                        <flux:modal.trigger name="import-from-catalog">
+                            <flux:menu.item icon="book-open">Import from OSS Catalog</flux:menu.item>
+                        </flux:modal.trigger>
+                        @if(config('services.trmnl.liquid_enabled'))
+                            <flux:modal.trigger name="import-from-trmnl-catalog">
+                                <flux:menu.item icon="book-open">Import from TRMNL Catalog</flux:menu.item>
+                            </flux:modal.trigger>
+                        @endif
+                        <flux:separator />
                         <flux:modal.trigger name="import-zip">
                             <flux:menu.item icon="archive-box">Import Recipe Archive</flux:menu.item>
                         </flux:modal.trigger>
-                        <flux:modal.trigger name="import-from-catalog">
-                            <flux:menu.item icon="book-open">Import from Catalog</flux:menu.item>
-                        </flux:modal.trigger>
+                        <flux:separator />
                         <flux:menu.item icon="beaker" wire:click="seedExamplePlugins">Seed Example Recipes</flux:menu.item>
                     </flux:menu>
                 </flux:dropdown>
             </flux:button.group>
         </div>
 
-        <div class="mb-6 flex flex-col sm:flex-row gap-4">
+        <div x-show="showFilters" class="mb-6 flex flex-col sm:flex-row gap-4" style="display: none;">
             <div class="flex-1">
                 <flux:input
                     x-model="searchTerm"
@@ -272,11 +281,22 @@ new class extends Component {
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Import from Catalog
-                        <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
+                        <flux:badge color="blue" class="ml-2">Beta</flux:badge>
                     </flux:heading>
                     <flux:subheading>Browse and install Recipes from the community. Add yours <a href="https://github.com/bnussbau/trmnl-recipe-catalog" class="underline" target="_blank">here</a>.</flux:subheading>
                 </div>
                 <livewire:catalog.index />
+            </div>
+        </flux:modal>
+
+        <flux:modal name="import-from-trmnl-catalog">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Import from TRMNL Recipe Catalog
+                        <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
+                    </flux:heading>
+                </div>
+                <livewire:catalog.trmnl />
             </div>
         </flux:modal>
 
@@ -361,8 +381,12 @@ new class extends Component {
                     <a href="{{ ($plugin['detail_view_route']) ? route($plugin['detail_view_route']) : route('plugins.recipe', ['plugin' => $plugin['id']]) }}"
                        class="block">
                         <div class="flex items-center space-x-4 px-10 py-8">
-                            <flux:icon name="{{$plugin['flux_icon_name'] ?? 'puzzle-piece'}}"
+                            @isset($plugin['icon_url'])
+                                <img src="{{ $plugin['icon_url'] }}" class="h-6"/>
+                            @else
+                                <flux:icon name="{{$plugin['flux_icon_name'] ?? 'puzzle-piece'}}"
                                        class="text-4xl text-accent"/>
+                            @endif
                             <h3 class="text-lg font-medium dark:text-zinc-200">{{$plugin['name']}}</h3>
                         </div>
                     </a>
