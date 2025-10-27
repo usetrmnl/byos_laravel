@@ -23,3 +23,9 @@ yarn-error.log
 /.zed
 /database/seeders/PersonalDeviceSeeder.php
 /.junie/mcp/mcp.json
+/.cursor/mcp.json
+/.cursor/rules/laravel-boost.mdc
+/.github/copilot-instructions.md
+/.junie/guidelines.md
+/CLAUDE.md
+/.mcp.json
