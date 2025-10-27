@@ -99,7 +99,7 @@ new class extends Component {
                     'icon_url' => $item['icon_url'] ?? null,
                     'screenshot_url' => $item['screenshot_url'] ?? null,
                     'author_bio' => is_array($item['author_bio'] ?? null)
-                        ? ($item['author_bio']['description'] ?? null)
+                        ? strip_tags($item['author_bio']['description'] ?? null)
                         : null,
                     'stats' => [
                         'installs' => data_get($item, 'stats.installs'),
