@@ -4,12 +4,14 @@ use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use App\Services\PluginImportService;
+use Illuminate\Support\Facades\Auth;
 
 new class extends Component {
     public array $recipes = [];
     public string $search = '';
-    public string $error = '';
     public bool $isSearching = false;
+    public string $installingPlugin = '';
 
     public function mount(): void
     {
@@ -18,7 +20,6 @@ new class extends Component {
 
     private function loadNewest(): void
     {
-        $this->error = '';
         try {
             $this->recipes = Cache::remember('trmnl_recipes_newest', 300, function () {
                 $response = Http::get('https://usetrmnl.com/recipes.json', [
@@ -36,13 +37,11 @@ new class extends Component {
         } catch (\Throwable $e) {
             Log::error('TRMNL catalog load error: ' . $e->getMessage());
             $this->recipes = [];
-            $this->error = 'Failed to load the TRMNL catalog. Please try again later.';
         }
     }
 
     private function searchRecipes(string $term): void
     {
-        $this->error = '';
         $this->isSearching = true;
         try {
             $cacheKey = 'trmnl_recipes_search_' . md5($term);
@@ -63,7 +62,6 @@ new class extends Component {
         } catch (\Throwable $e) {
             Log::error('TRMNL catalog search error: ' . $e->getMessage());
             $this->recipes = [];
-            $this->error = 'Search failed. Please try again later.';
         } finally {
             $this->isSearching = false;
         }
@@ -83,6 +81,27 @@ new class extends Component {
         }
 
         $this->searchRecipes($term);
+    }
+
+    public function installPlugin(string $recipeId, PluginImportService $pluginImportService): void
+    {
+        abort_unless(auth()->user() !== null, 403);
+
+        $this->installingPlugin = $recipeId;
+
+        try {
+            $zipUrl = "https://usetrmnl.com/api/plugin_settings/{$recipeId}/archive";
+            $plugin = $pluginImportService->importFromUrl($zipUrl, auth()->user());
+            
+            $this->dispatch('plugin-installed');
+            Flux::modal('import-from-trmnl-catalog')->close();
+            
+        } catch (\Exception $e) {
+            Log::error('Plugin installation failed: ' . $e->getMessage());
+            $this->addError('installation', 'Error installing plugin: ' . $e->getMessage());
+        } finally {
+            $this->installingPlugin = '';
+        }
     }
 
     /**
@@ -124,9 +143,9 @@ new class extends Component {
         <flux:badge color="gray">Newest</flux:badge>
     </div>
 
-    @if($error)
-        <flux:callout variant="danger" icon="x-circle" heading="{{ $error }}" />
-    @endif
+    @error('installation')
+        <flux:callout variant="danger" icon="x-circle" heading="{{$message}}" />
+    @enderror
 
     @if(empty($recipes))
         <div class="text-center py-8">
@@ -170,11 +189,22 @@ new class extends Component {
                             @endif
 
                             <div class="mt-4 flex items-center space-x-3">
-                                <flux:tooltip text="Installation via cloud coming soon">
-                                    <flux:button disabled variant="primary">
-                                        Install
-                                    </flux:button>
-                                </flux:tooltip>
+                                @if($recipe['id'])
+                                    @if($installingPlugin === $recipe['id'])
+                                        <flux:button 
+                                            wire:click="installPlugin('{{ $recipe['id'] }}')"
+                                            variant="primary"
+                                            disabled>
+                                            <flux:icon name="arrow-path" class="w-4 h-4 animate-spin" />
+                                        </flux:button>
+                                    @else
+                                        <flux:button 
+                                            wire:click="installPlugin('{{ $recipe['id'] }}')"
+                                            variant="primary">
+                                            Install
+                                        </flux:button>
+                                    @endif
+                                @endif
 
                                 @if($recipe['detail_url'])
                                     <flux:button
