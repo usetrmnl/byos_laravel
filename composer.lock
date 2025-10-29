@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d6d201899ecc5b1243e9a481c22c5732",
+    "content-hash": "3d743ce4dc2742c59ed6f9cc8ed36e04",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -243,16 +243,16 @@
         },
         {
             "name": "bnussbau/trmnl-pipeline-php",
-            "version": "0.3.2",
+            "version": "0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bnussbau/trmnl-pipeline-php.git",
-                "reference": "ead26a45ac919e3f2a5f4a448508a919cd3258d3"
+                "reference": "b58b937f36e55aa7cbd4859cbe7a902bf1050bf8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bnussbau/trmnl-pipeline-php/zipball/ead26a45ac919e3f2a5f4a448508a919cd3258d3",
-                "reference": "ead26a45ac919e3f2a5f4a448508a919cd3258d3",
+                "url": "https://api.github.com/repos/bnussbau/trmnl-pipeline-php/zipball/b58b937f36e55aa7cbd4859cbe7a902bf1050bf8",
+                "reference": "b58b937f36e55aa7cbd4859cbe7a902bf1050bf8",
                 "shasum": ""
             },
             "require": {
@@ -294,7 +294,7 @@
             ],
             "support": {
                 "issues": "https://github.com/bnussbau/trmnl-pipeline-php/issues",
-                "source": "https://github.com/bnussbau/trmnl-pipeline-php/tree/0.3.2"
+                "source": "https://github.com/bnussbau/trmnl-pipeline-php/tree/0.4.0"
             },
             "funding": [
                 {
@@ -310,7 +310,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-10-17T12:12:40+00:00"
+            "time": "2025-10-30T11:52:17+00:00"
         },
         {
             "name": "brick/math",

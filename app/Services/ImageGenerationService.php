@@ -72,6 +72,12 @@ class ImageGenerationService
                 ->offsetY($imageSettings['offset_y'])
                 ->outputPath($outputPath);
 
+            // Apply dithering if requested by markup
+            $shouldDither = self::markupContainsDitherImage($markup);
+            if ($shouldDither) {
+                $imageStage->dither();
+            }
+
             (new TrmnlPipeline())->pipe($browserStage)
                 ->pipe($imageStage)
                 ->process();
@@ -207,6 +213,31 @@ class ImageGenerationService
             ImageFormat::AUTO->value => 1, // Default for AUTO
             default => 1,
         };
+    }
+
+    /**
+     * Detect whether the provided HTML markup contains an <img> tag with class "image-dither".
+     */
+    private static function markupContainsDitherImage(string $markup): bool
+    {
+        if (mb_trim($markup) === '') {
+            return false;
+        }
+
+        // Find <img ... class="..."> (or with single quotes) and inspect class tokens
+        $imgWithClassPattern = '/<img\b[^>]*\bclass\s*=\s*(["\'])(.*?)\1[^>]*>/i';
+        if (! preg_match_all($imgWithClassPattern, $markup, $matches)) {
+            return false;
+        }
+
+        foreach ($matches[2] as $classValue) {
+            // Look for class token 'image-dither' or 'image--dither'
+            if (preg_match('/(?:^|\s)image--?dither(?:\s|$)/', $classValue)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function cleanupFolder(): void
