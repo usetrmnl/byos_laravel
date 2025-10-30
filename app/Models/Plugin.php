@@ -38,6 +38,8 @@ class Plugin extends Model
         'markup_language' => 'string',
         'configuration' => 'json',
         'configuration_template' => 'json',
+        'no_bleed' => 'boolean',
+        'dark_mode' => 'boolean',
     ];
 
     protected static function boot()
@@ -407,8 +409,8 @@ class Plugin extends Model
                             'plugin_settings' => [
                                 'instance_name' => $this->name,
                                 'strategy' => $this->data_strategy,
-                                'dark_mode' => 'no',
-                                'no_screen_padding' => 'no',
+                                'dark_mode' => $this->dark_mode ? 'yes' : 'no',
+                                'no_screen_padding' => $this->no_bleed ? 'yes' : 'no',
                                 'polling_headers' => $this->polling_header,
                                 'polling_url' => $this->polling_url,
                                 'custom_fields_values' => [
@@ -432,6 +434,8 @@ class Plugin extends Model
                     return view('trmnl-layouts.single', [
                         'colorDepth' => $device?->colorDepth(),
                         'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                        'noBleed' => $this->no_bleed,
+                        'darkMode' => $this->dark_mode,
                         'scaleLevel' => $device?->scaleLevel(),
                         'slot' => $renderedContent,
                     ])->render();
@@ -441,6 +445,7 @@ class Plugin extends Model
                     'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
                     'colorDepth' => $device?->colorDepth(),
                     'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                    'darkMode' => $this->dark_mode,
                     'scaleLevel' => $device?->scaleLevel(),
                     'slot' => $renderedContent,
                 ])->render();
@@ -455,6 +460,8 @@ class Plugin extends Model
                 return view('trmnl-layouts.single', [
                     'colorDepth' => $device?->colorDepth(),
                     'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                    'noBleed' => $this->no_bleed,
+                    'darkMode' => $this->dark_mode,
                     'scaleLevel' => $device?->scaleLevel(),
                     'slot' => view($this->render_markup_view, [
                         'size' => $size,

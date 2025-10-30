@@ -14,7 +14,7 @@
         {!! $slot !!}
     </x-trmnl::screen>
 @else
-    <x-trmnl::screen colorDepth="{{$colorDepth}}">
+    <x-trmnl::screen colorDepth="{{$colorDepth}}" no-bleed="{{$noBleed}}" dark-mode="{{$darkMode}}">
         {!! $slot !!}
     </x-trmnl::screen>
 @endif

@@ -15,6 +15,8 @@ new class extends Component {
     public string|null $markup_language;
 
     public string $name;
+    public bool $no_bleed = false;
+    public bool $dark_mode = false;
     public int $data_stale_minutes;
     public string $data_strategy;
     public string|null $polling_url;
@@ -66,6 +68,10 @@ new class extends Component {
             $this->markup_language = $this->plugin->markup_language ?? 'blade';
         }
 
+        // Initialize screen settings from the model
+        $this->no_bleed = (bool) ($this->plugin->no_bleed ?? false);
+        $this->dark_mode = (bool) ($this->plugin->dark_mode ?? false);
+
         $this->fillformFields();
         $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
     }
@@ -109,6 +115,8 @@ new class extends Component {
         'device_weekdays' => 'array',
         'device_active_from' => 'array',
         'device_active_until' => 'array',
+        'no_bleed' => 'boolean',
+        'dark_mode' => 'boolean',
     ];
 
     public function editSettings()
@@ -1023,6 +1031,22 @@ HTML;
                     @elseif($data_strategy === 'static')
                         <flux:text class="mb-2">Enter static JSON data in the Data Payload field.</flux:text>
                     @endif
+
+                    <div class="mb-4">
+                        <flux:label>Screen Settings</flux:label>
+                        <div class="mt-2 space-y-2">
+                            <flux:checkbox
+                                wire:model="no_bleed"
+                                label="Remove bleed margin?"
+                                description="If selected, padding around your markup will be removed."
+                            />
+                            <flux:checkbox
+                                wire:model="dark_mode"
+                                label="Enable Dark Mode?"
+                                description="Inverts black/white pixels for the entire screen. Add class 'image' to img tags as needed."
+                            />
+                        </div>
+                    </div>
 
                     <div class="flex">
                         <flux:spacer/>
