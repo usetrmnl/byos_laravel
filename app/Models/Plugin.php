@@ -235,9 +235,15 @@ class Plugin extends Model
             }
         }
 
-        // Default to JSON parsing
         try {
-            return $httpResponse->json() ?? [];
+            // Attempt to parse it into JSON
+            $json = $httpResponse->json();
+            if($json !== null) {
+                return $json;
+            }
+            
+            // Response doesn't seem to be JSON, wrap the response body text as a JSON object
+            return ['text' => $httpResponse->body()];
         } catch (Exception $e) {
             Log::warning('Failed to parse JSON response: '.$e->getMessage());
 

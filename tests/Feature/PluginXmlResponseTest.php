@@ -72,7 +72,7 @@ test('plugin parses XML responses and wraps under rss key', function (): void {
     expect($plugin->data_payload['rss']['channel']['item'])->toHaveCount(2);
 });
 
-test('plugin handles non-XML content-type as JSON', function (): void {
+test('plugin parses JSON-parsable response body as JSON', function (): void {
     $jsonContent = '{"title": "Test Data", "items": [1, 2, 3]}';
 
     Http::fake([
@@ -92,6 +92,28 @@ test('plugin handles non-XML content-type as JSON', function (): void {
     expect($plugin->data_payload)->toBe([
         'title' => 'Test Data',
         'items' => [1, 2, 3],
+    ]);
+});
+
+test('plugin wraps plain text response body as JSON', function (): void {
+    $jsonContent = 'Lorem ipsum dolor sit amet';
+
+    Http::fake([
+        'example.com/data' => Http::response($jsonContent, 200, ['Content-Type' => 'text/plain']),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://example.com/data',
+        'polling_verb' => 'get',
+    ]);
+
+    $plugin->updateDataPayload();
+
+    $plugin->refresh();
+
+    expect($plugin->data_payload)->toBe([
+        'text' => 'Lorem ipsum dolor sit amet',
     ]);
 });
 
