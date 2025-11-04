@@ -91,11 +91,16 @@ new class extends Component {
 
         try {
             $zipUrl = "https://usetrmnl.com/api/plugin_settings/{$recipeId}/archive";
-            $plugin = $pluginImportService->importFromUrl($zipUrl, auth()->user());
-            
+
+            $plugin = $pluginImportService->importFromUrl(
+                $zipUrl,
+                auth()->user(),
+                preferredRenderer: config('services.trmnl.liquid_enabled') ? 'trmnl-liquid' : null
+            );
+
             $this->dispatch('plugin-installed');
             Flux::modal('import-from-trmnl-catalog')->close();
-            
+
         } catch (\Exception $e) {
             Log::error('Plugin installation failed: ' . $e->getMessage());
             $this->addError('installation', 'Error installing plugin: ' . $e->getMessage());

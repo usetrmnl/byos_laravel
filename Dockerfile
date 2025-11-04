@@ -12,6 +12,9 @@ ENV APP_VERSION=${APP_VERSION}
 
 ENV AUTORUN_ENABLED="true"
 
+# Mark trmnl-liquid-cli as installed
+ENV TRMNL_LIQUID_ENABLED=1
+
 # Switch to the root user so we can do root things
 USER root
 
@@ -49,5 +52,6 @@ FROM base AS production
 COPY --chown=www-data:www-data --from=assets /app/public/build /var/www/html/public/build
 COPY --chown=www-data:www-data --from=assets /app/node_modules /var/www/html/node_modules
 
+COPY --chown=www-data:www-data --from=bnussbau/trmnl-liquid-cli:latest /usr/local/bin/trmnl-liquid-cli /usr/local/bin/
 # Drop back to the www-data user
 USER www-data
