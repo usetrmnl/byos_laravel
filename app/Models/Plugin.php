@@ -243,7 +243,7 @@ class Plugin extends Model
             }
             
             // Response doesn't seem to be JSON, wrap the response body text as a JSON object
-            return ['text' => $httpResponse->body()];
+            return ['data' => $httpResponse->body()];
         } catch (Exception $e) {
             Log::warning('Failed to parse JSON response: '.$e->getMessage());
 
