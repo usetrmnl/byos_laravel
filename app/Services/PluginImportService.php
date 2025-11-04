@@ -143,7 +143,7 @@ class PluginImportService
      *
      * @throws Exception If the ZIP file is invalid or required files are missing
      */
-    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null): Plugin
+    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null, $preferredRenderer = null): Plugin
     {
         // Download the ZIP file
         $response = Http::timeout(60)->get($zipUrl);
@@ -232,6 +232,7 @@ class PluginImportService
                     'render_markup' => $fullLiquid,
                     'configuration_template' => $configurationTemplate,
                     'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
+                    'preferred_renderer' => $preferredRenderer,
                 ]);
 
             if (! $plugin_updated) {
