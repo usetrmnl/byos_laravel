@@ -41,6 +41,8 @@ return [
         'proxy_refresh_cron' => env('TRMNL_PROXY_REFRESH_CRON'),
         'override_orig_icon' => env('TRMNL_OVERRIDE_ORIG_ICON', false),
         'image_url_timeout' => env('TRMNL_IMAGE_URL_TIMEOUT', 30), // 30 seconds; increase on low-powered devices
+        'liquid_enabled' => env('TRMNL_LIQUID_ENABLED', false),
+        'liquid_path' => env('TRMNL_LIQUID_PATH', '/usr/local/bin/trmnl-liquid-cli'),
     ],
 
     'webhook' => [
