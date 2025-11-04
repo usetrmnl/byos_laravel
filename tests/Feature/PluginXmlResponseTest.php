@@ -113,7 +113,7 @@ test('plugin wraps plain text response body as JSON', function (): void {
     $plugin->refresh();
 
     expect($plugin->data_payload)->toBe([
-        'text' => 'Lorem ipsum dolor sit amet',
+        'data' => 'Lorem ipsum dolor sit amet',
     ]);
 });
 
