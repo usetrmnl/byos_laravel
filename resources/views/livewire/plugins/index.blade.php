@@ -180,9 +180,11 @@ new class extends Component {
                         <flux:modal.trigger name="import-from-catalog">
                             <flux:menu.item icon="book-open">Import from OSS Catalog</flux:menu.item>
                         </flux:modal.trigger>
-                        <flux:modal.trigger name="import-from-trmnl-catalog">
-                            <flux:menu.item icon="book-open">Import from TRMNL Catalog</flux:menu.item>
-                        </flux:modal.trigger>
+                        @if(config('services.trmnl.liquid_enabled'))
+                            <flux:modal.trigger name="import-from-trmnl-catalog">
+                                <flux:menu.item icon="book-open">Import from TRMNL Catalog</flux:menu.item>
+                            </flux:modal.trigger>
+                        @endif
                         <flux:menu.item icon="beaker" wire:click="seedExamplePlugins">Seed Example Recipes</flux:menu.item>
                     </flux:menu>
                 </flux:dropdown>
