@@ -36,14 +36,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
+      - name: Extract metadata for Docker (stable release with latest tag)
         id: meta
+        if: ${{ !github.event.release.prerelease }}
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=tag
-            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+            type=raw,value=latest
+
+      - name: Extract metadata for Docker (prerelease)
+        id: meta
+        if: ${{ github.event.release.prerelease }}
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
