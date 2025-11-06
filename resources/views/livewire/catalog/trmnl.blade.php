@@ -21,7 +21,7 @@ new class extends Component {
     private function loadNewest(): void
     {
         try {
-            $this->recipes = Cache::remember('trmnl_recipes_newest', 300, function () {
+            $this->recipes = Cache::remember('trmnl_recipes_newest', 43200, function () {
                 $response = Http::get('https://usetrmnl.com/recipes.json', [
                     'sort-by' => 'newest',
                 ]);
@@ -200,14 +200,14 @@ new class extends Component {
                             <div class="mt-4 flex items-center space-x-3">
                                 @if($recipe['id'])
                                     @if($installingPlugin === $recipe['id'])
-                                        <flux:button 
+                                        <flux:button
                                             wire:click="installPlugin('{{ $recipe['id'] }}')"
                                             variant="primary"
                                             disabled>
                                             <flux:icon name="arrow-path" class="w-4 h-4 animate-spin" />
                                         </flux:button>
                                     @else
-                                        <flux:button 
+                                        <flux:button
                                             wire:click="installPlugin('{{ $recipe['id'] }}')"
                                             variant="primary">
                                             Install
