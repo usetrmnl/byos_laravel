@@ -139,11 +139,13 @@ class PluginImportService
      * @param  string  $zipUrl  The URL to the ZIP file
      * @param  User  $user  The user importing the plugin
      * @param  string|null  $zipEntryPath  Optional path to specific plugin in monorepo
+     * @param  string|null  $preferredRenderer  Optional preferred renderer (e.g., 'trmnl-liquid')
+     * @param  string|null  $iconUrl  Optional icon URL to set on the plugin
      * @return Plugin The created plugin instance
      *
      * @throws Exception If the ZIP file is invalid or required files are missing
      */
-    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null, $preferredRenderer = null): Plugin
+    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null, $preferredRenderer = null, ?string $iconUrl = null): Plugin
     {
         // Download the ZIP file
         $response = Http::timeout(60)->get($zipUrl);
@@ -233,6 +235,7 @@ class PluginImportService
                     'configuration_template' => $configurationTemplate,
                     'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
                     'preferred_renderer' => $preferredRenderer,
+                    'icon_url' => $iconUrl,
                 ]);
 
             if (! $plugin_updated) {
@@ -388,7 +391,6 @@ class PluginImportService
      * @param  string  $template  The liquid template string
      * @param  string  $jsonContext  The JSON-encoded context
      * @param  string  $liquidPath  The path to the liquid renderer executable
-     * @return void
      *
      * @throws Exception If the template or context exceeds argument limits
      */
@@ -398,17 +400,17 @@ class PluginImportService
         // ARG_MAX is the total size of all arguments (typically 2MB on modern systems)
         $maxIndividualArgLength = 131072; // 128KB - MAX_ARG_STRLEN limit
         $maxTotalArgLength = $this->getMaxArgumentLength();
-        
+
         // Check individual argument sizes (template and context are the largest)
-        if (strlen($template) > $maxIndividualArgLength || strlen($jsonContext) > $maxIndividualArgLength) {
+        if (mb_strlen($template) > $maxIndividualArgLength || mb_strlen($jsonContext) > $maxIndividualArgLength) {
             throw new Exception('Context too large for external liquid renderer. Reduce the size of the Payload or Template.');
         }
-        
+
         // Calculate total size of all arguments (path + flags + template + context)
         // Add overhead for path, flags, and separators (conservative estimate: ~200 bytes)
-        $totalArgSize = strlen($liquidPath) + strlen('--template') + strlen($template) 
-            + strlen('--context') + strlen($jsonContext) + 200;
-        
+        $totalArgSize = mb_strlen($liquidPath) + mb_strlen('--template') + mb_strlen($template)
+            + mb_strlen('--context') + mb_strlen($jsonContext) + 200;
+
         if ($totalArgSize > $maxTotalArgLength) {
             throw new Exception('Context too large for external liquid renderer. Reduce the size of the Payload or Template.');
         }
@@ -416,7 +418,7 @@ class PluginImportService
 
     /**
      * Get the maximum argument length for command-line arguments
-     * 
+     *
      * @return int Maximum argument length in bytes
      */
     private function getMaxArgumentLength(): int
@@ -425,11 +427,11 @@ class PluginImportService
         $argMax = null;
         if (function_exists('shell_exec')) {
             $result = @shell_exec('getconf ARG_MAX 2>/dev/null');
-            if ($result !== null && is_numeric(trim($result))) {
-                $argMax = (int) trim($result);
+            if ($result !== null && is_numeric(mb_trim($result))) {
+                $argMax = (int) mb_trim($result);
             }
         }
-        
+
         // Use conservative fallback if ARG_MAX cannot be determined
         // ARG_MAX on macOS is typically 262144 (256KB), on Linux it's usually 2097152 (2MB)
         // We use 200KB as a conservative limit that works on both systems

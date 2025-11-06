@@ -341,6 +341,53 @@ it('imports specific plugin from monorepo zip with zip_entry_path parameter', fu
         ->and($plugin->render_markup)->toContain('<div class="plugin2-content">Plugin 2 content</div>');
 });
 
+it('sets icon_url when importing from URL with iconUrl parameter', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        'src/full.liquid' => getValidFullLiquid(),
+    ]);
+
+    Http::fake([
+        'https://example.com/plugin.zip' => Http::response($zipContent, 200),
+    ]);
+
+    $pluginImportService = new PluginImportService();
+    $plugin = $pluginImportService->importFromUrl(
+        'https://example.com/plugin.zip',
+        $user,
+        null,
+        null,
+        'https://example.com/icon.png'
+    );
+
+    expect($plugin)->toBeInstanceOf(Plugin::class)
+        ->and($plugin->icon_url)->toBe('https://example.com/icon.png');
+});
+
+it('does not set icon_url when importing from URL without iconUrl parameter', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        'src/full.liquid' => getValidFullLiquid(),
+    ]);
+
+    Http::fake([
+        'https://example.com/plugin.zip' => Http::response($zipContent, 200),
+    ]);
+
+    $pluginImportService = new PluginImportService();
+    $plugin = $pluginImportService->importFromUrl(
+        'https://example.com/plugin.zip',
+        $user
+    );
+
+    expect($plugin)->toBeInstanceOf(Plugin::class)
+        ->and($plugin->icon_url)->toBeNull();
+});
+
 // Helper methods
 function createMockZipFile(array $files): string
 {
