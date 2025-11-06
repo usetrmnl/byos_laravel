@@ -1082,7 +1082,7 @@ HTML;
                             })"
                         wire:ignore
                         wire:key="cm-{{ $textareaId }}"
-                        class="max-w-2xl min-h-[300px] h-[500px] overflow-hidden resize-y"
+                        class="max-w-2xl min-h-[300px] h-[565px] overflow-hidden resize-y"
                     >
                         <!-- Loading state -->
                         <div x-show="isLoading" class="flex items-center justify-center h-full">
