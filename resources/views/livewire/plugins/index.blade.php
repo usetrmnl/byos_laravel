@@ -377,8 +377,12 @@ new class extends Component {
                     <a href="{{ ($plugin['detail_view_route']) ? route($plugin['detail_view_route']) : route('plugins.recipe', ['plugin' => $plugin['id']]) }}"
                        class="block">
                         <div class="flex items-center space-x-4 px-10 py-8">
-                            <flux:icon name="{{$plugin['flux_icon_name'] ?? 'puzzle-piece'}}"
+                            @isset($plugin['icon_url'])
+                                <img src="{{ $plugin['icon_url'] }}" class="h-6"/>
+                            @else
+                                <flux:icon name="{{$plugin['flux_icon_name'] ?? 'puzzle-piece'}}"
                                        class="text-4xl text-accent"/>
+                            @endif
                             <h3 class="text-lg font-medium dark:text-zinc-200">{{$plugin['name']}}</h3>
                         </div>
                     </a>
