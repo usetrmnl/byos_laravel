@@ -156,6 +156,7 @@ new class extends Component {
 
 <div class="py-12" x-data="{
     searchTerm: '',
+    showFilters: false,
     filterPlugins(plugins) {
         if (this.searchTerm.length <= 1) return plugins;
         const search = this.searchTerm.toLowerCase();
@@ -166,6 +167,7 @@ new class extends Component {
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold dark:text-gray-100">Plugins &amp; Recipes</h2>
 
+            <flux:button icon="funnel" variant="primary" @click="showFilters = !showFilters"></flux:button>
             <flux:button.group>
                 <flux:modal.trigger name="add-plugin">
                     <flux:button icon="plus" variant="primary">Add Recipe</flux:button>
@@ -191,7 +193,7 @@ new class extends Component {
             </flux:button.group>
         </div>
 
-        <div class="mb-6 flex flex-col sm:flex-row gap-4">
+        <div x-show="showFilters" class="mb-6 flex flex-col sm:flex-row gap-4" style="display: none;">
             <div class="flex-1">
                 <flux:input
                     x-model="searchTerm"
