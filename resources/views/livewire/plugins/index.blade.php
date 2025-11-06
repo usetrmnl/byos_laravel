@@ -224,7 +224,7 @@ new class extends Component {
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Import Recipe
-                        <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
+                        <flux:badge color="blue" class="ml-2">Beta</flux:badge>
                     </flux:heading>
                     <flux:subheading>Upload a ZIP archive containing a TRMNL recipe — either exported from the cloud service or structured using the <a href="https://github.com/usetrmnl/trmnlp" target="_blank" class="underline">trmnlp</a> project structure.</flux:subheading>
                 </div>
