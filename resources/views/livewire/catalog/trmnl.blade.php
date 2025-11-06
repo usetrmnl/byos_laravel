@@ -92,10 +92,14 @@ new class extends Component {
         try {
             $zipUrl = "https://usetrmnl.com/api/plugin_settings/{$recipeId}/archive";
 
+            $recipe = collect($this->recipes)->firstWhere('id', $recipeId);
+
             $plugin = $pluginImportService->importFromUrl(
                 $zipUrl,
                 auth()->user(),
-                preferredRenderer: config('services.trmnl.liquid_enabled') ? 'trmnl-liquid' : null
+                null,
+                config('services.trmnl.liquid_enabled') ? 'trmnl-liquid' : null,
+                $recipe['icon_url'] ?? null
             );
 
             $this->dispatch('plugin-installed');

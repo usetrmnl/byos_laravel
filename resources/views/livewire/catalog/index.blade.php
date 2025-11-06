@@ -83,7 +83,13 @@ new class extends Component {
         $this->installingPlugin = $pluginId;
 
         try {
-            $importedPlugin = $pluginImportService->importFromUrl($plugin['zip_url'], auth()->user(), $plugin['zip_entry_path'] ?? null);
+            $importedPlugin = $pluginImportService->importFromUrl(
+                $plugin['zip_url'],
+                auth()->user(),
+                $plugin['zip_entry_path'] ?? null,
+                null,
+                $plugin['logo_url'] ?? null
+            );
 
             $this->dispatch('plugin-installed');
             Flux::modal('import-from-catalog')->close();
