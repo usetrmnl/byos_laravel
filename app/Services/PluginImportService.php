@@ -381,4 +381,59 @@ class PluginImportService
             'sharedLiquidPath' => $sharedLiquidPath,
         ];
     }
+
+    /**
+     * Validate that template and context are within command-line argument limits
+     *
+     * @param  string  $template  The liquid template string
+     * @param  string  $jsonContext  The JSON-encoded context
+     * @param  string  $liquidPath  The path to the liquid renderer executable
+     * @return void
+     *
+     * @throws Exception If the template or context exceeds argument limits
+     */
+    public function validateExternalRendererArguments(string $template, string $jsonContext, string $liquidPath): void
+    {
+        // MAX_ARG_STRLEN on Linux is typically 131072 (128KB) for individual arguments
+        // ARG_MAX is the total size of all arguments (typically 2MB on modern systems)
+        $maxIndividualArgLength = 131072; // 128KB - MAX_ARG_STRLEN limit
+        $maxTotalArgLength = $this->getMaxArgumentLength();
+        
+        // Check individual argument sizes (template and context are the largest)
+        if (strlen($template) > $maxIndividualArgLength || strlen($jsonContext) > $maxIndividualArgLength) {
+            throw new Exception('Context too large for external liquid renderer. Reduce the size of the Payload or Template.');
+        }
+        
+        // Calculate total size of all arguments (path + flags + template + context)
+        // Add overhead for path, flags, and separators (conservative estimate: ~200 bytes)
+        $totalArgSize = strlen($liquidPath) + strlen('--template') + strlen($template) 
+            + strlen('--context') + strlen($jsonContext) + 200;
+        
+        if ($totalArgSize > $maxTotalArgLength) {
+            throw new Exception('Context too large for external liquid renderer. Reduce the size of the Payload or Template.');
+        }
+    }
+
+    /**
+     * Get the maximum argument length for command-line arguments
+     * 
+     * @return int Maximum argument length in bytes
+     */
+    private function getMaxArgumentLength(): int
+    {
+        // Try to get ARG_MAX from system using getconf
+        $argMax = null;
+        if (function_exists('shell_exec')) {
+            $result = @shell_exec('getconf ARG_MAX 2>/dev/null');
+            if ($result !== null && is_numeric(trim($result))) {
+                $argMax = (int) trim($result);
+            }
+        }
+        
+        // Use conservative fallback if ARG_MAX cannot be determined
+        // ARG_MAX on macOS is typically 262144 (256KB), on Linux it's usually 2097152 (2MB)
+        // We use 200KB as a conservative limit that works on both systems
+        // Note: ARG_MAX includes environment variables, so we leave headroom
+        return $argMax !== null ? min($argMax, 204800) : 204800;
+    }
 }

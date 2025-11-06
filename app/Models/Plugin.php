@@ -11,6 +11,7 @@ use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
+use App\Services\PluginImportService;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -372,14 +373,14 @@ class Plugin extends Model
      * @param  array  $context  The render context data
      * @return string The rendered HTML
      *
-     * @throws LiquidException
+     * @throws Exception
      */
     private function renderWithExternalLiquidRenderer(string $template, array $context): string
     {
         $liquidPath = config('services.trmnl.liquid_path');
 
         if (empty($liquidPath)) {
-            throw new LiquidException('External liquid renderer path is not configured');
+            throw new Exception('External liquid renderer path is not configured');
         }
 
         // HTML encode the template
@@ -389,8 +390,11 @@ class Plugin extends Model
         $jsonContext = json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         if ($jsonContext === false) {
-            throw new LiquidException('Failed to encode render context as JSON: '.json_last_error_msg());
+            throw new Exception('Failed to encode render context as JSON: '.json_last_error_msg());
         }
+
+        // Validate argument sizes
+        app(PluginImportService::class)->validateExternalRendererArguments($encodedTemplate, $jsonContext, $liquidPath);
 
         // Execute the external renderer
         $process = Process::run([
