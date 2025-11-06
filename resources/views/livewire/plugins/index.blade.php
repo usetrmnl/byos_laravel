@@ -176,9 +176,6 @@ new class extends Component {
                 <flux:dropdown>
                     <flux:button icon="chevron-down" variant="primary"></flux:button>
                     <flux:menu>
-                        <flux:modal.trigger name="import-zip">
-                            <flux:menu.item icon="archive-box">Import Recipe Archive</flux:menu.item>
-                        </flux:modal.trigger>
                         <flux:modal.trigger name="import-from-catalog">
                             <flux:menu.item icon="book-open">Import from OSS Catalog</flux:menu.item>
                         </flux:modal.trigger>
@@ -187,6 +184,11 @@ new class extends Component {
                                 <flux:menu.item icon="book-open">Import from TRMNL Catalog</flux:menu.item>
                             </flux:modal.trigger>
                         @endif
+                        <flux:separator />
+                        <flux:modal.trigger name="import-zip">
+                            <flux:menu.item icon="archive-box">Import Recipe Archive</flux:menu.item>
+                        </flux:modal.trigger>
+                        <flux:separator />
                         <flux:menu.item icon="beaker" wire:click="seedExamplePlugins">Seed Example Recipes</flux:menu.item>
                     </flux:menu>
                 </flux:dropdown>
@@ -279,7 +281,7 @@ new class extends Component {
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Import from Catalog
-                        <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
+                        <flux:badge color="blue" class="ml-2">Beta</flux:badge>
                     </flux:heading>
                     <flux:subheading>Browse and install Recipes from the community. Add yours <a href="https://github.com/bnussbau/trmnl-recipe-catalog" class="underline" target="_blank">here</a>.</flux:subheading>
                 </div>
