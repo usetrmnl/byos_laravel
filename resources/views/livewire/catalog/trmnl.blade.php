@@ -22,7 +22,7 @@ new class extends Component {
     {
         try {
             $this->recipes = Cache::remember('trmnl_recipes_newest', 43200, function () {
-                $response = Http::get('https://usetrmnl.com/recipes.json', [
+                $response = Http::timeout(10)->get('https://usetrmnl.com/recipes.json', [
                     'sort-by' => 'newest',
                 ]);
 
@@ -169,7 +169,7 @@ new class extends Component {
                     <div class="flex items-start space-x-4">
                         @php($thumb = $recipe['icon_url'] ?? $recipe['screenshot_url'])
                         @if($thumb)
-                            <img src="{{ $thumb }}" alt="{{ $recipe['name'] }}" class="w-12 h-12 rounded-lg object-cover">
+                            <img src="{{ $thumb }}" loading="lazy" alt="{{ $recipe['name'] }}" class="w-12 h-12 rounded-lg object-cover">
                         @else
                             <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                                 <flux:icon name="puzzle-piece" class="w-6 h-6 text-gray-400" />
