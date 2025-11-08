@@ -119,7 +119,7 @@ new class extends Component {
                 <div class="bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 [:where(&)]:p-6 [:where(&)]:rounded-xl space-y-6">
                     <div class="flex items-start space-x-4">
                         @if($plugin['logo_url'])
-                            <img src="{{ $plugin['logo_url'] }}" alt="{{ $plugin['name'] }}" class="w-12 h-12 rounded-lg object-cover">
+                            <img src="{{ $plugin['logo_url'] }}" loading="lazy" alt="{{ $plugin['name'] }}" class="w-12 h-12 rounded-lg object-cover">
                         @else
                             <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                                 <flux:icon name="puzzle-piece" class="w-6 h-6 text-gray-400" />
