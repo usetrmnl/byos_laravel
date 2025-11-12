@@ -23,7 +23,7 @@ new class extends Component {
 
         $this->catalogPlugins = Cache::remember('catalog_plugins', 43200, function () use ($catalogUrl) {
             try {
-                $response = Http::get($catalogUrl);
+                $response = Http::timeout(10)->get($catalogUrl);
                 $catalogContent = $response->body();
                 $catalog = Yaml::parse($catalogContent);
 

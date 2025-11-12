@@ -286,7 +286,7 @@ new class extends Component {
                     </flux:heading>
                     <flux:subheading>Browse and install Recipes from the community. Add yours <a href="https://github.com/bnussbau/trmnl-recipe-catalog" class="underline" target="_blank">here</a>.</flux:subheading>
                 </div>
-                <livewire:catalog.index />
+                <livewire:catalog.index lazy />
             </div>
         </flux:modal>
 
@@ -297,7 +297,7 @@ new class extends Component {
                         <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
                     </flux:heading>
                 </div>
-                <livewire:catalog.trmnl />
+                <livewire:catalog.trmnl lazy />
             </div>
         </flux:modal>
 

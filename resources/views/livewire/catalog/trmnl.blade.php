@@ -22,7 +22,7 @@ new class extends Component {
     {
         try {
             $this->recipes = Cache::remember('trmnl_recipes_newest', 43200, function () {
-                $response = Http::get('https://usetrmnl.com/recipes.json', [
+                $response = Http::timeout(10)->get('https://usetrmnl.com/recipes.json', [
                     'sort-by' => 'newest',
                 ]);
 
