@@ -1,5 +1,6 @@
 <?php
 
+use Livewire\Attributes\Lazy;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -7,15 +8,30 @@ use Illuminate\Support\Facades\Cache;
 use App\Services\PluginImportService;
 use Illuminate\Support\Facades\Auth;
 
-new class extends Component {
+new
+#[Lazy]
+class extends Component {
     public array $recipes = [];
     public string $search = '';
     public bool $isSearching = false;
-    public string $installingPlugin = '';
 
     public function mount(): void
     {
         $this->loadNewest();
+    }
+
+    public function placeholder()
+    {
+        return <<<'HTML'
+         <div class="space-y-4">
+            <div class="flex items-center justify-center py-12">
+                <div class="flex items-center space-x-2">
+                    <flux:icon.loading />
+                    <flux:text>Loading recipes...</flux:text>
+                </div>
+            </div>
+        </div>
+        HTML;
     }
 
     private function loadNewest(): void
@@ -87,8 +103,6 @@ new class extends Component {
     {
         abort_unless(auth()->user() !== null, 403);
 
-        $this->installingPlugin = $recipeId;
-
         try {
             $zipUrl = "https://usetrmnl.com/api/plugin_settings/{$recipeId}/archive";
 
@@ -108,8 +122,6 @@ new class extends Component {
         } catch (\Exception $e) {
             Log::error('Plugin installation failed: ' . $e->getMessage());
             $this->addError('installation', 'Error installing plugin: ' . $e->getMessage());
-        } finally {
-            $this->installingPlugin = '';
         }
     }
 
@@ -199,20 +211,11 @@ new class extends Component {
 
                             <div class="mt-4 flex items-center space-x-3">
                                 @if($recipe['id'])
-                                    @if($installingPlugin === $recipe['id'])
-                                        <flux:button
-                                            wire:click="installPlugin('{{ $recipe['id'] }}')"
-                                            variant="primary"
-                                            disabled>
-                                            <flux:icon name="arrow-path" class="w-4 h-4 animate-spin" />
-                                        </flux:button>
-                                    @else
-                                        <flux:button
-                                            wire:click="installPlugin('{{ $recipe['id'] }}')"
-                                            variant="primary">
-                                            Install
-                                        </flux:button>
-                                    @endif
+                                    <flux:button
+                                        wire:click="installPlugin('{{ $recipe['id'] }}')"
+                                        variant="primary">
+                                        Install
+                                    </flux:button>
                                 @endif
 
                                 @if($recipe['detail_url'])

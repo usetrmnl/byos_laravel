@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\PluginImportService;
+use Livewire\Attributes\Lazy;
 use Livewire\Volt\Component;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -8,13 +9,29 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Yaml\Yaml;
 
-new class extends Component {
+new
+#[Lazy]
+class extends Component {
     public array $catalogPlugins = [];
     public string $installingPlugin = '';
 
     public function mount(): void
     {
         $this->loadCatalogPlugins();
+    }
+
+    public function placeholder()
+    {
+        return <<<'HTML'
+         <div class="space-y-4">
+            <div class="flex items-center justify-center py-12">
+                <div class="flex items-center space-x-2">
+                    <flux:icon.loading />
+                    <flux:text>Loading recipes...</flux:text>
+                </div>
+            </div>
+        </div>
+        HTML;
     }
 
     private function loadCatalogPlugins(): void
