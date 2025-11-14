@@ -130,9 +130,10 @@ class Plugin extends Model
                 }
             }
 
-            // Split URLs by newline and filter out empty lines
+            // Resolve Liquid variables in the entire polling_url field first, then split by newline
+            $resolvedPollingUrls = $this->resolveLiquidVariables($this->polling_url);
             $urls = array_filter(
-                array_map('trim', explode("\n", $this->polling_url)),
+                array_map('trim', explode("\n", $resolvedPollingUrls)),
                 fn ($url): bool => ! empty($url)
             );
 
@@ -147,8 +148,8 @@ class Plugin extends Model
                     $httpRequest = $httpRequest->withBody($resolvedBody);
                 }
 
-                // Resolve Liquid variables in the polling URL
-                $resolvedUrl = $this->resolveLiquidVariables($url);
+                // URL is already resolved, use it directly
+                $resolvedUrl = $url;
 
                 try {
                     // Make the request based on the verb
@@ -183,8 +184,8 @@ class Plugin extends Model
                     $httpRequest = $httpRequest->withBody($resolvedBody);
                 }
 
-                // Resolve Liquid variables in the polling URL
-                $resolvedUrl = $this->resolveLiquidVariables($url);
+                // URL is already resolved, use it directly
+                $resolvedUrl = $url;
 
                 try {
                     // Make the request based on the verb
@@ -241,10 +242,10 @@ class Plugin extends Model
         try {
             // Attempt to parse it into JSON
             $json = $httpResponse->json();
-            if($json !== null) {
+            if ($json !== null) {
                 return $json;
             }
-            
+
             // Response doesn't seem to be JSON, wrap the response body text as a JSON object
             return ['data' => $httpResponse->body()];
         } catch (Exception $e) {
@@ -345,17 +346,46 @@ class Plugin extends Model
     }
 
     /**
+     * Check if a template contains a Liquid for loop pattern
+     *
+     * @param  string  $template  The template string to check
+     * @return bool True if the template contains a for loop pattern
+     */
+    private function containsLiquidForLoop(string $template): bool
+    {
+        return preg_match('/{%-?\s*for\s+/i', $template) === 1;
+    }
+
+    /**
      * Resolve Liquid variables in a template string using the Liquid template engine
+     *
+     * Uses the external trmnl-liquid renderer when:
+     * - preferred_renderer is 'trmnl-liquid'
+     * - External renderer is enabled in config
+     * - Template contains a Liquid for loop pattern
+     *
+     * Otherwise uses the internal PHP-based Liquid renderer.
      *
      * @param  string  $template  The template string containing Liquid variables
      * @return string The resolved template with variables replaced with their values
      *
      * @throws LiquidException
+     * @throws Exception
      */
     public function resolveLiquidVariables(string $template): string
     {
         // Get configuration variables - make them available at root level
         $variables = $this->configuration ?? [];
+
+        // Check if external renderer should be used
+        $useExternalRenderer = $this->preferred_renderer === 'trmnl-liquid'
+            && config('services.trmnl.liquid_enabled')
+            && $this->containsLiquidForLoop($template);
+
+        if ($useExternalRenderer) {
+            // Use external Ruby liquid renderer
+            return $this->renderWithExternalLiquidRenderer($template, $variables);
+        }
 
         // Use the Liquid template engine to resolve variables
         $environment = App::make('liquid.environment');
@@ -404,7 +434,7 @@ class Plugin extends Model
             '--context',
             $jsonContext,
         ]);
-        
+
         if (! $process->successful()) {
             $errorOutput = $process->errorOutput() ?: $process->output();
             throw new Exception('External liquid renderer failed: '.$errorOutput);
