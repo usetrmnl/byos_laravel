@@ -296,6 +296,16 @@ new class extends Component {
                     <flux:heading size="lg">Import from TRMNL Recipe Catalog
                         <flux:badge color="yellow" class="ml-2">Alpha</flux:badge>
                     </flux:heading>
+                    <flux:callout class="mb-4 mt-4" color="yellow">
+                        <flux:heading size="sm">Limitations</flux:heading>
+                        <ul class="list-disc pl-5 mt-2">
+                            <li><flux:text>Only full view will be imported; shared markup will be prepended</flux:text></li>
+                            <li><flux:text>Requires <span class="font-mono">trmnl-liquid-cli</span>. (Included in Docker container)</flux:text></li>
+                            <li><flux:text>API responses in formats other than <span class="font-mono">JSON</span> are not yet fully supported.</flux:text></li>
+                            <li><flux:text>There are limitations in payload size (Data Payload, Template).</flux:text></li>
+                        </ul>
+                        <flux:text class="mt-1">Please report issues, aside from the known limitations, on <a href="https://github.com/usetrmnl/byos_laravel/issues/new" target="_blank" class="underline">GitHub</a>. Include the recipe URL.</flux:text></li>
+                    </flux:callout>
                 </div>
                 <livewire:catalog.trmnl lazy />
             </div>
