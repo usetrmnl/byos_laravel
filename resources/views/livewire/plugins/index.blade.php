@@ -286,7 +286,7 @@ new class extends Component {
                     </flux:heading>
                     <flux:subheading>Browse and install Recipes from the community. Add yours <a href="https://github.com/bnussbau/trmnl-recipe-catalog" class="underline" target="_blank">here</a>.</flux:subheading>
                 </div>
-                <livewire:catalog.index lazy />
+                <livewire:catalog.index />
             </div>
         </flux:modal>
 
@@ -300,14 +300,14 @@ new class extends Component {
                         <flux:heading size="sm">Limitations</flux:heading>
                         <ul class="list-disc pl-5 mt-2">
                             <li><flux:text>Only full view will be imported; shared markup will be prepended</flux:text></li>
-                            <li><flux:text>Requires <span class="font-mono">trmnl-liquid-cli</span>. (Included in Docker container)</flux:text></li>
+                            <li><flux:text>Requires <span class="font-mono">trmnl-liquid-cli</span> executable.</flux:text></li>
                             <li><flux:text>API responses in formats other than <span class="font-mono">JSON</span> are not yet fully supported.</flux:text></li>
                             <li><flux:text>There are limitations in payload size (Data Payload, Template).</flux:text></li>
                         </ul>
                         <flux:text class="mt-1">Please report issues, aside from the known limitations, on <a href="https://github.com/usetrmnl/byos_laravel/issues/new" target="_blank" class="underline">GitHub</a>. Include the recipe URL.</flux:text></li>
                     </flux:callout>
                 </div>
-                <livewire:catalog.trmnl lazy />
+                <livewire:catalog.trmnl />
             </div>
         </flux:modal>
 
