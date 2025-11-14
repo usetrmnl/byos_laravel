@@ -18,6 +18,8 @@ ENV TRMNL_LIQUID_ENABLED=1
 # Switch to the root user so we can do root things
 USER root
 
+COPY --chown=www-data:www-data --from=bnussbau/trmnl-liquid-cli:0.1.0 /usr/local/bin/trmnl-liquid-cli /usr/local/bin/
+
 # Set the working directory
 WORKDIR /var/www/html
 
@@ -51,7 +53,5 @@ FROM base AS production
 # Copy the assets from the assets image
 COPY --chown=www-data:www-data --from=assets /app/public/build /var/www/html/public/build
 COPY --chown=www-data:www-data --from=assets /app/node_modules /var/www/html/node_modules
-
-COPY --chown=www-data:www-data --from=bnussbau/trmnl-liquid-cli:latest /usr/local/bin/trmnl-liquid-cli /usr/local/bin/
 # Drop back to the www-data user
 USER www-data
