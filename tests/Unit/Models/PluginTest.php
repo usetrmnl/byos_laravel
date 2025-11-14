@@ -357,3 +357,233 @@ test('resolveLiquidVariables handles empty configuration', function (): void {
 
     expect($plugin->resolveLiquidVariables($template))->toBe($expected);
 });
+
+test('resolveLiquidVariables uses external renderer when preferred_renderer is trmnl-liquid and template contains for loop', function (): void {
+    Illuminate\Support\Facades\Process::fake([
+        '*' => Illuminate\Support\Facades\Process::result(
+            output: 'https://api1.example.com/data\nhttps://api2.example.com/data',
+            exitCode: 0
+        ),
+    ]);
+
+    config(['services.trmnl.liquid_enabled' => true]);
+    config(['services.trmnl.liquid_path' => '/usr/local/bin/trmnl-liquid-cli']);
+
+    $plugin = Plugin::factory()->create([
+        'preferred_renderer' => 'trmnl-liquid',
+        'configuration' => [
+            'recipe_ids' => '1,2',
+        ],
+    ]);
+
+    $template = <<<'LIQUID'
+{% assign ids = recipe_ids | split: "," %}
+{% for id in ids %}
+https://api{{ id }}.example.com/data
+{% endfor %}
+LIQUID;
+
+    $result = $plugin->resolveLiquidVariables($template);
+
+    // Trim trailing newlines that may be added by the process
+    expect(mb_trim($result))->toBe('https://api1.example.com/data\nhttps://api2.example.com/data');
+
+    Illuminate\Support\Facades\Process::assertRan(function ($process): bool {
+        $command = is_array($process->command) ? implode(' ', $process->command) : $process->command;
+
+        return str_contains($command, 'trmnl-liquid-cli') &&
+               str_contains($command, '--template') &&
+               str_contains($command, '--context');
+    });
+});
+
+test('resolveLiquidVariables uses internal renderer when preferred_renderer is not trmnl-liquid', function (): void {
+    $plugin = Plugin::factory()->create([
+        'preferred_renderer' => 'php',
+        'configuration' => [
+            'recipe_ids' => '1,2',
+        ],
+    ]);
+
+    $template = <<<'LIQUID'
+{% assign ids = recipe_ids | split: "," %}
+{% for id in ids %}
+https://api{{ id }}.example.com/data
+{% endfor %}
+LIQUID;
+
+    // Should use internal renderer even with for loop
+    $result = $plugin->resolveLiquidVariables($template);
+
+    // Internal renderer should process the template
+    expect($result)->toBeString();
+});
+
+test('resolveLiquidVariables uses internal renderer when external renderer is disabled', function (): void {
+    config(['services.trmnl.liquid_enabled' => false]);
+
+    $plugin = Plugin::factory()->create([
+        'preferred_renderer' => 'trmnl-liquid',
+        'configuration' => [
+            'recipe_ids' => '1,2',
+        ],
+    ]);
+
+    $template = <<<'LIQUID'
+{% assign ids = recipe_ids | split: "," %}
+{% for id in ids %}
+https://api{{ id }}.example.com/data
+{% endfor %}
+LIQUID;
+
+    // Should use internal renderer when external is disabled
+    $result = $plugin->resolveLiquidVariables($template);
+
+    expect($result)->toBeString();
+});
+
+test('resolveLiquidVariables uses internal renderer when template does not contain for loop', function (): void {
+    config(['services.trmnl.liquid_enabled' => true]);
+    config(['services.trmnl.liquid_path' => '/usr/local/bin/trmnl-liquid-cli']);
+
+    $plugin = Plugin::factory()->create([
+        'preferred_renderer' => 'trmnl-liquid',
+        'configuration' => [
+            'api_key' => 'test123',
+        ],
+    ]);
+
+    $template = 'https://api.example.com/data?key={{ api_key }}';
+
+    // Should use internal renderer when no for loop
+    $result = $plugin->resolveLiquidVariables($template);
+
+    expect($result)->toBe('https://api.example.com/data?key=test123');
+
+    Illuminate\Support\Facades\Process::assertNothingRan();
+});
+
+test('resolveLiquidVariables detects for loop with standard opening tag', function (): void {
+    Illuminate\Support\Facades\Process::fake([
+        '*' => Illuminate\Support\Facades\Process::result(
+            output: 'resolved',
+            exitCode: 0
+        ),
+    ]);
+
+    config(['services.trmnl.liquid_enabled' => true]);
+    config(['services.trmnl.liquid_path' => '/usr/local/bin/trmnl-liquid-cli']);
+
+    $plugin = Plugin::factory()->create([
+        'preferred_renderer' => 'trmnl-liquid',
+        'configuration' => [],
+    ]);
+
+    // Test {% for pattern
+    $template = '{% for item in items %}test{% endfor %}';
+    $plugin->resolveLiquidVariables($template);
+
+    Illuminate\Support\Facades\Process::assertRan(function ($process): bool {
+        $command = is_array($process->command) ? implode(' ', $process->command) : (string) $process->command;
+
+        return str_contains($command, 'trmnl-liquid-cli');
+    });
+});
+
+test('resolveLiquidVariables detects for loop with whitespace stripping tag', function (): void {
+    Illuminate\Support\Facades\Process::fake([
+        '*' => Illuminate\Support\Facades\Process::result(
+            output: 'resolved',
+            exitCode: 0
+        ),
+    ]);
+
+    config(['services.trmnl.liquid_enabled' => true]);
+    config(['services.trmnl.liquid_path' => '/usr/local/bin/trmnl-liquid-cli']);
+
+    $plugin = Plugin::factory()->create([
+        'preferred_renderer' => 'trmnl-liquid',
+        'configuration' => [],
+    ]);
+
+    // Test {%- for pattern (with whitespace stripping)
+    $template = '{%- for item in items %}test{% endfor %}';
+    $plugin->resolveLiquidVariables($template);
+
+    Illuminate\Support\Facades\Process::assertRan(function ($process): bool {
+        $command = is_array($process->command) ? implode(' ', $process->command) : (string) $process->command;
+
+        return str_contains($command, 'trmnl-liquid-cli');
+    });
+});
+
+test('updateDataPayload resolves entire polling_url field first then splits by newline', function (): void {
+    Http::fake([
+        'https://api1.example.com/data' => Http::response(['data' => 'test1'], 200),
+        'https://api2.example.com/data' => Http::response(['data' => 'test2'], 200),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => "https://api1.example.com/data\nhttps://api2.example.com/data",
+        'polling_verb' => 'get',
+        'configuration' => [
+            'recipe_ids' => '1,2',
+        ],
+    ]);
+
+    $plugin->updateDataPayload();
+
+    // Should have split the multi-line URL and generated two requests
+    expect($plugin->data_payload)->toHaveKey('IDX_0');
+    expect($plugin->data_payload)->toHaveKey('IDX_1');
+    expect($plugin->data_payload['IDX_0'])->toBe(['data' => 'test1']);
+    expect($plugin->data_payload['IDX_1'])->toBe(['data' => 'test2']);
+});
+
+test('updateDataPayload handles multi-line polling_url with for loop using external renderer', function (): void {
+    Illuminate\Support\Facades\Process::fake([
+        '*' => Illuminate\Support\Facades\Process::result(
+            output: "https://api1.example.com/data\nhttps://api2.example.com/data",
+            exitCode: 0
+        ),
+    ]);
+
+    Http::fake([
+        'https://api1.example.com/data' => Http::response(['data' => 'test1'], 200),
+        'https://api2.example.com/data' => Http::response(['data' => 'test2'], 200),
+    ]);
+
+    config(['services.trmnl.liquid_enabled' => true]);
+    config(['services.trmnl.liquid_path' => '/usr/local/bin/trmnl-liquid-cli']);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'preferred_renderer' => 'trmnl-liquid',
+        'polling_url' => <<<'LIQUID'
+{% assign ids = recipe_ids | split: "," %}
+{% for id in ids %}
+https://api{{ id }}.example.com/data
+{% endfor %}
+LIQUID
+        ,
+        'polling_verb' => 'get',
+        'configuration' => [
+            'recipe_ids' => '1,2',
+        ],
+    ]);
+
+    $plugin->updateDataPayload();
+
+    // Should have used external renderer and generated two URLs
+    expect($plugin->data_payload)->toHaveKey('IDX_0');
+    expect($plugin->data_payload)->toHaveKey('IDX_1');
+    expect($plugin->data_payload['IDX_0'])->toBe(['data' => 'test1']);
+    expect($plugin->data_payload['IDX_1'])->toBe(['data' => 'test2']);
+
+    Illuminate\Support\Facades\Process::assertRan(function ($process): bool {
+        $command = is_array($process->command) ? implode(' ', $process->command) : (string) $process->command;
+
+        return str_contains($command, 'trmnl-liquid-cli');
+    });
+});
