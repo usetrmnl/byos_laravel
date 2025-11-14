@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Symfony\Component\Yaml\Yaml;
 
@@ -15,6 +16,8 @@ it('can render catalog component', function (): void {
     Http::fake([
         config('app.catalog_url') => Http::response('', 200),
     ]);
+
+    Livewire::withoutLazyLoading();
 
     $component = Volt::test('catalog.index');
 
@@ -54,6 +57,8 @@ it('loads plugins from catalog URL', function (): void {
         config('app.catalog_url') => Http::response($yamlContent, 200),
     ]);
 
+    Livewire::withoutLazyLoading();
+
     $component = Volt::test('catalog.index');
 
     $component->assertSee('Test Plugin');
@@ -66,6 +71,8 @@ it('shows error when plugin not found', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user);
+
+    Livewire::withoutLazyLoading();
 
     $component = Volt::test('catalog.index');
 
@@ -96,6 +103,8 @@ it('shows error when zip_url is missing', function (): void {
     ]);
 
     $this->actingAs($user);
+
+    Livewire::withoutLazyLoading();
 
     $component = Volt::test('catalog.index');
 

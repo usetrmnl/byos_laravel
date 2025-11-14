@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\User;
-use App\Services\PluginImportService;
 use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 use Livewire\Volt\Volt;
-use Mockery\MockInterface;
 
 it('loads newest TRMNL recipes on mount', function () {
     Http::fake([
@@ -23,6 +22,8 @@ it('loads newest TRMNL recipes on mount', function () {
             ],
         ], 200),
     ]);
+
+    Livewire::withoutLazyLoading();
 
     Volt::test('catalog.trmnl')
         ->assertSee('Weather Chum')
@@ -61,6 +62,8 @@ it('searches TRMNL recipes when search term is provided', function () {
             ], 200),
     ]);
 
+    Livewire::withoutLazyLoading();
+
     Volt::test('catalog.trmnl')
         ->assertSee('Initial Recipe')
         ->set('search', 'weather')
@@ -70,7 +73,7 @@ it('searches TRMNL recipes when search term is provided', function () {
 
 it('installs plugin successfully when user is authenticated', function () {
     $user = User::factory()->create();
-    
+
     Http::fake([
         'usetrmnl.com/recipes.json*' => Http::response([
             'data' => [
@@ -88,7 +91,9 @@ it('installs plugin successfully when user is authenticated', function () {
     ]);
 
     $this->actingAs($user);
-    
+
+    Livewire::withoutLazyLoading();
+
     Volt::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->call('installPlugin', '123')
@@ -111,6 +116,8 @@ it('shows error when user is not authenticated', function () {
         ], 200),
     ]);
 
+    Livewire::withoutLazyLoading();
+
     Volt::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->call('installPlugin', '123')
@@ -119,7 +126,7 @@ it('shows error when user is not authenticated', function () {
 
 it('shows error when plugin installation fails', function () {
     $user = User::factory()->create();
-    
+
     Http::fake([
         'usetrmnl.com/recipes.json*' => Http::response([
             'data' => [
@@ -137,7 +144,9 @@ it('shows error when plugin installation fails', function () {
     ]);
 
     $this->actingAs($user);
-    
+
+    Livewire::withoutLazyLoading();
+
     Volt::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->call('installPlugin', '123')
