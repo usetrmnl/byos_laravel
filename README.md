@@ -3,7 +3,7 @@
 [![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
 
 TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
-It allows you to manage TRMNL devices, generate screens using native plugins, recipes (100+ from the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)), or the API, and can also act as a proxy for the native cloud service (Core). With over 20k downloads and 100+ stars, it’s the most popular community-driven BYOS.
+It allows you to manage TRMNL devices, generate screens using **native plugins**, **recipes** (100+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), ~500 from the [TRMNL catalog](https://usetrmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 25k downloads and 125+ stars, it’s the most popular community-driven BYOS.
 
 ![Screenshot](README_byos-screenshot.png)
 ![Screenshot](README_byos-screenshot-dark.png)
@@ -16,7 +16,8 @@ It allows you to manage TRMNL devices, generate screens using native plugins, re
 * 🔍 Auto-Join – Automatically detects and adds devices from your local network.
 * 🖥️ Screen Generation – Supports Plugins (including Mashups), Recipes, API, Markup, or updates via Code.
   * Support for TRMNL [Design Framework](https://usetrmnl.com/framework)
-  * Over 45 compatible open-source recipes are available in the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)
+  * Compatible open-source recipes are available in the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)
+  * Import from the [TRMNL community recipe catalog](https://usetrmnl.com/recipes)
   * Supported Devices
     * TRMNL OG (1-bit & 2-bit)
     * SeeedStudio TRMNL 7,5" (OG) DIY Kit
@@ -24,6 +25,7 @@ It allows you to manage TRMNL devices, generate screens using native plugins, re
     * reTerminal E1001 Monochrome ePaper Display
     * Custom ESP32 with TRMNL firmware
     * E-Reader Devices
+      * KOReader ([trmnl-koreader](https://github.com/usetrmnl/trmnl-koreader))
       * Kindle ([trmnl-kindle](https://github.com/usetrmnl/byos_laravel/pull/27))
       * Nook ([trmnl-nook](https://github.com/usetrmnl/trmnl-nook))
       * Kobo ([trmnl-kobo](https://github.com/usetrmnl/trmnl-kobo))
