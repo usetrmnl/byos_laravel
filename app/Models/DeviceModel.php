@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class DeviceModel extends Model
 {
@@ -24,6 +25,11 @@ final class DeviceModel extends Model
         'offset_y' => 'integer',
         'published_at' => 'datetime',
     ];
+
+    public function palette(): BelongsTo
+    {
+        return $this->belongsTo(Palette::class);
+    }
 
     public function getColorDepthAttribute(): ?string
     {
