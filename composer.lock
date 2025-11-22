@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3d743ce4dc2742c59ed6f9cc8ed36e04",
+    "content-hash": "c593b7296def10241918381c7d57c9c0",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -243,16 +243,16 @@
         },
         {
             "name": "bnussbau/trmnl-pipeline-php",
-            "version": "0.4.0",
+            "version": "dev-feat/colormap",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bnussbau/trmnl-pipeline-php.git",
-                "reference": "b58b937f36e55aa7cbd4859cbe7a902bf1050bf8"
+                "reference": "f2e639ac026b1b4c763e903fccb70c633f12b86b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bnussbau/trmnl-pipeline-php/zipball/b58b937f36e55aa7cbd4859cbe7a902bf1050bf8",
-                "reference": "b58b937f36e55aa7cbd4859cbe7a902bf1050bf8",
+                "url": "https://api.github.com/repos/bnussbau/trmnl-pipeline-php/zipball/f2e639ac026b1b4c763e903fccb70c633f12b86b",
+                "reference": "f2e639ac026b1b4c763e903fccb70c633f12b86b",
                 "shasum": ""
             },
             "require": {
@@ -294,7 +294,7 @@
             ],
             "support": {
                 "issues": "https://github.com/bnussbau/trmnl-pipeline-php/issues",
-                "source": "https://github.com/bnussbau/trmnl-pipeline-php/tree/0.4.0"
+                "source": "https://github.com/bnussbau/trmnl-pipeline-php/tree/feat/colormap"
             },
             "funding": [
                 {
@@ -310,7 +310,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-10-30T11:52:17+00:00"
+            "time": "2025-11-22T06:30:50+00:00"
         },
         {
             "name": "brick/math",
@@ -11612,7 +11612,9 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {},
+    "stability-flags": {
+        "bnussbau/trmnl-pipeline-php": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
