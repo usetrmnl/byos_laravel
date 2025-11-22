@@ -25,7 +25,7 @@ class ImageGenerationService
 {
     public static function generateImage(string $markup, $deviceId): string
     {
-        $device = Device::with('deviceModel')->find($deviceId);
+        $device = Device::with(['deviceModel', 'palette', 'deviceModel.palette'])->find($deviceId);
         $uuid = Uuid::uuid4()->toString();
 
         try {
@@ -61,6 +61,14 @@ class ImageGenerationService
                 $browserStage->setBrowsershotOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']);
             }
 
+            // Get palette from device or fallback to device model's default palette
+            $palette = $device->palette ?? $device->deviceModel?->palette;
+            $colorPalette = null;
+
+            if ($palette && $palette->colors) {
+                $colorPalette = $palette->colors;
+            }
+
             $imageStage = new ImageStage();
             $imageStage->format($fileExtension)
                 ->width($imageSettings['width'])
@@ -71,6 +79,11 @@ class ImageGenerationService
                 ->offsetX($imageSettings['offset_x'])
                 ->offsetY($imageSettings['offset_y'])
                 ->outputPath($outputPath);
+
+            // Apply color palette if available
+            if ($colorPalette) {
+                $imageStage->colormap($colorPalette);
+            }
 
             // Apply dithering if requested by markup
             $shouldDither = self::markupContainsDitherImage($markup);
@@ -338,6 +351,9 @@ class ImageGenerationService
         $uuid = Uuid::uuid4()->toString();
 
         try {
+            // Load device with relationships
+            $device->load(['palette', 'deviceModel.palette']);
+
             // Get image generation settings from DeviceModel if available, otherwise use device settings
             $imageSettings = self::getImageSettings($device);
 
@@ -372,6 +388,14 @@ class ImageGenerationService
                 $browserStage->setBrowsershotOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']);
             }
 
+            // Get palette from device or fallback to device model's default palette
+            $palette = $device->palette ?? $device->deviceModel?->palette;
+            $colorPalette = null;
+
+            if ($palette && $palette->colors) {
+                $colorPalette = $palette->colors;
+            }
+
             $imageStage = new ImageStage();
             $imageStage->format($fileExtension)
                 ->width($imageSettings['width'])
@@ -382,6 +406,11 @@ class ImageGenerationService
                 ->offsetX($imageSettings['offset_x'])
                 ->offsetY($imageSettings['offset_y'])
                 ->outputPath($outputPath);
+
+            // Apply color palette if available
+            if ($colorPalette) {
+                $imageStage->colormap($colorPalette);
+            }
 
             (new TrmnlPipeline())->pipe($browserStage)
                 ->pipe($imageStage)
