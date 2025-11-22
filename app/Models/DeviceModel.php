@@ -35,7 +35,7 @@ final class DeviceModel extends Model
             return '2bit';
         }
 
-        // if higher then 4 return 4bit
+        // if higher than 4 return 4bit
         if ($this->bit_depth > 4) {
             return '4bit';
         }
