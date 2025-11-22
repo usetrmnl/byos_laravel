@@ -1,25 +1,42 @@
 <?php
 
 use App\Models\DeviceModel;
+use App\Models\DevicePalette;
 use Livewire\Volt\Component;
 
-new class extends Component {
-
+new class extends Component
+{
     public $deviceModels;
 
+    public $devicePalettes;
+
     public $name;
+
     public $label;
+
     public $description;
+
     public $width;
+
     public $height;
+
     public $colors;
+
     public $bit_depth;
+
     public $scale_factor = 1.0;
+
     public $rotation = 0;
+
     public $mime_type = 'image/png';
+
     public $offset_x = 0;
+
     public $offset_y = 0;
+
     public $published_at;
+
+    public $palette_id;
 
     protected $rules = [
         'name' => 'required|string|max:255|unique:device_models,name',
@@ -40,62 +57,58 @@ new class extends Component {
     public function mount()
     {
         $this->deviceModels = DeviceModel::all();
+        $this->devicePalettes = DevicePalette::all();
+
         return view('livewire.device-models.index');
-    }
-
-    public function createDeviceModel(): void
-    {
-        $this->validate();
-
-        DeviceModel::create([
-            'name' => $this->name,
-            'label' => $this->label,
-            'description' => $this->description,
-            'width' => $this->width,
-            'height' => $this->height,
-            'colors' => $this->colors,
-            'bit_depth' => $this->bit_depth,
-            'scale_factor' => $this->scale_factor,
-            'rotation' => $this->rotation,
-            'mime_type' => $this->mime_type,
-            'offset_x' => $this->offset_x,
-            'offset_y' => $this->offset_y,
-            'published_at' => $this->published_at,
-        ]);
-
-        $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at']);
-        \Flux::modal('create-device-model')->close();
-
-        $this->deviceModels = DeviceModel::all();
-        session()->flash('message', 'Device model created successfully.');
     }
 
     public $editingDeviceModelId;
 
-    public function editDeviceModel(DeviceModel $deviceModel): void
+    public $viewingDeviceModelId;
+
+    public function openDeviceModelModal(?string $deviceModelId = null, bool $viewOnly = false): void
     {
-        $this->editingDeviceModelId = $deviceModel->id;
-        $this->name = $deviceModel->name;
-        $this->label = $deviceModel->label;
-        $this->description = $deviceModel->description;
-        $this->width = $deviceModel->width;
-        $this->height = $deviceModel->height;
-        $this->colors = $deviceModel->colors;
-        $this->bit_depth = $deviceModel->bit_depth;
-        $this->scale_factor = $deviceModel->scale_factor;
-        $this->rotation = $deviceModel->rotation;
-        $this->mime_type = $deviceModel->mime_type;
-        $this->offset_x = $deviceModel->offset_x;
-        $this->offset_y = $deviceModel->offset_y;
-        $this->published_at = $deviceModel->published_at?->format('Y-m-d\TH:i');
+        if ($deviceModelId) {
+            $deviceModel = DeviceModel::findOrFail($deviceModelId);
+
+            if ($viewOnly) {
+                $this->viewingDeviceModelId = $deviceModel->id;
+                $this->editingDeviceModelId = null;
+            } else {
+                $this->editingDeviceModelId = $deviceModel->id;
+                $this->viewingDeviceModelId = null;
+            }
+
+            $this->name = $deviceModel->name;
+            $this->label = $deviceModel->label;
+            $this->description = $deviceModel->description;
+            $this->width = $deviceModel->width;
+            $this->height = $deviceModel->height;
+            $this->colors = $deviceModel->colors;
+            $this->bit_depth = $deviceModel->bit_depth;
+            $this->scale_factor = $deviceModel->scale_factor;
+            $this->rotation = $deviceModel->rotation;
+            $this->mime_type = $deviceModel->mime_type;
+            $this->offset_x = $deviceModel->offset_x;
+            $this->offset_y = $deviceModel->offset_y;
+            $this->published_at = $deviceModel->published_at?->format('Y-m-d\TH:i');
+            $this->palette_id = $deviceModel->palette_id;
+        } else {
+            $this->editingDeviceModelId = null;
+            $this->viewingDeviceModelId = null;
+            $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id']);
+            $this->mime_type = 'image/png';
+            $this->scale_factor = 1.0;
+            $this->rotation = 0;
+            $this->offset_x = 0;
+            $this->offset_y = 0;
+        }
     }
 
-    public function updateDeviceModel(): void
+    public function saveDeviceModel(): void
     {
-        $deviceModel = DeviceModel::findOrFail($this->editingDeviceModelId);
-
-        $this->validate([
-            'name' => 'required|string|max:255|unique:device_models,name,' . $deviceModel->id,
+        $rules = [
+            'name' => 'required|string|max:255',
             'label' => 'required|string|max:255',
             'description' => 'required|string',
             'width' => 'required|integer|min:1',
@@ -108,37 +121,95 @@ new class extends Component {
             'offset_x' => 'required|integer',
             'offset_y' => 'required|integer',
             'published_at' => 'nullable|date',
-        ]);
+            'palette_id' => 'nullable|exists:device_palettes,id',
+        ];
 
-        $deviceModel->update([
-            'name' => $this->name,
-            'label' => $this->label,
-            'description' => $this->description,
-            'width' => $this->width,
-            'height' => $this->height,
-            'colors' => $this->colors,
-            'bit_depth' => $this->bit_depth,
-            'scale_factor' => $this->scale_factor,
-            'rotation' => $this->rotation,
-            'mime_type' => $this->mime_type,
-            'offset_x' => $this->offset_x,
-            'offset_y' => $this->offset_y,
-            'published_at' => $this->published_at,
-        ]);
+        if ($this->editingDeviceModelId) {
+            $rules['name'] = 'required|string|max:255|unique:device_models,name,'.$this->editingDeviceModelId;
+        } else {
+            $rules['name'] = 'required|string|max:255|unique:device_models,name';
+        }
 
-        $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'editingDeviceModelId']);
-        \Flux::modal('edit-device-model-' . $deviceModel->id)->close();
+        $this->validate($rules);
+
+        if ($this->editingDeviceModelId) {
+            $deviceModel = DeviceModel::findOrFail($this->editingDeviceModelId);
+            $deviceModel->update([
+                'name' => $this->name,
+                'label' => $this->label,
+                'description' => $this->description,
+                'width' => $this->width,
+                'height' => $this->height,
+                'colors' => $this->colors,
+                'bit_depth' => $this->bit_depth,
+                'scale_factor' => $this->scale_factor,
+                'rotation' => $this->rotation,
+                'mime_type' => $this->mime_type,
+                'offset_x' => $this->offset_x,
+                'offset_y' => $this->offset_y,
+                'published_at' => $this->published_at,
+                'palette_id' => $this->palette_id ?: null,
+            ]);
+            $message = 'Device model updated successfully.';
+        } else {
+            DeviceModel::create([
+                'name' => $this->name,
+                'label' => $this->label,
+                'description' => $this->description,
+                'width' => $this->width,
+                'height' => $this->height,
+                'colors' => $this->colors,
+                'bit_depth' => $this->bit_depth,
+                'scale_factor' => $this->scale_factor,
+                'rotation' => $this->rotation,
+                'mime_type' => $this->mime_type,
+                'offset_x' => $this->offset_x,
+                'offset_y' => $this->offset_y,
+                'published_at' => $this->published_at,
+                'palette_id' => $this->palette_id ?: null,
+                'source' => 'manual',
+            ]);
+            $message = 'Device model created successfully.';
+        }
+
+        $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'editingDeviceModelId', 'viewingDeviceModelId']);
+        Flux::modal('device-model-modal')->close();
 
         $this->deviceModels = DeviceModel::all();
-        session()->flash('message', 'Device model updated successfully.');
+        session()->flash('message', $message);
     }
 
-    public function deleteDeviceModel(DeviceModel $deviceModel): void
+    public function deleteDeviceModel(string $deviceModelId): void
     {
+        $deviceModel = DeviceModel::findOrFail($deviceModelId);
         $deviceModel->delete();
 
         $this->deviceModels = DeviceModel::all();
         session()->flash('message', 'Device model deleted successfully.');
+    }
+
+    public function duplicateDeviceModel(string $deviceModelId): void
+    {
+        $deviceModel = DeviceModel::findOrFail($deviceModelId);
+
+        $this->editingDeviceModelId = null;
+        $this->viewingDeviceModelId = null;
+        $this->name = $deviceModel->name.' (Copy)';
+        $this->label = $deviceModel->label;
+        $this->description = $deviceModel->description;
+        $this->width = $deviceModel->width;
+        $this->height = $deviceModel->height;
+        $this->colors = $deviceModel->colors;
+        $this->bit_depth = $deviceModel->bit_depth;
+        $this->scale_factor = $deviceModel->scale_factor;
+        $this->rotation = $deviceModel->rotation;
+        $this->mime_type = $deviceModel->mime_type;
+        $this->offset_x = $deviceModel->offset_x;
+        $this->offset_y = $deviceModel->offset_y;
+        $this->published_at = $deviceModel->published_at?->format('Y-m-d\TH:i');
+        $this->palette_id = $deviceModel->palette_id;
+
+        $this->js('Flux.modal("device-model-modal").show()');
     }
 }
 
@@ -148,10 +219,19 @@ new class extends Component {
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold dark:text-gray-100">Device Models</h2>
-                {{-- <flux:modal.trigger name="create-device-model">--}}
-                {{--     <flux:button icon="plus" variant="primary">Add Device Model</flux:button>--}}
-                {{-- </flux:modal.trigger>--}}
+                <div class="flex items-center space-x-2">
+                    <h2 class="text-2xl font-semibold dark:text-gray-100">Device Models</h2>
+                    <flux:dropdown>
+                        <flux:button icon="chevron-down" variant="ghost"></flux:button>
+                        <flux:menu>
+                            <flux:menu.item href="{{ route('devices') }}">Devices</flux:menu.item>
+                            <flux:menu.item href="{{ route('device-palettes.index') }}">Device Palettes</flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
+                </div>
+                <flux:modal.trigger name="device-model-modal">
+                    <flux:button wire:click="openDeviceModelModal()" icon="plus" variant="primary">Add Device Model</flux:button>
+                </flux:modal.trigger>
             </div>
             @if (session()->has('message'))
                 <div class="mb-4">
@@ -164,156 +244,103 @@ new class extends Component {
                 </div>
             @endif
 
-            <flux:modal name="create-device-model" class="md:w-96">
+            <flux:modal name="device-model-modal" class="md:w-96">
                 <div class="space-y-6">
                     <div>
-                        <flux:heading size="lg">Add Device Model</flux:heading>
+                        <flux:heading size="lg">
+                            @if ($viewingDeviceModelId)
+                                View Device Model
+                            @elseif ($editingDeviceModelId)
+                                Edit Device Model
+                            @else
+                                Add Device Model
+                            @endif
+                        </flux:heading>
                     </div>
 
-                    <form wire:submit="createDeviceModel">
+                    <form wire:submit="saveDeviceModel">
                         <div class="mb-4">
                             <flux:input label="Name" wire:model="name" id="name" class="block mt-1 w-full" type="text"
-                                        name="name" autofocus/>
+                                        name="name" autofocus :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
                         <div class="mb-4">
                             <flux:input label="Label" wire:model="label" id="label" class="block mt-1 w-full"
                                         type="text"
-                                        name="label"/>
+                                        name="label" :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
                         <div class="mb-4">
                             <flux:input label="Description" wire:model="description" id="description"
-                                        class="block mt-1 w-full" name="description"/>
+                                        class="block mt-1 w-full" name="description" :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <flux:input label="Width" wire:model="width" id="width" class="block mt-1 w-full"
                                         type="number"
-                                        name="width"/>
+                                        name="width" :disabled="(bool) $viewingDeviceModelId"/>
                             <flux:input label="Height" wire:model="height" id="height" class="block mt-1 w-full"
                                         type="number"
-                                        name="height"/>
+                                        name="height" :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <flux:input label="Colors" wire:model="colors" id="colors" class="block mt-1 w-full"
                                         type="number"
-                                        name="colors"/>
+                                        name="colors" :disabled="(bool) $viewingDeviceModelId"/>
                             <flux:input label="Bit Depth" wire:model="bit_depth" id="bit_depth"
                                         class="block mt-1 w-full" type="number"
-                                        name="bit_depth"/>
+                                        name="bit_depth" :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <flux:input label="Scale Factor" wire:model="scale_factor" id="scale_factor"
                                         class="block mt-1 w-full" type="number"
-                                        name="scale_factor" step="0.1"/>
+                                        name="scale_factor" step="0.1" :disabled="(bool) $viewingDeviceModelId"/>
                             <flux:input label="Rotation" wire:model="rotation" id="rotation" class="block mt-1 w-full"
                                         type="number"
-                                        name="rotation"/>
+                                        name="rotation" :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
                         <div class="mb-4">
-                            <flux:input label="MIME Type" wire:model="mime_type" id="mime_type"
-                                        class="block mt-1 w-full" type="text"
-                                        name="mime_type"/>
+                            <flux:select label="MIME Type" wire:model="mime_type" id="mime_type" name="mime_type" :disabled="(bool) $viewingDeviceModelId">
+                                <flux:select.option>image/png</flux:select.option>
+                                <flux:select.option>image/bmp</flux:select.option>
+                            </flux:select>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <flux:input label="Offset X" wire:model="offset_x" id="offset_x" class="block mt-1 w-full"
                                         type="number"
-                                        name="offset_x"/>
+                                        name="offset_x" :disabled="(bool) $viewingDeviceModelId"/>
                             <flux:input label="Offset Y" wire:model="offset_y" id="offset_y" class="block mt-1 w-full"
                                         type="number"
-                                        name="offset_y"/>
+                                        name="offset_y" :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
-                        <div class="flex">
-                            <flux:spacer/>
-                            <flux:button type="submit" variant="primary">Create Device Model</flux:button>
+                        <div class="mb-4">
+                            <flux:select label="Color Palette" wire:model="palette_id" id="palette_id" name="palette_id" :disabled="(bool) $viewingDeviceModelId">
+                                <flux:select.option value="">None</flux:select.option>
+                                @foreach ($devicePalettes as $palette)
+                                    <flux:select.option value="{{ $palette->id }}">{{ $palette->description ?? $palette->name }} ({{ $palette->name }})</flux:select.option>
+                                @endforeach
+                            </flux:select>
                         </div>
+
+                        @if (!$viewingDeviceModelId)
+                            <div class="flex">
+                                <flux:spacer/>
+                                <flux:button type="submit" variant="primary">{{ $editingDeviceModelId ? 'Update' : 'Create' }} Device Model</flux:button>
+                            </div>
+                        @else
+                            <div class="flex">
+                                <flux:spacer/>
+                                <flux:button type="button" wire:click="duplicateDeviceModel({{ $viewingDeviceModelId }})" variant="primary">Duplicate</flux:button>
+                            </div>
+                        @endif
                     </form>
                 </div>
             </flux:modal>
-
-            @foreach ($deviceModels as $deviceModel)
-                <flux:modal name="edit-device-model-{{ $deviceModel->id }}" class="md:w-96">
-                    <div class="space-y-6">
-                        <div>
-                            <flux:heading size="lg">Edit Device Model</flux:heading>
-                        </div>
-
-                        <form wire:submit="updateDeviceModel">
-                            <div class="mb-4">
-                                <flux:input label="Name" wire:model="name" id="edit_name" class="block mt-1 w-full"
-                                            type="text"
-                                            name="edit_name"/>
-                            </div>
-
-                            <div class="mb-4">
-                                <flux:input label="Label" wire:model="label" id="edit_label" class="block mt-1 w-full"
-                                            type="text"
-                                            name="edit_label"/>
-                            </div>
-
-                            <div class="mb-4">
-                                <flux:input label="Description" wire:model="description" id="edit_description"
-                                            class="block mt-1 w-full" name="edit_description"/>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <flux:input label="Width" wire:model="width" id="edit_width" class="block mt-1 w-full"
-                                            type="number"
-                                            name="edit_width"/>
-                                <flux:input label="Height" wire:model="height" id="edit_height"
-                                            class="block mt-1 w-full" type="number"
-                                            name="edit_height"/>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <flux:input label="Colors" wire:model="colors" id="edit_colors"
-                                            class="block mt-1 w-full" type="number"
-                                            name="edit_colors"/>
-                                <flux:input label="Bit Depth" wire:model="bit_depth" id="edit_bit_depth"
-                                            class="block mt-1 w-full" type="number"
-                                            name="edit_bit_depth"/>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <flux:input label="Scale Factor" wire:model="scale_factor" id="edit_scale_factor"
-                                            class="block mt-1 w-full" type="number"
-                                            name="edit_scale_factor" step="0.1"/>
-                                <flux:input label="Rotation" wire:model="rotation" id="edit_rotation"
-                                            class="block mt-1 w-full" type="number"
-                                            name="edit_rotation"/>
-                            </div>
-
-                            <div class="mb-4">
-                                <flux:select label="MIME Type" wire:model="mime_type" id="edit_mime_type" name="edit_mime_type">
-                                    <flux:select.option>image/png</flux:select.option>
-                                    <flux:select.option>image/bmp</flux:select.option>
-                                </flux:select>
-
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <flux:input label="Offset X" wire:model="offset_x" id="edit_offset_x"
-                                            class="block mt-1 w-full" type="number"
-                                            name="edit_offset_x"/>
-                                <flux:input label="Offset Y" wire:model="offset_y" id="edit_offset_y"
-                                            class="block mt-1 w-full" type="number"
-                                            name="edit_offset_y"/>
-                            </div>
-
-                            <div class="flex">
-                                <flux:spacer/>
-                                <flux:button type="submit" variant="primary">Update Device Model</flux:button>
-                            </div>
-                        </form>
-                    </div>
-                </flux:modal>
-            @endforeach
 
             <table
                 class="min-w-full table-fixed text-zinc-800 divide-y divide-zinc-800/10 dark:divide-white/20 text-zinc-800"
@@ -369,14 +396,25 @@ new class extends Component {
                         >
                             <div class="flex items-center gap-4">
                                 <flux:button.group>
-                                    <flux:modal.trigger name="edit-device-model-{{ $deviceModel->id }}">
-                                        <flux:button wire:click="editDeviceModel({{ $deviceModel->id }})" icon="pencil"
+                                    @if ($deviceModel->source === 'api')
+                                        <flux:modal.trigger name="device-model-modal">
+                                            <flux:button wire:click="openDeviceModelModal('{{ $deviceModel->id }}', true)" icon="eye"
+                                                         iconVariant="outline">
+                                            </flux:button>
+                                        </flux:modal.trigger>
+                                        <flux:button wire:click="duplicateDeviceModel('{{ $deviceModel->id }}')" icon="document-duplicate"
                                                      iconVariant="outline">
                                         </flux:button>
-                                    </flux:modal.trigger>
-                                    <flux:button wire:click="deleteDeviceModel({{ $deviceModel->id }})" icon="trash"
-                                                 iconVariant="outline">
-                                    </flux:button>
+                                    @else
+                                        <flux:modal.trigger name="device-model-modal">
+                                            <flux:button wire:click="openDeviceModelModal('{{ $deviceModel->id }}')" icon="pencil"
+                                                         iconVariant="outline">
+                                            </flux:button>
+                                        </flux:modal.trigger>
+                                        <flux:button wire:click="deleteDeviceModel('{{ $deviceModel->id }}')" icon="trash"
+                                                     iconVariant="outline">
+                                        </flux:button>
+                                    @endif
                                 </flux:button.group>
                             </div>
                         </td>

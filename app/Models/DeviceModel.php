@@ -6,7 +6,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property-read DevicePalette|null $palette
+ */
 final class DeviceModel extends Model
 {
     use HasFactory;
@@ -65,5 +69,10 @@ final class DeviceModel extends Model
         }
 
         return null;
+    }
+
+    public function palette(): BelongsTo
+    {
+        return $this->belongsTo(DevicePalette::class, 'palette_id');
     }
 }

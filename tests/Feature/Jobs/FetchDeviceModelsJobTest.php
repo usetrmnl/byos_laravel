@@ -12,6 +12,13 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     DeviceModel::truncate();
+
+    // Mock palettes API to return empty array by default
+    Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response([
+            'data' => [],
+        ], 200),
+    ]);
 });
 
 test('fetch device models job can be dispatched', function (): void {
@@ -21,6 +28,7 @@ test('fetch device models job can be dispatched', function (): void {
 
 test('fetch device models job handles successful api response', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
                 [
@@ -41,6 +49,10 @@ test('fetch device models job handles successful api response', function (): voi
             ],
         ], 200),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('info')
         ->once()
@@ -67,6 +79,7 @@ test('fetch device models job handles successful api response', function (): voi
 
 test('fetch device models job handles multiple device models', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
                 [
@@ -105,6 +118,10 @@ test('fetch device models job handles multiple device models', function (): void
 
     Log::shouldReceive('info')
         ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
+
+    Log::shouldReceive('info')
+        ->once()
         ->with('Successfully fetched and updated device models', ['count' => 2]);
 
     $job = new FetchDeviceModelsJob();
@@ -116,10 +133,15 @@ test('fetch device models job handles multiple device models', function (): void
 
 test('fetch device models job handles empty data array', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => [],
         ], 200),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('info')
         ->once()
@@ -133,10 +155,15 @@ test('fetch device models job handles empty data array', function (): void {
 
 test('fetch device models job handles missing data field', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'message' => 'No data available',
         ], 200),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('info')
         ->once()
@@ -150,10 +177,15 @@ test('fetch device models job handles missing data field', function (): void {
 
 test('fetch device models job handles non-array data', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => 'invalid-data',
         ], 200),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('error')
         ->once()
@@ -167,10 +199,15 @@ test('fetch device models job handles non-array data', function (): void {
 
 test('fetch device models job handles api failure', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'error' => 'Internal Server Error',
         ], 500),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('error')
         ->once()
@@ -187,10 +224,15 @@ test('fetch device models job handles api failure', function (): void {
 
 test('fetch device models job handles network exception', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => function (): void {
             throw new Exception('Network connection failed');
         },
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('error')
         ->once()
@@ -204,6 +246,7 @@ test('fetch device models job handles network exception', function (): void {
 
 test('fetch device models job handles device model with missing name', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
                 [
@@ -213,6 +256,10 @@ test('fetch device models job handles device model with missing name', function 
             ],
         ], 200),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('warning')
         ->once()
@@ -230,6 +277,7 @@ test('fetch device models job handles device model with missing name', function 
 
 test('fetch device models job handles device model with partial data', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
                 [
@@ -239,6 +287,10 @@ test('fetch device models job handles device model with partial data', function 
             ],
         ], 200),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('info')
         ->once()
@@ -273,6 +325,7 @@ test('fetch device models job updates existing device model', function (): void 
     ]);
 
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
                 [
@@ -296,6 +349,10 @@ test('fetch device models job updates existing device model', function (): void 
 
     Log::shouldReceive('info')
         ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
+
+    Log::shouldReceive('info')
+        ->once()
         ->with('Successfully fetched and updated device models', ['count' => 1]);
 
     $job = new FetchDeviceModelsJob();
@@ -311,6 +368,7 @@ test('fetch device models job updates existing device model', function (): void 
 
 test('fetch device models job handles processing exception for individual model', function (): void {
     Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
         'usetrmnl.com/api/models' => Http::response([
             'data' => [
                 [
@@ -326,6 +384,10 @@ test('fetch device models job handles processing exception for individual model'
             ],
         ], 200),
     ]);
+
+    Log::shouldReceive('info')
+        ->once()
+        ->with('Successfully fetched and updated palettes', ['count' => 0]);
 
     Log::shouldReceive('warning')
         ->once()
