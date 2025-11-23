@@ -77,7 +77,7 @@ test('l_date handles null locale parameter', function (): void {
     $filter = new Localization();
     $date = '2025-01-11';
 
-    $result = $filter->l_date($date, 'Y-m-d', null);
+    $result = $filter->l_date($date, 'Y-m-d');
 
     // Should work the same as default
     expect($result)->toContain('2025');

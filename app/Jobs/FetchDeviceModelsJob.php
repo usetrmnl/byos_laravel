@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\DeviceModel;
+use App\Models\DevicePalette;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,6 +21,8 @@ final class FetchDeviceModelsJob implements ShouldQueue
 
     private const API_URL = 'https://usetrmnl.com/api/models';
 
+    private const PALETTES_API_URL = 'http://usetrmnl.com/api/palettes';
+
     /**
      * Create a new job instance.
      */
@@ -34,6 +37,8 @@ final class FetchDeviceModelsJob implements ShouldQueue
     public function handle(): void
     {
         try {
+            $this->processPalettes();
+
             $response = Http::timeout(30)->get(self::API_URL);
 
             if (! $response->successful()) {
@@ -67,6 +72,86 @@ final class FetchDeviceModelsJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
         }
+    }
+
+    /**
+     * Process palettes from API and update/create records.
+     */
+    private function processPalettes(): void
+    {
+        try {
+            $response = Http::timeout(30)->get(self::PALETTES_API_URL);
+
+            if (! $response->successful()) {
+                Log::error('Failed to fetch palettes from API', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return;
+            }
+
+            $data = $response->json('data', []);
+
+            if (! is_array($data)) {
+                Log::error('Invalid response format from palettes API', [
+                    'response' => $response->json(),
+                ]);
+
+                return;
+            }
+
+            foreach ($data as $paletteData) {
+                try {
+                    $this->updateOrCreatePalette($paletteData);
+                } catch (Exception $e) {
+                    Log::error('Failed to process palette', [
+                        'palette_data' => $paletteData,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info('Successfully fetched and updated palettes', [
+                'count' => count($data),
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Exception occurred while fetching palettes', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Update or create a palette record.
+     */
+    private function updateOrCreatePalette(array $paletteData): void
+    {
+        $name = $paletteData['id'] ?? null;
+
+        if (! $name) {
+            Log::warning('Palette data missing id field', [
+                'palette_data' => $paletteData,
+            ]);
+
+            return;
+        }
+
+        $attributes = [
+            'name' => $name,
+            'description' => $paletteData['name'] ?? '',
+            'grays' => $paletteData['grays'] ?? 2,
+            'colors' => $paletteData['colors'] ?? null,
+            'framework_class' => $paletteData['framework_class'] ?? '',
+            'source' => 'api',
+        ];
+
+        DevicePalette::updateOrCreate(
+            ['name' => $name],
+            $attributes
+        );
     }
 
     /**
@@ -117,9 +202,45 @@ final class FetchDeviceModelsJob implements ShouldQueue
             'source' => 'api',
         ];
 
+        // Set palette_id to the first palette from the model's palettes array
+        $firstPaletteId = $this->getFirstPaletteId($modelData);
+        if ($firstPaletteId) {
+            $attributes['palette_id'] = $firstPaletteId;
+        }
+
         DeviceModel::updateOrCreate(
             ['name' => $name],
             $attributes
         );
+    }
+
+    /**
+     * Get the first palette ID from model data.
+     */
+    private function getFirstPaletteId(array $modelData): ?int
+    {
+        $paletteName = null;
+
+        // Check for palette_ids array
+        if (isset($modelData['palette_ids']) && is_array($modelData['palette_ids']) && $modelData['palette_ids'] !== []) {
+            $paletteName = $modelData['palette_ids'][0];
+        }
+
+        // Check for palettes array (array of objects with id)
+        if (! $paletteName && isset($modelData['palettes']) && is_array($modelData['palettes']) && $modelData['palettes'] !== []) {
+            $firstPalette = $modelData['palettes'][0];
+            if (is_array($firstPalette) && isset($firstPalette['id'])) {
+                $paletteName = $firstPalette['id'];
+            }
+        }
+
+        if (! $paletteName) {
+            return null;
+        }
+
+        // Look up palette by name to get the integer ID
+        $palette = DevicePalette::where('name', $paletteName)->first();
+
+        return $palette?->id;
     }
 }

@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('oidc_sub')->nullable()->unique()->after('email');
+        Schema::table('device_models', function (Blueprint $table) {
+            $table->foreignId('palette_id')->nullable()->after('source')->constrained('device_palettes')->onDelete('set null');
         });
     }
 
@@ -21,9 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropUnique(['oidc_sub']);
-            $table->dropColumn('oidc_sub');
+        Schema::table('device_models', function (Blueprint $table) {
+            $table->dropForeign(['palette_id']);
+            $table->dropColumn('palette_id');
         });
     }
 };

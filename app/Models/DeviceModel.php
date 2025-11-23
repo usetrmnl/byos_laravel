@@ -6,7 +6,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property-read DevicePalette|null $palette
+ */
 final class DeviceModel extends Model
 {
     use HasFactory;
@@ -35,7 +39,7 @@ final class DeviceModel extends Model
             return '2bit';
         }
 
-        // if higher then 4 return 4bit
+        // if higher than 4 return 4bit
         if ($this->bit_depth > 4) {
             return '4bit';
         }
@@ -65,5 +69,10 @@ final class DeviceModel extends Model
         }
 
         return null;
+    }
+
+    public function palette(): BelongsTo
+    {
+        return $this->belongsTo(DevicePalette::class, 'palette_id');
     }
 }

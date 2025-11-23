@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Livewire\Volt\Volt;
 
-it('loads newest TRMNL recipes on mount', function () {
+it('loads newest TRMNL recipes on mount', function (): void {
     Http::fake([
         'usetrmnl.com/recipes.json*' => Http::response([
             'data' => [
@@ -31,7 +31,7 @@ it('loads newest TRMNL recipes on mount', function () {
         ->assertSee('Installs: 10');
 });
 
-it('searches TRMNL recipes when search term is provided', function () {
+it('searches TRMNL recipes when search term is provided', function (): void {
     Http::fake([
         // First call (mount -> newest)
         'usetrmnl.com/recipes.json?*' => Http::sequence()
@@ -71,7 +71,7 @@ it('searches TRMNL recipes when search term is provided', function () {
         ->assertSee('Install');
 });
 
-it('installs plugin successfully when user is authenticated', function () {
+it('installs plugin successfully when user is authenticated', function (): void {
     $user = User::factory()->create();
 
     Http::fake([
@@ -100,7 +100,7 @@ it('installs plugin successfully when user is authenticated', function () {
         ->assertSee('Error installing plugin'); // This will fail because we don't have a real zip file
 });
 
-it('shows error when user is not authenticated', function () {
+it('shows error when user is not authenticated', function (): void {
     Http::fake([
         'usetrmnl.com/recipes.json*' => Http::response([
             'data' => [
@@ -124,7 +124,7 @@ it('shows error when user is not authenticated', function () {
         ->assertStatus(403); // This will return 403 because user is not authenticated
 });
 
-it('shows error when plugin installation fails', function () {
+it('shows error when plugin installation fails', function (): void {
     $user = User::factory()->create();
 
     Http::fake([

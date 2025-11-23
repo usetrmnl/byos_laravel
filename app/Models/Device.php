@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * @property-read DeviceModel|null $deviceModel
+ * @property-read DevicePalette|null $palette
  */
 class Device extends Model
 {
@@ -185,6 +186,11 @@ class Device extends Model
     public function deviceModel(): BelongsTo
     {
         return $this->belongsTo(DeviceModel::class);
+    }
+
+    public function palette(): BelongsTo
+    {
+        return $this->belongsTo(DevicePalette::class, 'palette_id');
     }
 
     /**
