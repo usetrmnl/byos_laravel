@@ -15,7 +15,7 @@
         "ext-simplexml": "*",
         "ext-zip": "*",
         "bnussbau/laravel-trmnl-blade": "2.0.*",
-        "bnussbau/trmnl-pipeline-php": "dev-feat/colormap",
+        "bnussbau/trmnl-pipeline-php": "^0.5.0",
         "keepsuit/laravel-liquid": "^0.5.2",
         "laravel/framework": "^12.1",
         "laravel/sanctum": "^4.0",
