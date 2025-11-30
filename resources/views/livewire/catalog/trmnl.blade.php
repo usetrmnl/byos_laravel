@@ -204,7 +204,7 @@ class extends Component {
     @else
         <div class="grid grid-cols-1 gap-4">
             @foreach($recipes as $recipe)
-                <div class="bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 [:where(&)]:p-6 [:where(&)]:rounded-xl space-y-6">
+                <flux:card class="space-y-6">
                     <div class="flex items-start space-x-4">
                         @php($thumb = $recipe['icon_url'] ?? $recipe['screenshot_url'])
                         @if($thumb)
@@ -218,9 +218,9 @@ class extends Component {
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $recipe['name'] }}</h3>
+                                    <flux:heading size="lg">{{ $recipe['name'] }}</flux:heading>
                                     @if(data_get($recipe, 'stats.installs'))
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">Installs: {{ data_get($recipe, 'stats.installs') }} · Forks: {{ data_get($recipe, 'stats.forks') }}</p>
+                                        <flux:text variant="subtle" size="sm">Installs: {{ data_get($recipe, 'stats.installs') }} · Forks: {{ data_get($recipe, 'stats.forks') }}</flux:text>
                                     @endif
                                 </div>
                                 <div class="flex items-center space-x-2">
@@ -233,7 +233,7 @@ class extends Component {
                             </div>
 
                             @if($recipe['author_bio'])
-                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ $recipe['author_bio'] }}</p>
+                                <flux:text class="mt-2" size="sm">{{ $recipe['author_bio'] }}</flux:text>
                             @endif
 
                             <div class="mt-4 flex items-center space-x-3">
@@ -269,7 +269,7 @@ class extends Component {
                             </div>
                         </div>
                     </div>
-                </div>
+                </flux:card>
             @endforeach
         </div>
     @endif
@@ -293,30 +293,30 @@ class extends Component {
                         <img src="{{ $previewData['icon_url'] }}"
                              alt="{{ $previewData['name'] }} icon"
                              class="mx-auto h-32 w-auto object-contain mb-4">
-                        <p class="text-gray-600 dark:text-gray-400">No preview image available</p>
+                        <flux:text variant="subtle">No preview image available</flux:text>
                     </div>
                 @else
                     <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden p-8 text-center">
                         <flux:icon name="puzzle-piece" class="mx-auto h-32 w-32 text-gray-400 mb-4" />
-                        <p class="text-gray-600 dark:text-gray-400">No preview available</p>
+                        <flux:text variant="subtle">No preview available</flux:text>
                     </div>
                 @endif
 
                 @if($previewData['author_bio'])
-                    <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Description</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-300">{{ $previewData['author_bio'] }}</p>
-                    </div>
+                    <flux:card variant="subtle">
+                        <flux:heading size="sm" class="mb-2">Description</flux:heading>
+                        <flux:text size="sm">{{ $previewData['author_bio'] }}</flux:text>
+                    </flux:card>
                 @endif
 
                 @if(data_get($previewData, 'stats.installs'))
-                    <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Statistics</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-300">
+                    <flux:card variant="subtle">
+                        <flux:heading size="sm" class="mb-2">Statistics</flux:heading>
+                        <flux:text size="sm">
                             Installs: {{ data_get($previewData, 'stats.installs') }} ·
                             Forks: {{ data_get($previewData, 'stats.forks') }}
-                        </p>
-                    </div>
+                        </flux:text>
+                    </flux:card>
                 @endif
 
                 <div class="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700 space-x-3">
