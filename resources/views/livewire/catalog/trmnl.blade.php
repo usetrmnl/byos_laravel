@@ -204,7 +204,7 @@ class extends Component {
     @else
         <div class="grid grid-cols-1 gap-4">
             @foreach($recipes as $recipe)
-                <flux:card class="space-y-6">
+                <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs p-6 space-y-6">
                     <div class="flex items-start space-x-4">
                         @php($thumb = $recipe['icon_url'] ?? $recipe['screenshot_url'])
                         @if($thumb)
@@ -220,7 +220,7 @@ class extends Component {
                                 <div>
                                     <flux:heading size="lg">{{ $recipe['name'] }}</flux:heading>
                                     @if(data_get($recipe, 'stats.installs'))
-                                        <flux:text variant="subtle" size="sm">Installs: {{ data_get($recipe, 'stats.installs') }} · Forks: {{ data_get($recipe, 'stats.forks') }}</flux:text>
+                                        <flux:text size="sm" class="text-gray-500 dark:text-gray-400">Installs: {{ data_get($recipe, 'stats.installs') }} · Forks: {{ data_get($recipe, 'stats.forks') }}</flux:text>
                                     @endif
                                 </div>
                                 <div class="flex items-center space-x-2">
@@ -269,7 +269,7 @@ class extends Component {
                             </div>
                         </div>
                     </div>
-                </flux:card>
+                </div>
             @endforeach
         </div>
     @endif
@@ -293,30 +293,30 @@ class extends Component {
                         <img src="{{ $previewData['icon_url'] }}"
                              alt="{{ $previewData['name'] }} icon"
                              class="mx-auto h-32 w-auto object-contain mb-4">
-                        <flux:text variant="subtle">No preview image available</flux:text>
+                        <flux:text class="text-gray-600 dark:text-gray-400">No preview image available</flux:text>
                     </div>
                 @else
                     <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden p-8 text-center">
                         <flux:icon name="puzzle-piece" class="mx-auto h-32 w-32 text-gray-400 mb-4" />
-                        <flux:text variant="subtle">No preview available</flux:text>
+                        <flux:text class="text-gray-600 dark:text-gray-400">No preview available</flux:text>
                     </div>
                 @endif
 
                 @if($previewData['author_bio'])
-                    <flux:card variant="subtle">
+                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs p-4">
                         <flux:heading size="sm" class="mb-2">Description</flux:heading>
                         <flux:text size="sm">{{ $previewData['author_bio'] }}</flux:text>
-                    </flux:card>
+                    </div>
                 @endif
 
                 @if(data_get($previewData, 'stats.installs'))
-                    <flux:card variant="subtle">
+                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs p-4">
                         <flux:heading size="sm" class="mb-2">Statistics</flux:heading>
                         <flux:text size="sm">
                             Installs: {{ data_get($previewData, 'stats.installs') }} ·
                             Forks: {{ data_get($previewData, 'stats.forks') }}
                         </flux:text>
-                    </flux:card>
+                    </div>
                 @endif
 
                 <div class="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700 space-x-3">
