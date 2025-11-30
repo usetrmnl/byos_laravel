@@ -204,8 +204,9 @@ class extends Component {
     @else
         <div class="grid grid-cols-1 gap-4">
             @foreach($recipes as $recipe)
-                <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs p-6 space-y-6">
-                    <div class="flex items-start space-x-4">
+                <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                    <div class="px-10 py-8 space-y-6">
+                        <div class="flex items-start space-x-4">
                         @php($thumb = $recipe['icon_url'] ?? $recipe['screenshot_url'])
                         @if($thumb)
                             <img src="{{ $thumb }}" loading="lazy" alt="{{ $recipe['name'] }}" class="w-12 h-12 rounded-lg object-cover">
@@ -269,6 +270,7 @@ class extends Component {
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
             @endforeach
         </div>
@@ -303,19 +305,23 @@ class extends Component {
                 @endif
 
                 @if($previewData['author_bio'])
-                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs p-4">
-                        <flux:heading size="sm" class="mb-2">Description</flux:heading>
-                        <flux:text size="sm">{{ $previewData['author_bio'] }}</flux:text>
+                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                        <div class="px-10 py-8">
+                            <flux:heading size="sm" class="mb-2">Description</flux:heading>
+                            <flux:text size="sm">{{ $previewData['author_bio'] }}</flux:text>
+                        </div>
                     </div>
                 @endif
 
                 @if(data_get($previewData, 'stats.installs'))
-                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs p-4">
-                        <flux:heading size="sm" class="mb-2">Statistics</flux:heading>
-                        <flux:text size="sm">
-                            Installs: {{ data_get($previewData, 'stats.installs') }} ·
-                            Forks: {{ data_get($previewData, 'stats.forks') }}
-                        </flux:text>
+                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                        <div class="px-10 py-8">
+                            <flux:heading size="sm" class="mb-2">Statistics</flux:heading>
+                            <flux:text size="sm">
+                                Installs: {{ data_get($previewData, 'stats.installs') }} ·
+                                Forks: {{ data_get($previewData, 'stats.forks') }}
+                            </flux:text>
+                        </div>
                     </div>
                 @endif
 
