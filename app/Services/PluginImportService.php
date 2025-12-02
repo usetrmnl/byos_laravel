@@ -349,10 +349,13 @@ class PluginImportService
                 } elseif ($filename === 'shared.liquid') {
                     $sharedLiquidPath = $filepath;
                 }
+            }
 
-                // If we found both required files, break the loop
-                if ($settingsYamlPath && $fullLiquidPath) {
-                    break;
+            // Check if shared.liquid exists in the same directory as full.liquid
+            if ($settingsYamlPath && $fullLiquidPath && ! $sharedLiquidPath) {
+                $fullLiquidDir = dirname((string) $fullLiquidPath);
+                if (File::exists($fullLiquidDir.'/shared.liquid')) {
+                    $sharedLiquidPath = $fullLiquidDir.'/shared.liquid';
                 }
             }
 
