@@ -80,6 +80,9 @@ class PluginImportService
                 $settings['custom_fields'] = [];
             }
 
+            // Normalize options in custom_fields (convert non-named values to named values)
+            $settings['custom_fields'] = $this->normalizeCustomFieldsOptions($settings['custom_fields']);
+
             // Create configuration template with the custom fields
             $configurationTemplate = [
                 'custom_fields' => $settings['custom_fields'],
@@ -205,6 +208,9 @@ class PluginImportService
             if (! isset($settings['custom_fields']) || ! is_array($settings['custom_fields'])) {
                 $settings['custom_fields'] = [];
             }
+
+            // Normalize options in custom_fields (convert non-named values to named values)
+            $settings['custom_fields'] = $this->normalizeCustomFieldsOptions($settings['custom_fields']);
 
             // Create configuration template with the custom fields
             $configurationTemplate = [
@@ -383,6 +389,49 @@ class PluginImportService
             'fullLiquidPath' => $fullLiquidPath,
             'sharedLiquidPath' => $sharedLiquidPath,
         ];
+    }
+
+    /**
+     * Normalize options in custom_fields by converting non-named values to named values
+     * This ensures that options like ["true", "false"] become [["true" => "true"], ["false" => "false"]]
+     *
+     * @param  array  $customFields  The custom_fields array from settings
+     * @return array The normalized custom_fields array
+     */
+    private function normalizeCustomFieldsOptions(array $customFields): array
+    {
+        foreach ($customFields as &$field) {
+            // Only process select fields with options
+            if (isset($field['field_type']) && $field['field_type'] === 'select' && isset($field['options']) && is_array($field['options'])) {
+                $normalizedOptions = [];
+                foreach ($field['options'] as $option) {
+                    // If option is already a named value (array with key-value pair), keep it as is
+                    if (is_array($option)) {
+                        $normalizedOptions[] = $option;
+                    } else {
+                        // Convert non-named value to named value
+                        // Convert boolean to string, use lowercase for label
+                        $value = is_bool($option) ? ($option ? 'true' : 'false') : (string) $option;
+                        $normalizedOptions[] = [$value => $value];
+                    }
+                }
+                $field['options'] = $normalizedOptions;
+
+                // Normalize default value to match normalized option values
+                if (isset($field['default'])) {
+                    $default = $field['default'];
+                    // If default is boolean, convert to string to match normalized options
+                    if (is_bool($default)) {
+                        $field['default'] = $default ? 'true' : 'false';
+                    } else {
+                        // Convert to string to ensure consistency
+                        $field['default'] = (string) $default;
+                    }
+                }
+            }
+        }
+
+        return $customFields;
     }
 
     /**
