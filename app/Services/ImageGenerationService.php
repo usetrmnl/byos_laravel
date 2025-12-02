@@ -25,7 +25,7 @@ class ImageGenerationService
 {
     public static function generateImage(string $markup, $deviceId): string
     {
-        $device = Device::with(['deviceModel', 'palette', 'deviceModel.palette'])->find($deviceId);
+        $device = Device::with(['deviceModel', 'palette', 'deviceModel.palette', 'user'])->find($deviceId);
         $uuid = Uuid::uuid4()->toString();
 
         try {
@@ -43,6 +43,10 @@ class ImageGenerationService
 
             $browserStage = new BrowserStage($browsershotInstance);
             $browserStage->html($markup);
+
+            // Set timezone from user or fall back to app timezone
+            $timezone = $device->user->timezone ?? config('app.timezone');
+            $browserStage->timezone($timezone);
 
             if (config('app.puppeteer_window_size_strategy') === 'v2') {
                 $browserStage
@@ -352,7 +356,7 @@ class ImageGenerationService
 
         try {
             // Load device with relationships
-            $device->load(['palette', 'deviceModel.palette']);
+            $device->load(['palette', 'deviceModel.palette', 'user']);
 
             // Get image generation settings from DeviceModel if available, otherwise use device settings
             $imageSettings = self::getImageSettings($device);
@@ -371,6 +375,10 @@ class ImageGenerationService
 
             $browserStage = new BrowserStage($browsershotInstance);
             $browserStage->html($html);
+
+            // Set timezone from user or fall back to app timezone
+            $timezone = $device->user->timezone ?? config('app.timezone');
+            $browserStage->timezone($timezone);
 
             if (config('app.puppeteer_window_size_strategy') === 'v2') {
                 $browserStage
