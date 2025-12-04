@@ -18,6 +18,11 @@ ENV TRMNL_LIQUID_ENABLED=1
 # Switch to the root user so we can do root things
 USER root
 
+# Install intl
+RUN apk add --no-cache icu-dev zlib-dev \
+    && docker-php-ext-install intl \
+    && apk del icu-dev zlib-dev
+
 COPY --chown=www-data:www-data --from=bnussbau/trmnl-liquid-cli:0.1.0 /usr/local/bin/trmnl-liquid-cli /usr/local/bin/
 
 # Set the working directory
