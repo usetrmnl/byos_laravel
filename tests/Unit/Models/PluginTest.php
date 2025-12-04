@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Plugin;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
@@ -586,4 +588,94 @@ LIQUID
 
         return str_contains($command, 'trmnl-liquid-cli');
     });
+});
+
+test('plugin render uses user timezone when set', function (): void {
+    $user = User::factory()->create([
+        'timezone' => 'America/New_York',
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ trmnl.user.time_zone_iana }}',
+    ]);
+
+    $rendered = $plugin->render();
+
+    expect($rendered)->toContain('America/New_York');
+});
+
+test('plugin render falls back to app timezone when user timezone is not set', function (): void {
+    $user = User::factory()->create([
+        'timezone' => null,
+    ]);
+
+    config(['app.timezone' => 'Europe/London']);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ trmnl.user.time_zone_iana }}',
+    ]);
+
+    $rendered = $plugin->render();
+
+    expect($rendered)->toContain('Europe/London');
+});
+
+test('plugin render calculates correct UTC offset from user timezone', function (): void {
+    $user = User::factory()->create([
+        'timezone' => 'America/New_York', // UTC-5 (EST) or UTC-4 (EDT)
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ trmnl.user.utc_offset }}',
+    ]);
+
+    $rendered = $plugin->render();
+
+    // America/New_York offset should be -18000 (EST) or -14400 (EDT) in seconds
+    $expectedOffset = (string) Carbon::now('America/New_York')->getOffset();
+    expect($rendered)->toContain($expectedOffset);
+});
+
+test('plugin render calculates correct UTC offset from app timezone when user timezone is null', function (): void {
+    $user = User::factory()->create([
+        'timezone' => null,
+    ]);
+
+    config(['app.timezone' => 'Europe/London']);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ trmnl.user.utc_offset }}',
+    ]);
+
+    $rendered = $plugin->render();
+
+    // Europe/London offset should be 0 (GMT) or 3600 (BST) in seconds
+    $expectedOffset = (string) Carbon::now('Europe/London')->getOffset();
+    expect($rendered)->toContain($expectedOffset);
+});
+
+test('plugin render includes utc_offset and time_zone_iana in trmnl.user context', function (): void {
+    $user = User::factory()->create([
+        'timezone' => 'America/Chicago', // UTC-6 (CST) or UTC-5 (CDT)
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ trmnl.user.time_zone_iana }}|{{ trmnl.user.utc_offset }}',
+    ]);
+
+    $rendered = $plugin->render();
+
+    expect($rendered)
+        ->toContain('America/Chicago')
+        ->and($rendered)->toMatch('/\|-?\d+/'); // Should contain a pipe followed by a number (offset in seconds)
 });

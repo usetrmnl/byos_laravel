@@ -11,9 +11,12 @@ use Livewire\Volt\Component;
 new class extends Component {
     public ?int $assign_new_device_id = null;
 
+    public ?string $timezone = null;
+
     public function mount(): void
     {
         $this->assign_new_device_id = Auth::user()->assign_new_device_id;
+        $this->timezone = Auth::user()->timezone ?? config('app.timezone');
     }
 
     public function updatePreferences(): void
@@ -25,6 +28,11 @@ new class extends Component {
                     $query->where('user_id', Auth::id())
                         ->whereNull('mirror_device_id');
                 }),
+            ],
+            'timezone' => [
+                'nullable',
+                'string',
+                Rule::in(timezone_identifiers_list()),
             ],
         ]);
 
@@ -39,6 +47,14 @@ new class extends Component {
 
     <x-settings.layout heading="Preferences" subheading="Update your preferences">
         <form wire:submit="updatePreferences" class="my-6 w-full space-y-6">
+
+            <flux:select wire:model="timezone" label="Timezone">
+                <flux:select.option value="" disabled>Select timezone...</flux:select.option>
+                @foreach(timezone_identifiers_list() as $tz)
+                    <flux:select.option value="{{ $tz }}">{{ $tz }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
             <flux:select wire:model="assign_new_device_id" label="Auto-Joined Devices should mirror">
                 <flux:select.option value="">None</flux:select.option>
                 @foreach(auth()->user()->devices->where('mirror_device_id', null) as $device)

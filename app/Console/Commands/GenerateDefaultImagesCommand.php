@@ -121,6 +121,10 @@ class GenerateDefaultImagesCommand extends Command
 
             $browserStage = new BrowserStage($browsershotInstance);
             $browserStage->html($html);
+
+            // Set timezone from app config (no user context in this command)
+            $browserStage->timezone(config('app.timezone'));
+
             $browserStage
                 ->width($deviceModel->width)
                 ->height($deviceModel->height);

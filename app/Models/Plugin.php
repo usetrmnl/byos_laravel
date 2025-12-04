@@ -12,6 +12,7 @@ use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
 use App\Services\PluginImportService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -454,6 +455,12 @@ class Plugin extends Model
             $renderedContent = '';
 
             if ($this->markup_language === 'liquid') {
+                // Get timezone from user or fall back to app timezone
+                $timezone = $this->user->timezone ?? config('app.timezone');
+
+                // Calculate UTC offset in seconds
+                $utcOffset = (string) Carbon::now($timezone)->getOffset();
+
                 // Build render context
                 $context = [
                     'size' => $size,
@@ -465,10 +472,10 @@ class Plugin extends Model
                             'timestamp_utc' => now()->utc()->timestamp,
                         ],
                         'user' => [
-                            'utc_offset' => '0',
+                            'utc_offset' => $utcOffset,
                             'name' => $this->user->name ?? 'Unknown User',
                             'locale' => 'en',
-                            'time_zone_iana' => config('app.timezone'),
+                            'time_zone_iana' => $timezone,
                         ],
                         'plugin_settings' => [
                             'instance_name' => $this->name,

@@ -388,6 +388,45 @@ it('does not set icon_url when importing from URL without iconUrl parameter', fu
         ->and($plugin->icon_url)->toBeNull();
 });
 
+it('normalizes non-named select options to named values', function (): void {
+    $user = User::factory()->create();
+
+    $settingsYaml = <<<'YAML'
+name: Test Plugin
+refresh_interval: 30
+strategy: static
+polling_verb: get
+static_data: '{}'
+custom_fields:
+  - keyname: display_incident
+    field_type: select
+    options:
+      - true
+      - false
+    default: true
+YAML;
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => $settingsYaml,
+        'src/full.liquid' => getValidFullLiquid(),
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
+
+    $pluginImportService = new PluginImportService();
+    $plugin = $pluginImportService->importFromZip($zipFile, $user);
+
+    $customFields = $plugin->configuration_template['custom_fields'];
+    $displayIncidentField = collect($customFields)->firstWhere('keyname', 'display_incident');
+
+    expect($displayIncidentField)->not->toBeNull()
+        ->and($displayIncidentField['options'])->toBe([
+            ['true' => 'true'],
+            ['false' => 'false'],
+        ])
+        ->and($displayIncidentField['default'])->toBe('true');
+});
+
 // Helper methods
 function createMockZipFile(array $files): string
 {

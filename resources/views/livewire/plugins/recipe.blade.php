@@ -263,7 +263,19 @@ new class extends Component {
             foreach ($this->configuration_template['custom_fields'] as $field) {
                 $fieldKey = $field['keyname'];
                 if (isset($this->configuration[$fieldKey])) {
-                    $configurationValues[$fieldKey] = $this->configuration[$fieldKey];
+                    $value = $this->configuration[$fieldKey];
+                    
+                    // For code fields, if the value is a JSON string and the original was an array, decode it
+                    if ($field['field_type'] === 'code' && is_string($value)) {
+                        $decoded = json_decode($value, true);
+                        // If it's valid JSON and decodes to an array/object, use the decoded value
+                        // Otherwise, keep the string as-is
+                        if (json_last_error() === JSON_ERROR_NONE && (is_array($decoded) || is_object($decoded))) {
+                            $value = $decoded;
+                        }
+                    }
+                    
+                    $configurationValues[$fieldKey] = $value;
                 }
             }
         }
@@ -626,7 +638,14 @@ HTML;
                                 @foreach($configuration_template['custom_fields'] as $field)
                                     @php
                                         $fieldKey = $field['keyname'] ?? $field['key'] ?? $field['name'];
-                                        $currentValue = $configuration[$fieldKey] ?? '';
+                                        $rawValue = $configuration[$fieldKey] ?? ($field['default'] ?? '');
+                                        
+                                        // For code fields, if the value is an array, JSON encode it
+                                        if ($field['field_type'] === 'code' && is_array($rawValue)) {
+                                            $currentValue = json_encode($rawValue, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                                        } else {
+                                            $currentValue = is_array($rawValue) ? '' : (string) $rawValue;
+                                        }
                                     @endphp
                                     <div class="mb-4">
                                         @if($field['field_type'] === 'author_bio')
