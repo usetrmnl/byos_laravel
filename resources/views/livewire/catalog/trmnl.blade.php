@@ -14,6 +14,8 @@ class extends Component {
     public array $recipes = [];
     public string $search = '';
     public bool $isSearching = false;
+    public string $previewingRecipe = '';
+    public array $previewData = [];
 
     public function mount(): void
     {
@@ -125,6 +127,31 @@ class extends Component {
         }
     }
 
+    public function previewRecipe(string $recipeId): void
+    {
+        $recipe = collect($this->recipes)->firstWhere('id', $recipeId);
+
+        if (!$recipe) {
+            $this->addError('preview', 'Recipe not found.');
+            return;
+        }
+
+        $this->previewingRecipe = $recipeId;
+        $this->previewData = $recipe;
+
+        // Store scroll position for restoration later
+        $this->dispatch('store-scroll-position');
+    }
+
+    public function closePreview(): void
+    {
+        $this->previewingRecipe = '';
+        $this->previewData = [];
+
+        // Restore scroll position when returning to catalog
+        $this->dispatch('restore-scroll-position');
+    }
+
     /**
      * @param array<int, array<string, mixed>> $items
      * @return array<int, array<string, mixed>>
@@ -177,8 +204,9 @@ class extends Component {
     @else
         <div class="grid grid-cols-1 gap-4">
             @foreach($recipes as $recipe)
-                <div class="bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 [:where(&)]:p-6 [:where(&)]:rounded-xl space-y-6">
-                    <div class="flex items-start space-x-4">
+                <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                    <div class="px-10 py-8 space-y-6">
+                        <div class="flex items-start space-x-4">
                         @php($thumb = $recipe['icon_url'] ?? $recipe['screenshot_url'])
                         @if($thumb)
                             <img src="{{ $thumb }}" loading="lazy" alt="{{ $recipe['name'] }}" class="w-12 h-12 rounded-lg object-cover">
@@ -191,9 +219,9 @@ class extends Component {
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $recipe['name'] }}</h3>
+                                    <flux:heading size="lg">{{ $recipe['name'] }}</flux:heading>
                                     @if(data_get($recipe, 'stats.installs'))
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">Installs: {{ data_get($recipe, 'stats.installs') }} · Forks: {{ data_get($recipe, 'stats.forks') }}</p>
+                                        <flux:text size="sm" class="text-gray-500 dark:text-gray-400">Installs: {{ data_get($recipe, 'stats.installs') }} · Forks: {{ data_get($recipe, 'stats.forks') }}</flux:text>
                                     @endif
                                 </div>
                                 <div class="flex items-center space-x-2">
@@ -206,7 +234,7 @@ class extends Component {
                             </div>
 
                             @if($recipe['author_bio'])
-                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ $recipe['author_bio'] }}</p>
+                                <flux:text class="mt-2" size="sm">{{ $recipe['author_bio'] }}</flux:text>
                             @endif
 
                             <div class="mt-4 flex items-center space-x-3">
@@ -217,6 +245,19 @@ class extends Component {
                                         Install
                                     </flux:button>
                                 @endif
+
+                                @if($recipe['id'])
+                                    <flux:modal.trigger name="trmnl-catalog-preview">
+                                        <flux:button
+                                            wire:click="previewRecipe('{{ $recipe['id'] }}')"
+                                            variant="subtle"
+                                            icon="eye">
+                                            Preview
+                                        </flux:button>
+                                    </flux:modal.trigger>
+                                @endif
+
+
 
                                 @if($recipe['detail_url'])
                                     <flux:button
@@ -229,8 +270,130 @@ class extends Component {
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
             @endforeach
         </div>
     @endif
+
+    <!-- Preview Modal -->
+    <flux:modal name="trmnl-catalog-preview" class="min-w-[850px] min-h-[480px] space-y-6">
+        @if($previewingRecipe && !empty($previewData))
+            <div>
+                <flux:heading size="lg">Preview {{ $previewData['name'] ?? 'Recipe' }}</flux:heading>
+            </div>
+
+            <div class="space-y-4">
+                @if($previewData['screenshot_url'])
+                    <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden">
+                        <img src="{{ $previewData['screenshot_url'] }}"
+                             alt="Preview of {{ $previewData['name'] }}"
+                             class="w-full h-auto max-h-[480px] object-contain">
+                    </div>
+                @elseif($previewData['icon_url'])
+                    <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden p-8 text-center">
+                        <img src="{{ $previewData['icon_url'] }}"
+                             alt="{{ $previewData['name'] }} icon"
+                             class="mx-auto h-32 w-auto object-contain mb-4">
+                        <flux:text class="text-gray-600 dark:text-gray-400">No preview image available</flux:text>
+                    </div>
+                @else
+                    <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden p-8 text-center">
+                        <flux:icon name="puzzle-piece" class="mx-auto h-32 w-32 text-gray-400 mb-4" />
+                        <flux:text class="text-gray-600 dark:text-gray-400">No preview available</flux:text>
+                    </div>
+                @endif
+
+                @if($previewData['author_bio'])
+                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                        <div class="px-10 py-8">
+                            <flux:heading size="sm" class="mb-2">Description</flux:heading>
+                            <flux:text size="sm">{{ $previewData['author_bio'] }}</flux:text>
+                        </div>
+                    </div>
+                @endif
+
+                @if(data_get($previewData, 'stats.installs'))
+                    <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                        <div class="px-10 py-8">
+                            <flux:heading size="sm" class="mb-2">Statistics</flux:heading>
+                            <flux:text size="sm">
+                                Installs: {{ data_get($previewData, 'stats.installs') }} ·
+                                Forks: {{ data_get($previewData, 'stats.forks') }}
+                            </flux:text>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700 space-x-3">
+                    @if($previewData['detail_url'])
+                        <flux:button
+                            href="{{ $previewData['detail_url'] }}"
+                            target="_blank"
+                            variant="subtle">
+                            View on TRMNL
+                        </flux:button>
+                    @endif
+                    <flux:modal.close>
+                        <flux:button
+                            wire:click="installPlugin('{{ $previewingRecipe }}')"
+                            variant="primary">
+                            Install Recipe
+                        </flux:button>
+                    </flux:modal.close>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
 </div>
+
+@script
+<script>
+    let trmnlCatalogScrollPosition = 0;
+
+    $wire.on('store-scroll-position', () => {
+        const catalogModal = document.querySelector('[data-flux-modal="import-from-trmnl-catalog"]');
+        if (catalogModal) {
+            const scrollContainer = catalogModal.querySelector('.space-y-4') || catalogModal;
+            trmnlCatalogScrollPosition = scrollContainer.scrollTop || 0;
+        }
+    });
+
+    $wire.on('restore-scroll-position', () => {
+        // Small delay to ensure modal is fully rendered
+        setTimeout(() => {
+            const catalogModal = document.querySelector('[data-flux-modal="import-from-trmnl-catalog"]');
+            if (catalogModal) {
+                const scrollContainer = catalogModal.querySelector('.space-y-4') || catalogModal;
+                scrollContainer.scrollTop = trmnlCatalogScrollPosition;
+            }
+        }, 100);
+    });
+
+    // Listen for when the catalog modal is opened and restore scroll position
+    document.addEventListener('DOMContentLoaded', function() {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'data-flux-modal-open') {
+                    const target = mutation.target;
+                    if (target.getAttribute('data-flux-modal') === 'import-from-trmnl-catalog' &&
+                        target.getAttribute('data-flux-modal-open') === 'true') {
+                        // Modal was opened, restore scroll position
+                        setTimeout(() => {
+                            const scrollContainer = target.querySelector('.space-y-4') || target;
+                            if (trmnlCatalogScrollPosition > 0) {
+                                scrollContainer.scrollTop = trmnlCatalogScrollPosition;
+                            }
+                        }, 100);
+                    }
+                }
+            });
+        });
+
+        const catalogModal = document.querySelector('[data-flux-modal="import-from-trmnl-catalog"]');
+        if (catalogModal) {
+            observer.observe(catalogModal, { attributes: true });
+        }
+    });
+</script>
+@endscript
