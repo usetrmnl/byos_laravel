@@ -11,6 +11,7 @@ use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
+use App\Services\Plugin\Parsers\ResponseParserRegistry;
 use App\Services\PluginImportService;
 use Carbon\Carbon;
 use Exception;
@@ -26,7 +27,6 @@ use Illuminate\Support\Str;
 use Keepsuit\LaravelLiquid\LaravelLiquidExtension;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Keepsuit\Liquid\Extensions\StandardExtension;
-use SimpleXMLElement;
 
 class Plugin extends Model
 {
@@ -216,60 +216,25 @@ class Plugin extends Model
         }
     }
 
-    /**
-     * Parse HTTP response, handling both JSON and XML content types
-     */
     private function parseResponse(Response $httpResponse): array
     {
-        if ($httpResponse->header('Content-Type') && str_contains($httpResponse->header('Content-Type'), 'xml')) {
+        $parsers = app(ResponseParserRegistry::class)->getParsers();
+
+        foreach ($parsers as $parser) {
+            $parserName = class_basename($parser);
+
             try {
-                // Convert XML to array and wrap under 'rss' key
-                $xml = simplexml_load_string($httpResponse->body());
-                if ($xml === false) {
-                    throw new Exception('Invalid XML content');
+                $result = $parser->parse($httpResponse);
+
+                if ($result !== null) {
+                    return $result;
                 }
-
-                // Convert SimpleXML directly to array
-                $xmlArray = $this->xmlToArray($xml);
-
-                return ['rss' => $xmlArray];
             } catch (Exception $e) {
-                Log::warning('Failed to parse XML response: '.$e->getMessage());
-
-                return ['error' => 'Failed to parse XML response'];
+                Log::warning("Failed to parse {$parserName} response: ".$e->getMessage());
             }
         }
 
-        try {
-            // Attempt to parse it into JSON
-            $json = $httpResponse->json();
-            if ($json !== null) {
-                return $json;
-            }
-
-            // Response doesn't seem to be JSON, wrap the response body text as a JSON object
-            return ['data' => $httpResponse->body()];
-        } catch (Exception $e) {
-            Log::warning('Failed to parse JSON response: '.$e->getMessage());
-
-            return ['error' => 'Failed to parse JSON response'];
-        }
-    }
-
-    /**
-     * Convert SimpleXML object to array recursively
-     */
-    private function xmlToArray(SimpleXMLElement $xml): array
-    {
-        $array = (array) $xml;
-
-        foreach ($array as $key => $value) {
-            if ($value instanceof SimpleXMLElement) {
-                $array[$key] = $this->xmlToArray($value);
-            }
-        }
-
-        return $array;
+        return ['error' => 'Failed to parse response'];
     }
 
     /**

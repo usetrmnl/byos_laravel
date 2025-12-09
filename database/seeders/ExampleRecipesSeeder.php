@@ -144,5 +144,42 @@ class ExampleRecipesSeeder extends Seeder
                 'flux_icon_name' => 'flower',
             ]
         );
+
+        Plugin::updateOrCreate(
+            [
+                'uuid' => '1d98bca4-837d-4b01-b1a1-e3b6e56eca90',
+                'name' => 'Holidays (iCal)',
+                'user_id' => $user_id,
+                'data_payload' => null,
+                'data_stale_minutes' => 720,
+                'data_strategy' => 'polling',
+                'configuration_template' => [
+                    'custom_fields' => [
+                        [
+                            'keyname' => 'calendar',
+                            'field_type' => 'select',
+                            'name' => 'Public Holidays Calendar',
+                            'options' => [
+                                ['USA' => 'usa'],
+                                ['Austria' => 'austria'],
+                                ['Australia' => 'australia'],
+                                ['Canada' => 'canada'],
+                                ['Germany' => 'germany'],
+                                ['UK' => 'united-kingdom'],
+                            ],
+                        ],
+                    ],
+                ],
+                'configuration' => ['calendar' => 'usa'],
+                'polling_url' => 'https://www.officeholidays.com/ics-clean/{{calendar}}',
+                'polling_verb' => 'get',
+                'polling_header' => null,
+                'render_markup' => null,
+                'render_markup_view' => 'recipes.holidays-ical',
+                'detail_view_route' => null,
+                'icon_url' => null,
+                'flux_icon_name' => 'calendar',
+            ]
+        );
     }
 }

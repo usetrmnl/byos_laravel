@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Plugin;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 
 test('plugin parses JSON responses correctly', function (): void {
@@ -190,4 +191,97 @@ test('plugin handles POST requests with XML responses', function (): void {
     expect($plugin->data_payload['rss'])->toHaveKey('data');
     expect($plugin->data_payload['rss']['status'])->toBe('success');
     expect($plugin->data_payload['rss']['data'])->toBe('test');
+});
+
+test('plugin parses iCal responses and filters to recent window', function (): void {
+    Carbon::setTestNow(Carbon::parse('2025-01-15 12:00:00', 'UTC'));
+
+    $icalContent = <<<'ICS'
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Example Corp.//CalDAV Client//EN
+BEGIN:VEVENT
+UID:event-1@example.com
+DTSTAMP:20250101T120000Z
+DTSTART:20250110T090000Z
+DTEND:20250110T100000Z
+SUMMARY:Past within window
+END:VEVENT
+BEGIN:VEVENT
+UID:event-2@example.com
+DTSTAMP:20250101T120000Z
+DTSTART:20250301T090000Z
+DTEND:20250301T100000Z
+SUMMARY:Far future
+END:VEVENT
+BEGIN:VEVENT
+UID:event-3@example.com
+DTSTAMP:20250101T120000Z
+DTSTART:20250120T090000Z
+DTEND:20250120T100000Z
+SUMMARY:Upcoming within window
+END:VEVENT
+END:VCALENDAR
+ICS;
+
+    Http::fake([
+        'example.com/calendar.ics' => Http::response($icalContent, 200, ['Content-Type' => 'text/calendar']),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://example.com/calendar.ics',
+        'polling_verb' => 'get',
+    ]);
+
+    $plugin->updateDataPayload();
+    $plugin->refresh();
+
+    $ical = $plugin->data_payload['ical'];
+
+    expect($ical)->toHaveCount(2);
+    expect($ical[0]['SUMMARY'])->toBe('Past within window');
+    expect($ical[1]['SUMMARY'])->toBe('Upcoming within window');
+    expect(collect($ical)->pluck('SUMMARY'))->not->toContain('Far future');
+    expect($ical[0]['DTSTART'])->toBe('2025-01-10T09:00:00+00:00');
+    expect($ical[1]['DTSTART'])->toBe('2025-01-20T09:00:00+00:00');
+
+    Carbon::setTestNow();
+});
+
+test('plugin detects iCal content without calendar content type', function (): void {
+    Carbon::setTestNow(Carbon::parse('2025-01-15 12:00:00', 'UTC'));
+
+    $icalContent = <<<'ICS'
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:event-body-detected@example.com
+DTSTAMP:20250101T120000Z
+DTSTART:20250116T090000Z
+DTEND:20250116T100000Z
+SUMMARY:Detected by body
+END:VEVENT
+END:VCALENDAR
+ICS;
+
+    Http::fake([
+        'example.com/calendar-body.ics' => Http::response($icalContent, 200, ['Content-Type' => 'text/plain']),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://example.com/calendar-body.ics',
+        'polling_verb' => 'get',
+    ]);
+
+    $plugin->updateDataPayload();
+    $plugin->refresh();
+
+    expect($plugin->data_payload)->toHaveKey('ical');
+    expect($plugin->data_payload['ical'])->toHaveCount(1);
+    expect($plugin->data_payload['ical'][0]['SUMMARY'])->toBe('Detected by body');
+    expect($plugin->data_payload['ical'][0]['DTSTART'])->toBe('2025-01-16T09:00:00+00:00');
+
+    Carbon::setTestNow();
 });

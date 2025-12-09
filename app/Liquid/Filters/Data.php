@@ -131,6 +131,6 @@ class Data extends FiltersProvider
      */
     public function map_to_i(array $input): array
     {
-        return array_map('intval', $input);
+        return array_map(intval(...), $input);
     }
 }

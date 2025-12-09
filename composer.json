@@ -23,6 +23,7 @@
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.0",
         "livewire/volt": "^1.7",
+        "om/icalparser": "^3.2",
         "spatie/browsershot": "^5.0",
         "symfony/yaml": "^7.3",
         "wnx/sidecar-browsershot": "^2.6"

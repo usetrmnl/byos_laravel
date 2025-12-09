@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7750ff686c4cad7f85390488c28b33ca",
+    "content-hash": "3e4c22c016c04e49512b5fcd20983baa",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3709,6 +3709,57 @@
                 }
             ],
             "time": "2025-11-20T02:34:59+00:00"
+        },
+        {
+            "name": "om/icalparser",
+            "version": "v3.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/OzzyCzech/icalparser.git",
+                "reference": "3aa0716aa9e729f08fba20390773d6dcd685169b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/OzzyCzech/icalparser/zipball/3aa0716aa9e729f08fba20390773d6dcd685169b",
+                "reference": "3aa0716aa9e729f08fba20390773d6dcd685169b",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1.0"
+            },
+            "require-dev": {
+                "nette/tester": "^2.5.6"
+            },
+            "suggest": {
+                "ext-dom": "for timezone tool"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Roman Ožana",
+                    "email": "roman@ozana.cz"
+                }
+            ],
+            "description": "Simple iCal parser",
+            "keywords": [
+                "calendar",
+                "ical",
+                "parser"
+            ],
+            "support": {
+                "issues": "https://github.com/OzzyCzech/icalparser/issues",
+                "source": "https://github.com/OzzyCzech/icalparser/tree/v3.2.0"
+            },
+            "time": "2025-09-08T07:04:53+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
