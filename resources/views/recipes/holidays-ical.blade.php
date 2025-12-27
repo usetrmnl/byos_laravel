@@ -2,35 +2,45 @@
 @php
     use Carbon\Carbon;
 
+    $today = Carbon::today(config('app.timezone'));
+
     $events = collect($data['ical'] ?? [])
         ->map(function (array $event): array {
-            $start = null;
-            $end = null;
-
             try {
-                $start = isset($event['DTSTART']) ? Carbon::parse($event['DTSTART'])->setTimezone(config('app.timezone')) : null;
+                $start = isset($event['DTSTART'])
+                    ? Carbon::parse($event['DTSTART'])->setTimezone(config('app.timezone'))
+                    : null;
             } catch (Exception $e) {
                 $start = null;
             }
 
             try {
-                $end = isset($event['DTEND']) ? Carbon::parse($event['DTEND'])->setTimezone(config('app.timezone')) : null;
+                $end = isset($event['DTEND'])
+                    ? Carbon::parse($event['DTEND'])->setTimezone(config('app.timezone'))
+                    : null;
             } catch (Exception $e) {
                 $end = null;
             }
 
             return [
-                'summary' => $event['SUMMARY'] ?? 'Untitled event',
-                'location' => $event['LOCATION'] ?? null,
-                'start' => $start,
-                'end' => $end,
+                'summary'  => $event['SUMMARY'] ?? 'Untitled event',
+                'location' => $event['LOCATION'] ?? '—',
+                'start'    => $start,
+                'end'      => $end,
             ];
         })
-        ->filter(fn ($event) => $event['start'])
+        ->filter(fn ($event) =>
+            $event['start'] &&
+            (
+                $event['start']->greaterThanOrEqualTo($today) ||
+                ($event['end'] && $event['end']->greaterThanOrEqualTo($today))
+            )
+        )
         ->sortBy('start')
         ->take($size === 'quadrant' ? 5 : 8)
         ->values();
 @endphp
+
 
 <x-trmnl::view size="{{$size}}">
     <x-trmnl::layout class="layout--col gap--small">
