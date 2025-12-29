@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class Playlist extends Model
 {
@@ -37,21 +38,32 @@ class Playlist extends Model
             return false;
         }
 
-        // Check weekday
-        if ($this->weekdays !== null && ! in_array(now()->dayOfWeek, $this->weekdays)) {
+        // Get user's timezone or fall back to app timezone
+        $timezone = $this->device->user->timezone ?? config('app.timezone');
+        $now = now($timezone);
+
+        // Check weekday (using timezone-aware time)
+        if ($this->weekdays !== null && ! in_array($now->dayOfWeek, $this->weekdays)) {
             return false;
         }
 
         if ($this->active_from !== null && $this->active_until !== null) {
-            $now = now();
+            // Create timezone-aware datetime objects for active_from and active_until
+            $activeFrom = $now->copy()
+                ->setTimeFrom($this->active_from)
+                ->timezone($timezone);
+
+            $activeUntil = $now->copy()
+                ->setTimeFrom($this->active_until)
+                ->timezone($timezone);
 
             // Handle time ranges that span across midnight
-            if ($this->active_from > $this->active_until) {
+            if ($activeFrom > $activeUntil) {
                 // Time range spans midnight (e.g., 09:01 to 03:58)
-                if ($now >= $this->active_from || $now <= $this->active_until) {
+                if ($now >= $activeFrom || $now <= $activeUntil) {
                     return true;
                 }
-            } elseif ($now >= $this->active_from && $now <= $this->active_until) {
+            } elseif ($now >= $activeFrom && $now <= $activeUntil) {
                 return true;
             }
 
