@@ -55,6 +55,13 @@ class Plugin extends Model
                 $model->uuid = Str::uuid();
             }
         });
+
+        static::updating(function ($model): void {
+            // Reset image cache when markup changes
+            if ($model->isDirty('render_markup')) {
+                $model->current_image = null;
+            }
+        });
     }
 
     public function user()
