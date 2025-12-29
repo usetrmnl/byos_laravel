@@ -20,7 +20,7 @@ class DevicePaletteFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => 'test-' . $this->faker->unique()->slug(),
+            'id' => 'test-'.$this->faker->unique()->slug(),
             'name' => $this->faker->words(3, true),
             'grays' => $this->faker->randomElement([2, 4, 16, 256]),
             'colors' => $this->faker->optional()->passthrough([

@@ -34,7 +34,7 @@ class IcalResponseParser implements ResponseParser
             $filteredEvents = array_values(array_filter($events, function (array $event) use ($windowStart, $windowEnd): bool {
                 $startDate = $this->asCarbon($event['DTSTART'] ?? null);
 
-                if (!$startDate instanceof \Carbon\Carbon) {
+                if (! $startDate instanceof Carbon) {
                     return false;
                 }
 
