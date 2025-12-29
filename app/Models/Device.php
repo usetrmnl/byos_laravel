@@ -20,6 +20,14 @@ class Device extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * Set the MAC address attribute, normalizing to uppercase.
+     */
+    public function setMacAddressAttribute(?string $value): void
+    {
+        $this->attributes['mac_address'] = $value ? mb_strtoupper($value) : null;
+    }
+
     protected $casts = [
         'battery_notification_sent' => 'boolean',
         'proxy_cloud' => 'boolean',

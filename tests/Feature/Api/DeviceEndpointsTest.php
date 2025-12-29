@@ -954,3 +954,72 @@ test('setup endpoint handles non-existent device model gracefully', function ():
     expect($device)->not->toBeNull()
         ->and($device->device_model_id)->toBeNull();
 });
+
+test('setup endpoint matches MAC address case-insensitively', function (): void {
+    // Create device with lowercase MAC address
+    $device = Device::factory()->create([
+        'mac_address' => 'a1:b2:c3:d4:e5:f6',
+        'api_key' => 'test-api-key',
+        'friendly_id' => 'test-device',
+    ]);
+
+    // Request with uppercase MAC address should still match
+    $response = $this->withHeaders([
+        'id' => 'A1:B2:C3:D4:E5:F6',
+    ])->get('/api/setup');
+
+    $response->assertOk()
+        ->assertJson([
+            'status' => 200,
+            'api_key' => 'test-api-key',
+            'friendly_id' => 'test-device',
+            'message' => 'Welcome to TRMNL BYOS',
+        ]);
+});
+
+test('display endpoint matches MAC address case-insensitively', function (): void {
+    // Create device with lowercase MAC address
+    $device = Device::factory()->create([
+        'mac_address' => 'a1:b2:c3:d4:e5:f6',
+        'api_key' => 'test-api-key',
+        'current_screen_image' => 'test-image',
+    ]);
+
+    // Request with uppercase MAC address should still match
+    $response = $this->withHeaders([
+        'id' => 'A1:B2:C3:D4:E5:F6',
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk()
+        ->assertJson([
+            'status' => '0',
+            'filename' => 'test-image.bmp',
+        ]);
+});
+
+test('screens endpoint matches MAC address case-insensitively', function (): void {
+    Queue::fake();
+
+    // Create device with uppercase MAC address
+    $device = Device::factory()->create([
+        'mac_address' => 'A1:B2:C3:D4:E5:F6',
+        'api_key' => 'test-api-key',
+    ]);
+
+    // Request with lowercase MAC address should still match
+    $response = $this->withHeaders([
+        'id' => 'a1:b2:c3:d4:e5:f6',
+        'access-token' => $device->api_key,
+    ])->post('/api/screens', [
+        'image' => [
+            'content' => '<div>Test content</div>',
+        ],
+    ]);
+
+    $response->assertOk();
+    Queue::assertPushed(GenerateScreenJob::class);
+});

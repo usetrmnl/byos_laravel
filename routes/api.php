@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 Route::get('/display', function (Request $request) {
     $mac_address = $request->header('id');
     $access_token = $request->header('access-token');
-    $device = Device::where('mac_address', $mac_address)
+    $device = Device::where('mac_address', mb_strtoupper($mac_address ?? ''))
         ->where('api_key', $access_token)
         ->first();
 
@@ -29,7 +29,7 @@ Route::get('/display', function (Request $request) {
         if ($auto_assign_user) {
             // Create a new device and assign it to this user
             $device = Device::create([
-                'mac_address' => $mac_address,
+                'mac_address' => mb_strtoupper($mac_address ?? ''),
                 'api_key' => $access_token,
                 'user_id' => $auto_assign_user->id,
                 'name' => "{$auto_assign_user->name}'s TRMNL",
@@ -204,7 +204,7 @@ Route::get('/setup', function (Request $request) {
         ], 404);
     }
 
-    $device = Device::where('mac_address', $mac_address)->first();
+    $device = Device::where('mac_address', mb_strtoupper($mac_address))->first();
 
     if (! $device) {
         // Check if there's a user with assign_new_devices enabled
@@ -219,7 +219,7 @@ Route::get('/setup', function (Request $request) {
 
             // Create a new device and assign it to this user
             $device = Device::create([
-                'mac_address' => $mac_address,
+                'mac_address' => mb_strtoupper($mac_address),
                 'api_key' => Str::random(22),
                 'user_id' => $auto_assign_user->id,
                 'name' => "{$auto_assign_user->name}'s TRMNL",
@@ -345,7 +345,7 @@ Route::post('/display/update', function (Request $request) {
 Route::post('/screens', function (Request $request) {
     $mac_address = $request->header('id');
     $access_token = $request->header('access-token');
-    $device = Device::where('mac_address', $mac_address)
+    $device = Device::where('mac_address', mb_strtoupper($mac_address ?? ''))
         ->where('api_key', $access_token)
         ->first();
 
