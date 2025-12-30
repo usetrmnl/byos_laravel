@@ -95,9 +95,16 @@ Route::get('/display', function (Request $request) {
                     // Check and update stale data if needed
                     if ($plugin->isDataStale() || $plugin->current_image === null) {
                         $plugin->updateDataPayload();
-                        $markup = $plugin->render(device: $device);
+                        try {
+                            $markup = $plugin->render(device: $device);
 
-                        GenerateScreenJob::dispatchSync($device->id, $plugin->id, $markup);
+                            GenerateScreenJob::dispatchSync($device->id, $plugin->id, $markup);
+                        } catch (Exception $e) {
+                            Log::error("Failed to render plugin {$plugin->id} ({$plugin->name}): ".$e->getMessage());
+                            // Generate error display
+                            $errorImageUuid = ImageGenerationService::generateDefaultScreenImage($device, 'error', $plugin->name);
+                            $device->update(['current_screen_image' => $errorImageUuid]);
+                        }
                     }
 
                     $plugin->refresh();
@@ -120,8 +127,17 @@ Route::get('/display', function (Request $request) {
                         }
                     }
 
-                    $markup = $playlistItem->render(device: $device);
-                    GenerateScreenJob::dispatchSync($device->id, null, $markup);
+                    try {
+                        $markup = $playlistItem->render(device: $device);
+                        GenerateScreenJob::dispatchSync($device->id, null, $markup);
+                    } catch (Exception $e) {
+                        Log::error("Failed to render mashup playlist item {$playlistItem->id}: ".$e->getMessage());
+                        // For mashups, show error for the first plugin or a generic error
+                        $firstPlugin = $plugins->first();
+                        $pluginName = $firstPlugin ? $firstPlugin->name : 'Recipe';
+                        $errorImageUuid = ImageGenerationService::generateDefaultScreenImage($device, 'error', $pluginName);
+                        $device->update(['current_screen_image' => $errorImageUuid]);
+                    }
 
                     $device->refresh();
 

@@ -311,7 +311,7 @@ class ImageGenerationService
     public static function getDeviceSpecificDefaultImage(Device $device, string $imageType): ?string
     {
         // Validate image type
-        if (! in_array($imageType, ['setup-logo', 'sleep'])) {
+        if (! in_array($imageType, ['setup-logo', 'sleep', 'error'])) {
             return null;
         }
 
@@ -345,10 +345,10 @@ class ImageGenerationService
     /**
      * Generate a default screen image from Blade template
      */
-    public static function generateDefaultScreenImage(Device $device, string $imageType): string
+    public static function generateDefaultScreenImage(Device $device, string $imageType, ?string $pluginName = null): string
     {
         // Validate image type
-        if (! in_array($imageType, ['setup-logo', 'sleep'])) {
+        if (! in_array($imageType, ['setup-logo', 'sleep', 'error'])) {
             throw new InvalidArgumentException("Invalid image type: {$imageType}");
         }
 
@@ -365,7 +365,7 @@ class ImageGenerationService
             $outputPath = Storage::disk('public')->path('/images/generated/'.$uuid.'.'.$fileExtension);
 
             // Generate HTML from Blade template
-            $html = self::generateDefaultScreenHtml($device, $imageType);
+            $html = self::generateDefaultScreenHtml($device, $imageType, $pluginName);
 
             // Create custom Browsershot instance if using AWS Lambda
             $browsershotInstance = null;
@@ -445,12 +445,13 @@ class ImageGenerationService
     /**
      * Generate HTML from Blade template for default screens
      */
-    private static function generateDefaultScreenHtml(Device $device, string $imageType): string
+    private static function generateDefaultScreenHtml(Device $device, string $imageType, ?string $pluginName = null): string
     {
         // Map image type to template name
         $templateName = match ($imageType) {
             'setup-logo' => 'default-screens.setup',
             'sleep' => 'default-screens.sleep',
+            'error' => 'default-screens.error',
             default => throw new InvalidArgumentException("Invalid image type: {$imageType}")
         };
 
@@ -461,14 +462,22 @@ class ImageGenerationService
         $scaleLevel = $device->scaleLevel();
         $darkMode = $imageType === 'sleep'; // Sleep mode uses dark mode, setup uses light mode
 
-        // Render the Blade template
-        return view($templateName, [
+        // Build view data
+        $viewData = [
             'noBleed' => false,
             'darkMode' => $darkMode,
             'deviceVariant' => $deviceVariant,
             'deviceOrientation' => $deviceOrientation,
             'colorDepth' => $colorDepth,
             'scaleLevel' => $scaleLevel,
-        ])->render();
+        ];
+
+        // Add plugin name for error screens
+        if ($imageType === 'error' && $pluginName !== null) {
+            $viewData['pluginName'] = $pluginName;
+        }
+
+        // Render the Blade template
+        return view($templateName, $viewData)->render();
     }
 }

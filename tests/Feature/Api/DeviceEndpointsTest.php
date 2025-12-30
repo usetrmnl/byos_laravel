@@ -7,6 +7,7 @@ use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Plugin;
 use App\Models\User;
+use App\Services\ImageGenerationService;
 use Bnussbau\TrmnlPipeline\TrmnlPipeline;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -1022,4 +1023,164 @@ test('screens endpoint matches MAC address case-insensitively', function (): voi
 
     $response->assertOk();
     Queue::assertPushed(GenerateScreenJob::class);
+});
+
+test('display endpoint handles plugin rendering errors gracefully', function (): void {
+    TrmnlPipeline::fake();
+
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+        'proxy_cloud' => false,
+    ]);
+
+    // Create a plugin with Blade markup that will cause an exception when accessing data[0]
+    // when data is not an array or doesn't have index 0
+    $plugin = Plugin::factory()->create([
+        'name' => 'Broken Recipe',
+        'data_strategy' => 'polling',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'markup_language' => 'blade', // Use Blade which will throw exception on invalid array access
+        'render_markup' => '<div>{{ $data[0]["invalid"] }}</div>', // This will fail if data[0] doesn't exist
+        'data_payload' => ['error' => 'Failed to fetch data'], // Not a list, so data[0] will fail
+        'data_payload_updated_at' => now()->subMinutes(2), // Make it stale
+        'current_image' => null,
+    ]);
+
+    $playlist = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => 'test_playlist',
+        'is_active' => true,
+        'weekdays' => null,
+        'active_from' => null,
+        'active_until' => null,
+    ]);
+
+    PlaylistItem::factory()->create([
+        'playlist_id' => $playlist->id,
+        'plugin_id' => $plugin->id,
+        'order' => 1,
+        'is_active' => true,
+        'last_displayed_at' => null,
+    ]);
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk();
+
+    // Verify error screen was generated and set on device
+    $device->refresh();
+    expect($device->current_screen_image)->not->toBeNull();
+
+    // Verify the error image exists
+    $errorImagePath = Storage::disk('public')->path("images/generated/{$device->current_screen_image}.png");
+    // The TrmnlPipeline is faked, so we just verify the UUID was set
+    expect($device->current_screen_image)->toBeString();
+});
+
+test('display endpoint handles mashup rendering errors gracefully', function (): void {
+    TrmnlPipeline::fake();
+
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+        'proxy_cloud' => false,
+    ]);
+
+    // Create plugins for mashup, one with invalid markup
+    $plugin1 = Plugin::factory()->create([
+        'name' => 'Working Plugin',
+        'data_strategy' => 'polling',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'render_markup_view' => 'trmnl',
+        'data_payload_updated_at' => now()->subMinutes(2),
+        'current_image' => null,
+    ]);
+
+    $plugin2 = Plugin::factory()->create([
+        'name' => 'Broken Plugin',
+        'data_strategy' => 'polling',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'markup_language' => 'blade', // Use Blade which will throw exception on invalid array access
+        'render_markup' => '<div>{{ $data[0]["invalid"] }}</div>', // This will fail
+        'data_payload' => ['error' => 'Failed to fetch data'],
+        'data_payload_updated_at' => now()->subMinutes(2),
+        'current_image' => null,
+    ]);
+
+    $playlist = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => 'test_playlist',
+        'is_active' => true,
+        'weekdays' => null,
+        'active_from' => null,
+        'active_until' => null,
+    ]);
+
+    // Create mashup playlist item
+    $playlistItem = PlaylistItem::createMashup(
+        $playlist,
+        '1Lx1R',
+        [$plugin1->id, $plugin2->id],
+        'Test Mashup',
+        1
+    );
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk();
+
+    // Verify error screen was generated and set on device
+    $device->refresh();
+    expect($device->current_screen_image)->not->toBeNull();
+
+    // Verify the error image UUID was set
+    expect($device->current_screen_image)->toBeString();
+});
+
+test('generateDefaultScreenImage creates error screen with plugin name', function (): void {
+    TrmnlPipeline::fake();
+    Storage::fake('public');
+    Storage::disk('public')->makeDirectory('/images/generated');
+
+    $device = Device::factory()->create();
+
+    $errorUuid = ImageGenerationService::generateDefaultScreenImage($device, 'error', 'Test Recipe Name');
+
+    expect($errorUuid)->not->toBeEmpty();
+
+    // Verify the error image path would be created
+    $errorPath = "images/generated/{$errorUuid}.png";
+    // Since TrmnlPipeline is faked, we just verify the UUID was generated
+    expect($errorUuid)->toBeString();
+});
+
+test('generateDefaultScreenImage throws exception for invalid error image type', function (): void {
+    $device = Device::factory()->create();
+
+    expect(fn (): string => ImageGenerationService::generateDefaultScreenImage($device, 'invalid-error-type'))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+test('getDeviceSpecificDefaultImage returns null for error type when no device-specific image exists', function (): void {
+    $device = new Device();
+    $device->deviceModel = null;
+
+    $result = ImageGenerationService::getDeviceSpecificDefaultImage($device, 'error');
+    expect($result)->toBeNull();
 });
