@@ -13,6 +13,10 @@ class extends Component
 {
     public array $recipes = [];
 
+    public int $page = 1;
+
+    public bool $hasMore = false;
+
     public string $search = '';
 
     public bool $isSearching = false;
@@ -43,23 +47,36 @@ class extends Component
     private function loadNewest(): void
     {
         try {
-            $this->recipes = Cache::remember('trmnl_recipes_newest', 43200, function () {
+            $cacheKey = 'trmnl_recipes_newest_page_'.$this->page;
+            $response = Cache::remember($cacheKey, 43200, function () {
                 $response = Http::timeout(10)->get('https://usetrmnl.com/recipes.json', [
                     'sort-by' => 'newest',
+                    'page' => $this->page,
                 ]);
 
                 if (! $response->successful()) {
                     throw new RuntimeException('Failed to fetch TRMNL recipes');
                 }
 
-                $json = $response->json();
-                $data = $json['data'] ?? [];
-
-                return $this->mapRecipes($data);
+                return $response->json();
             });
+
+            $data = $response['data'] ?? [];
+            $mapped = $this->mapRecipes($data);
+
+            if ($this->page === 1) {
+                $this->recipes = $mapped;
+            } else {
+                $this->recipes = array_merge($this->recipes, $mapped);
+            }
+
+            $this->hasMore = ! empty($response['next_page_url']);
         } catch (Throwable $e) {
             Log::error('TRMNL catalog load error: '.$e->getMessage());
-            $this->recipes = [];
+            if ($this->page === 1) {
+                $this->recipes = [];
+            }
+            $this->hasMore = false;
         }
     }
 
@@ -67,32 +84,57 @@ class extends Component
     {
         $this->isSearching = true;
         try {
-            $cacheKey = 'trmnl_recipes_search_'.md5($term);
-            $this->recipes = Cache::remember($cacheKey, 300, function () use ($term) {
+            $cacheKey = 'trmnl_recipes_search_'.md5($term).'_page_'.$this->page;
+            $response = Cache::remember($cacheKey, 300, function () use ($term) {
                 $response = Http::get('https://usetrmnl.com/recipes.json', [
                     'search' => $term,
                     'sort-by' => 'newest',
+                    'page' => $this->page,
                 ]);
 
                 if (! $response->successful()) {
                     throw new RuntimeException('Failed to search TRMNL recipes');
                 }
 
-                $json = $response->json();
-                $data = $json['data'] ?? [];
-
-                return $this->mapRecipes($data);
+                return $response->json();
             });
+
+            $data = $response['data'] ?? [];
+            $mapped = $this->mapRecipes($data);
+
+            if ($this->page === 1) {
+                $this->recipes = $mapped;
+            } else {
+                $this->recipes = array_merge($this->recipes, $mapped);
+            }
+
+            $this->hasMore = ! empty($response['next_page_url']);
         } catch (Throwable $e) {
             Log::error('TRMNL catalog search error: '.$e->getMessage());
-            $this->recipes = [];
+            if ($this->page === 1) {
+                $this->recipes = [];
+            }
+            $this->hasMore = false;
         } finally {
             $this->isSearching = false;
         }
     }
 
+    public function loadMore(): void
+    {
+        $this->page++;
+
+        $term = mb_trim($this->search);
+        if ($term === '' || mb_strlen($term) < 2) {
+            $this->loadNewest();
+        } else {
+            $this->searchRecipes($term);
+        }
+    }
+
     public function updatedSearch(): void
     {
+        $this->page = 1;
         $term = mb_trim($this->search);
         if ($term === '') {
             $this->loadNewest();
@@ -286,6 +328,15 @@ class extends Component
                 </div>
             @endforeach
         </div>
+
+        @if($hasMore)
+            <div class="flex justify-center mt-6">
+                <flux:button wire:click="loadMore" variant="subtle" wire:loading.attr="disabled">
+                    <span wire:loading.remove wire:target="loadMore">Load next page</span>
+                    <span wire:loading wire:target="loadMore">Loading...</span>
+                </flux:button>
+            </div>
+        @endif
     @endif
 
     <!-- Preview Modal -->

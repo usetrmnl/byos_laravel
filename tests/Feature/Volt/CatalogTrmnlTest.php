@@ -214,3 +214,73 @@ it('previews a recipe with async fetch', function (): void {
         ->assertSee('Preview Weather Chum Updated')
         ->assertSee('New bio');
 });
+
+it('supports pagination and loading more recipes', function (): void {
+    Http::fake([
+        'usetrmnl.com/recipes.json?sort-by=newest&page=1' => Http::response([
+            'data' => [
+                [
+                    'id' => 1,
+                    'name' => 'Recipe Page 1',
+                    'icon_url' => null,
+                    'screenshot_url' => null,
+                    'author_bio' => null,
+                    'stats' => ['installs' => 1, 'forks' => 0],
+                ],
+            ],
+            'next_page_url' => '/recipes.json?page=2',
+        ], 200),
+        'usetrmnl.com/recipes.json?sort-by=newest&page=2' => Http::response([
+            'data' => [
+                [
+                    'id' => 2,
+                    'name' => 'Recipe Page 2',
+                    'icon_url' => null,
+                    'screenshot_url' => null,
+                    'author_bio' => null,
+                    'stats' => ['installs' => 2, 'forks' => 0],
+                ],
+            ],
+            'next_page_url' => null,
+        ], 200),
+    ]);
+
+    Livewire::withoutLazyLoading();
+
+    Volt::test('catalog.trmnl')
+        ->assertSee('Recipe Page 1')
+        ->assertDontSee('Recipe Page 2')
+        ->assertSee('Load next page')
+        ->call('loadMore')
+        ->assertSee('Recipe Page 1')
+        ->assertSee('Recipe Page 2')
+        ->assertDontSee('Load next page');
+});
+
+it('resets pagination when search term changes', function (): void {
+    Http::fake([
+        'usetrmnl.com/recipes.json?sort-by=newest&page=1' => Http::sequence()
+            ->push([
+                'data' => [['id' => 1, 'name' => 'Initial 1']],
+                'next_page_url' => '/recipes.json?page=2',
+            ])
+            ->push([
+                'data' => [['id' => 3, 'name' => 'Initial 1 Again']],
+                'next_page_url' => null,
+            ]),
+        'usetrmnl.com/recipes.json?search=weather&sort-by=newest&page=1' => Http::response([
+            'data' => [['id' => 2, 'name' => 'Weather Result']],
+            'next_page_url' => null,
+        ]),
+    ]);
+
+    Livewire::withoutLazyLoading();
+
+    Volt::test('catalog.trmnl')
+        ->assertSee('Initial 1')
+        ->call('loadMore')
+        ->set('search', 'weather')
+        ->assertSee('Weather Result')
+        ->assertDontSee('Initial 1')
+        ->assertSet('page', 1);
+});
