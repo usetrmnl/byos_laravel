@@ -227,7 +227,7 @@ class extends Component
     @else
         <div class="grid grid-cols-1 gap-4">
             @foreach($recipes as $recipe)
-                <div class="rounded-xl dark:bg-white/10 border border-zinc-200 dark:border-white/10 shadow-xs">
+                <div wire:key="recipe-{{ $recipe['id'] }}" class="rounded-xl dark:bg-white/10 border border-zinc-200 dark:border-white/10 shadow-xs">
                     <div class="px-10 py-8 space-y-6">
                         <div class="flex items-start space-x-4">
                         @php($thumb = $recipe['icon_url'] ?? $recipe['screenshot_url'])

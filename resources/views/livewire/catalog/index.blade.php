@@ -161,7 +161,7 @@ class extends Component
             @enderror
 
             @foreach($catalogPlugins as $plugin)
-                <div class="bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 [:where(&)]:p-6 [:where(&)]:rounded-xl space-y-6">
+                <div wire:key="plugin-{{ $plugin['id'] }}" class="bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 [:where(&)]:p-6 [:where(&)]:rounded-xl space-y-6">
                     <div class="flex items-start space-x-4">
                         @if($plugin['logo_url'])
                             <img src="{{ $plugin['logo_url'] }}" loading="lazy" alt="{{ $plugin['name'] }}" class="w-12 h-12 rounded-lg object-cover">
