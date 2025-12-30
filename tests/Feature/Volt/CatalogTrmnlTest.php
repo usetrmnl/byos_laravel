@@ -28,7 +28,31 @@ it('loads newest TRMNL recipes on mount', function (): void {
     Volt::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->assertSee('Install')
+        ->assertDontSeeHtml('variant="subtle" icon="eye"')
         ->assertSee('Installs: 10');
+});
+
+it('shows preview button when screenshot_url is provided', function (): void {
+    Http::fake([
+        'usetrmnl.com/recipes.json*' => Http::response([
+            'data' => [
+                [
+                    'id' => 123,
+                    'name' => 'Weather Chum',
+                    'icon_url' => 'https://example.com/icon.png',
+                    'screenshot_url' => 'https://example.com/screenshot.png',
+                    'author_bio' => null,
+                    'stats' => ['installs' => 10, 'forks' => 2],
+                ],
+            ],
+        ], 200),
+    ]);
+
+    Livewire::withoutLazyLoading();
+
+    Volt::test('catalog.trmnl')
+        ->assertSee('Weather Chum')
+        ->assertSee('Preview');
 });
 
 it('searches TRMNL recipes when search term is provided', function (): void {
@@ -151,4 +175,42 @@ it('shows error when plugin installation fails', function (): void {
         ->assertSee('Weather Chum')
         ->call('installPlugin', '123')
         ->assertSee('Error installing plugin'); // This will fail because the zip content is invalid
+});
+
+it('previews a recipe with async fetch', function (): void {
+    Http::fake([
+        'usetrmnl.com/recipes.json*' => Http::response([
+            'data' => [
+                [
+                    'id' => 123,
+                    'name' => 'Weather Chum',
+                    'icon_url' => 'https://example.com/icon.png',
+                    'screenshot_url' => 'https://example.com/old.png',
+                    'author_bio' => null,
+                    'stats' => ['installs' => 10, 'forks' => 2],
+                ],
+            ],
+        ], 200),
+        'usetrmnl.com/recipes/123.json' => Http::response([
+            'data' => [
+                'id' => 123,
+                'name' => 'Weather Chum Updated',
+                'icon_url' => 'https://example.com/icon.png',
+                'screenshot_url' => 'https://example.com/new.png',
+                'author_bio' => ['description' => 'New bio'],
+                'stats' => ['installs' => 11, 'forks' => 3],
+            ],
+        ], 200),
+    ]);
+
+    Livewire::withoutLazyLoading();
+
+    Volt::test('catalog.trmnl')
+        ->assertSee('Weather Chum')
+        ->call('previewRecipe', '123')
+        ->assertSet('previewingRecipe', '123')
+        ->assertSet('previewData.name', 'Weather Chum Updated')
+        ->assertSet('previewData.screenshot_url', 'https://example.com/new.png')
+        ->assertSee('Preview Weather Chum Updated')
+        ->assertSee('New bio');
 });
