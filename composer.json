@@ -6,6 +6,7 @@
     "keywords": [
         "trmnl",
         "trmnl-server",
+        "trmnl-byos",
         "laravel"
     ],
     "license": "MIT",
@@ -14,7 +15,7 @@
         "ext-imagick": "*",
         "ext-simplexml": "*",
         "ext-zip": "*",
-        "bnussbau/laravel-trmnl-blade": "2.0.*",
+        "bnussbau/laravel-trmnl-blade": "2.1.*",
         "bnussbau/trmnl-pipeline-php": "^0.6.0",
         "keepsuit/laravel-liquid": "^0.5.2",
         "laravel/framework": "^12.1",

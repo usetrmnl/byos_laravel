@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3e4c22c016c04e49512b5fcd20983baa",
+    "content-hash": "4d958d48655a5ad9e3de6b4a9fb52b0a",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -62,16 +62,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.369.5",
+            "version": "3.369.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "7cb482768899d510e8bcb3e9ef685d2ed0afcbfe"
+                "reference": "b1e1846a4b6593b6916764d86fc0890a31727370"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/7cb482768899d510e8bcb3e9ef685d2ed0afcbfe",
-                "reference": "7cb482768899d510e8bcb3e9ef685d2ed0afcbfe",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/b1e1846a4b6593b6916764d86fc0890a31727370",
+                "reference": "b1e1846a4b6593b6916764d86fc0890a31727370",
                 "shasum": ""
             },
             "require": {
@@ -153,22 +153,22 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.369.5"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.369.6"
             },
-            "time": "2025-12-30T19:07:16+00:00"
+            "time": "2026-01-02T19:09:23+00:00"
         },
         {
             "name": "bnussbau/laravel-trmnl-blade",
-            "version": "2.0.1",
+            "version": "2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bnussbau/laravel-trmnl-blade.git",
-                "reference": "59343cfa9c41c7c7f9285b366584cde92bf1294e"
+                "reference": "1e1cabfead00118d7a80c86ac6108aece2989bc7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bnussbau/laravel-trmnl-blade/zipball/59343cfa9c41c7c7f9285b366584cde92bf1294e",
-                "reference": "59343cfa9c41c7c7f9285b366584cde92bf1294e",
+                "url": "https://api.github.com/repos/bnussbau/laravel-trmnl-blade/zipball/1e1cabfead00118d7a80c86ac6108aece2989bc7",
+                "reference": "1e1cabfead00118d7a80c86ac6108aece2989bc7",
                 "shasum": ""
             },
             "require": {
@@ -223,7 +223,7 @@
             ],
             "support": {
                 "issues": "https://github.com/bnussbau/laravel-trmnl-blade/issues",
-                "source": "https://github.com/bnussbau/laravel-trmnl-blade/tree/2.0.1"
+                "source": "https://github.com/bnussbau/laravel-trmnl-blade/tree/2.1.0"
             },
             "funding": [
                 {
@@ -239,7 +239,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-09-22T12:12:00+00:00"
+            "time": "2026-01-02T20:38:51+00:00"
         },
         {
             "name": "bnussbau/trmnl-pipeline-php",
