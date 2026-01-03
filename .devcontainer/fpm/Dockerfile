@@ -14,7 +14,8 @@ RUN apk add --no-cache \
   nodejs \
   npm \
   imagemagick-dev \
-  chromium
+  chromium \
+  libzip-dev
 
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_DOCKER=1
@@ -24,7 +25,7 @@ RUN chmod 777 /usr/src/php/ext/imagick
 RUN curl -fsSL https://github.com/Imagick/imagick/archive/refs/tags/3.8.0.tar.gz | tar xvz -C "/usr/src/php/ext/imagick" --strip 1
 
 # Install PHP extensions
-RUN docker-php-ext-install imagick
+RUN docker-php-ext-install imagick zip
 
 RUN rm -f /usr/bin/php84
 RUN ln -s /usr/local/bin/php /usr/bin/php84
