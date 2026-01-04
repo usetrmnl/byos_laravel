@@ -26,6 +26,7 @@
         "livewire/volt": "^1.7",
         "om/icalparser": "^3.2",
         "spatie/browsershot": "^5.0",
+        "stevebauman/purify": "^6.3",
         "symfony/yaml": "^7.3",
         "wnx/sidecar-browsershot": "^2.6"
     },

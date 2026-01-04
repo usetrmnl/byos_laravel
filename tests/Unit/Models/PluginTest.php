@@ -4,8 +4,12 @@ use App\Models\Plugin;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Livewire\Volt\Volt;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Tests\TestCase;
+
+uses(TestCase::class,RefreshDatabase::class);
 
 test('plugin has required attributes', function (): void {
     $plugin = Plugin::factory()->create([
@@ -679,3 +683,111 @@ test('plugin render includes utc_offset and time_zone_iana in trmnl.user context
         ->toContain('America/Chicago')
         ->and($rendered)->toMatch('/\|-?\d+/'); // Should contain a pipe followed by a number (offset in seconds)
 });
+
+
+/**
+ * Plugin security: XSS Payload Dataset
+ * [Input, Expected to See, Dangerous parts that must be Missing]
+ */
+dataset('xss_vectors', [
+    'standard_script' => [
+        'Safe <script>alert(1)</script>',
+        'Safe',
+        ['<script>', 'alert(1)']
+    ],
+    'attribute_event_handlers' => [
+        '<a href="https://trmnl.com" onmouseover="alert(1)" onclick="confirm()">Link</a>',
+        '<a href="https://trmnl.com">Link</a>',
+        ['onmouseover', 'onclick', 'confirm()']
+    ],
+    'javascript_protocol' => [
+        '<a href="javascript:alert(1)">Click Me</a>',
+        '<a>Click Me</a>',
+        ['javascript:']
+    ],
+    'broken_tags_layout_break' => [
+        '<b>Unclosed tag <script>alert(1)</script>',
+        '<b>Unclosed tag',
+        ['<script>']
+    ],
+    'iframe_injection' => [
+        'Watch <iframe src="https://malicious.com"></iframe>',
+        'Watch',
+        ['<iframe>', 'https://malicious.com']
+    ],
+    'encoded_entities' => [
+        '<a href="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;alert(1)">Link</a>',
+        '<a>Link</a>',
+        ['javascript']
+    ],
+    'img_onerror_fallback' => [
+        'Photo <img src=x onerror=alert(1)>',
+        'Photo',
+        ['onerror', 'alert(1)']
+    ],
+]);
+
+test('plugin config descriptions are sanitized', function (string $input, string $expectedSee, array $forbidden) : void {
+    $user = User::factory()->create();
+
+    // This triggers the static::saving hook in the Plugin model
+    $plugin = Plugin::create([
+        'user_id' => $user->id,
+        'name' => 'Security Test Plugin',
+        'data_stale_minutes' => 15,
+        'data_strategy' => 'static',
+        'polling_verb' => 'get',
+        'configuration_template' => [
+            'custom_fields' => [
+                [
+                    'keyname' => 'test_field',
+                    'field_type' => 'string',
+                    'name' => 'Secure Field',
+                    'description' => $input,
+                ],
+            ],
+        ],
+        'configuration' => [],
+    ]);
+
+    $this->actingAs($user);
+
+    $test = Volt::test('plugins.recipe', ['plugin' => $plugin])
+        ->assertSeeHtml($expectedSee);
+
+    foreach ($forbidden as $malice) {
+        $test->assertDontSeeHtml($malice);
+    }
+})->with('xss_vectors');
+
+test('plugin configuration help_text is sanitized', function (string $input, string $expectedSee, array $forbidden) : void {
+    $user = User::factory()->create();
+
+    $plugin = Plugin::create([
+        'user_id' => $user->id,
+        'name' => 'Help Text Security Test',
+        'data_stale_minutes' => 15,
+        'data_strategy' => 'static',
+        'polling_verb' => 'get',
+        'configuration_template' => [
+            'custom_fields' => [
+                [
+                    'keyname' => 'test',
+                    'field_type' => 'string',
+                    'name' => 'Secure Field',
+                    'help_text' => $input,
+                ],
+            ],
+        ],
+        'configuration' => [],
+    ]);
+
+    $this->actingAs($user);
+
+    $test = Volt::test('plugins.recipe', ['plugin' => $plugin])
+        ->assertSeeHtml($expectedSee);
+
+    foreach ($forbidden as $malice) {
+        $test->assertDontSeeHtml($malice);
+    }
+})->with('xss_vectors');

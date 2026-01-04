@@ -62,11 +62,35 @@ class Plugin extends Model
                 $model->current_image = null;
             }
         });
+
+        // Sanitize configuration template on save
+        static::saving(function ($model): void {
+            $model->sanitizeTemplate();
+        });
     }
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // sanitize configuration template descriptions and help texts (since they allow HTML rendering)
+    protected function sanitizeTemplate(): void
+    {
+        $template = $this->configuration_template;
+
+        if (isset($template['custom_fields']) && is_array($template['custom_fields'])) {
+            foreach ($template['custom_fields'] as &$field) {
+                if (isset($field['description'])) {
+                    $field['description'] = \Stevebauman\Purify\Facades\Purify::clean($field['description']);
+                }
+                if (isset($field['help_text'])) {
+                    $field['help_text'] = \Stevebauman\Purify\Facades\Purify::clean($field['help_text']);
+                }
+            }
+
+            $this->configuration_template = $template;
+        }
     }
 
     public function hasMissingRequiredConfigurationFields(): bool
