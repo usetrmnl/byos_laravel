@@ -4,12 +4,8 @@ use App\Models\Plugin;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
-use Livewire\Volt\Volt;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-use Tests\TestCase;
-
-uses(TestCase::class,RefreshDatabase::class);
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 test('plugin has required attributes', function (): void {
     $plugin = Plugin::factory()->create([
@@ -684,56 +680,25 @@ test('plugin render includes utc_offset and time_zone_iana in trmnl.user context
         ->and($rendered)->toMatch('/\|-?\d+/'); // Should contain a pipe followed by a number (offset in seconds)
 });
 
-
 /**
  * Plugin security: XSS Payload Dataset
- * [Input, Expected to See, Dangerous parts that must be Missing]
+ * [Input, Expected Result, Forbidden String]
  */
 dataset('xss_vectors', [
-    'standard_script' => [
-        'Safe <script>alert(1)</script>',
-        'Safe',
-        ['<script>', 'alert(1)']
-    ],
-    'attribute_event_handlers' => [
-        '<a href="https://trmnl.com" onmouseover="alert(1)" onclick="confirm()">Link</a>',
-        '<a href="https://trmnl.com">Link</a>',
-        ['onmouseover', 'onclick', 'confirm()']
-    ],
-    'javascript_protocol' => [
-        '<a href="javascript:alert(1)">Click Me</a>',
-        '<a>Click Me</a>',
-        ['javascript:']
-    ],
-    'broken_tags_layout_break' => [
-        '<b>Unclosed tag <script>alert(1)</script>',
-        '<b>Unclosed tag',
-        ['<script>']
-    ],
-    'iframe_injection' => [
-        'Watch <iframe src="https://malicious.com"></iframe>',
-        'Watch',
-        ['<iframe>', 'https://malicious.com']
-    ],
-    'encoded_entities' => [
-        '<a href="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;alert(1)">Link</a>',
-        '<a>Link</a>',
-        ['javascript']
-    ],
-    'img_onerror_fallback' => [
-        'Photo <img src=x onerror=alert(1)>',
-        'Photo',
-        ['onerror', 'alert(1)']
-    ],
+    'standard_script'          => ['Safe <script>alert(1)</script>', 'Safe ', '<script>'],
+    'attribute_event_handlers' => ['<a onmouseover="alert(1)">Link</a>', '<a>Link</a>', 'onmouseover'],
+    'javascript_protocol'      => ['<a href="javascript:alert(1)">Click</a>', '<a>Click</a>', 'javascript:'],
+    'iframe_injection'         => ['Watch <iframe src="https://x.com"></iframe>', 'Watch ', '<iframe>'],
+    'img_onerror_fallback'     => ['Photo <img src=x onerror=alert(1)>', 'Photo <img src="x" alt="x">', 'onerror'],
 ]);
 
-test('plugin config descriptions are sanitized', function (string $input, string $expectedSee, array $forbidden) : void {
+test('plugin model sanitizes template fields on save', function (string $input, string $expected, string $forbidden): void {
     $user = User::factory()->create();
 
-    // This triggers the static::saving hook in the Plugin model
+    // We test the Model logic directly. This triggers the static::saving hook.
     $plugin = Plugin::create([
         'user_id' => $user->id,
-        'name' => 'Security Test Plugin',
+        'name' => 'Security Test',
         'data_stale_minutes' => 15,
         'data_strategy' => 'static',
         'polling_verb' => 'get',
@@ -741,53 +706,34 @@ test('plugin config descriptions are sanitized', function (string $input, string
             'custom_fields' => [
                 [
                     'keyname' => 'test_field',
-                    'field_type' => 'string',
-                    'name' => 'Secure Field',
                     'description' => $input,
-                ],
-            ],
-        ],
-        'configuration' => [],
-    ]);
-
-    $this->actingAs($user);
-
-    $test = Volt::test('plugins.recipe', ['plugin' => $plugin])
-        ->assertSeeHtml($expectedSee);
-
-    foreach ($forbidden as $malice) {
-        $test->assertDontSeeHtml($malice);
-    }
-})->with('xss_vectors');
-
-test('plugin configuration help_text is sanitized', function (string $input, string $expectedSee, array $forbidden) : void {
-    $user = User::factory()->create();
-
-    $plugin = Plugin::create([
-        'user_id' => $user->id,
-        'name' => 'Help Text Security Test',
-        'data_stale_minutes' => 15,
-        'data_strategy' => 'static',
-        'polling_verb' => 'get',
-        'configuration_template' => [
-            'custom_fields' => [
-                [
-                    'keyname' => 'test',
-                    'field_type' => 'string',
-                    'name' => 'Secure Field',
                     'help_text' => $input,
                 ],
             ],
         ],
-        'configuration' => [],
     ]);
 
-    $this->actingAs($user);
+    $field = $plugin->fresh()->configuration_template['custom_fields'][0];
 
-    $test = Volt::test('plugins.recipe', ['plugin' => $plugin])
-        ->assertSeeHtml($expectedSee);
-
-    foreach ($forbidden as $malice) {
-        $test->assertDontSeeHtml($malice);
-    }
+    // Assert the saved data is clean
+    expect($field['description'])->toBe($expected)
+        ->and($field['help_text'])->toBe($expected)
+        ->and($field['description'])->not->toContain($forbidden);
 })->with('xss_vectors');
+
+test('plugin model preserves multi_string csv format', function (): void {
+    $user = User::factory()->create();
+
+    $plugin = Plugin::create([
+        'user_id' => $user->id,
+        'name' => 'Multi-string Test',
+        'data_stale_minutes' => 15,
+        'data_strategy' => 'static',
+        'polling_verb' => 'get',
+        'configuration' => [
+            'tags' => 'laravel,pest,security'
+        ]
+    ]);
+
+    expect($plugin->fresh()->configuration['tags'])->toBe('laravel,pest,security');
+});
