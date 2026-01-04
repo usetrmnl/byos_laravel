@@ -37,6 +37,7 @@ new class extends Component {
     public array $configuration = [];
     public array $xhrSelectOptions = [];
     public array $searchQueries = [];
+    public array $multiValues = [];
 
     public function mount(): void
     {
@@ -74,6 +75,25 @@ new class extends Component {
 
         $this->fillformFields();
         $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
+
+        foreach ($this->configuration_template['custom_fields'] ?? [] as $field) {
+            if (($field['field_type'] ?? null) !== 'multi_string') {
+                continue;
+            }
+
+            $fieldKey = $field['keyname'] ?? $field['key'] ?? $field['name'];
+
+            // Get the existing value from the plugin's configuration
+            $rawValue = $this->configuration[$fieldKey] ?? ($field['default'] ?? '');
+
+            $currentValue = is_array($rawValue) ? '' : (string)$rawValue;
+
+            // Split CSV into array for UI boxes
+            $this->multiValues[$fieldKey] = $currentValue !== ''
+                ? array_values(array_filter(explode(',', $currentValue)))
+                : [''];
+        }
+
     }
 
     public function fillFormFields(): void
@@ -129,6 +149,19 @@ new class extends Component {
         $validated = $this->validate();
         $validated['data_payload'] = json_decode(Arr::get($validated,'data_payload'), true);
         $this->plugin->update($validated);
+
+        foreach ($this->configuration_template as $fieldKey => $field) {
+            if (($field['field_type'] ?? null) !== 'multi_string') {
+                continue;
+            }
+
+            if (!isset($this->multiValues[$fieldKey])) {
+                continue;
+            }
+
+            $validated[$fieldKey] = implode(',', array_filter(array_map('trim', $this->multiValues[$fieldKey])));
+        }
+
     }
 
     protected function validatePollingUrl(): void
@@ -258,6 +291,14 @@ new class extends Component {
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
 
+        foreach ($this->configuration_template['custom_fields'] ?? [] as $field) {
+            $fieldKey = $field['keyname'] ?? $field['key'] ?? $field['name'];
+
+            if ($field['field_type'] === 'multi_string' && isset($this->multiValues[$fieldKey])) {
+                // Join the boxes into a CSV string, trimming whitespace and filtering empties
+                $this->configuration[$fieldKey] = implode(',', array_filter(array_map('trim', $this->multiValues[$fieldKey])));
+            }
+        }
         $configurationValues = [];
         if (isset($this->configuration_template['custom_fields'])) {
             foreach ($this->configuration_template['custom_fields'] as $field) {
@@ -431,6 +472,22 @@ HTML;
             $query = $this->searchQueries[$fieldKey] ?? '';
             if (!empty($query)) {
                 $this->loadXhrSelectOptions($fieldKey, $endpoint, $query);
+            }
+        }
+
+        public function addMultiItem(string $fieldKey): void
+        {
+            $this->multiValues[$fieldKey][] = '';
+        }
+
+        public function removeMultiItem(string $fieldKey, int $index): void
+        {
+            unset($this->multiValues[$fieldKey][$index]);
+
+            $this->multiValues[$fieldKey] = array_values($this->multiValues[$fieldKey]);
+
+            if (empty($this->multiValues[$fieldKey])) {
+                $this->multiValues[$fieldKey][] = '';
             }
         }
 }
@@ -639,13 +696,10 @@ HTML;
                                     @php
                                         $fieldKey = $field['keyname'] ?? $field['key'] ?? $field['name'];
                                         $rawValue = $configuration[$fieldKey] ?? ($field['default'] ?? '');
-                                        # These are sanitized at PluginImportService when imported, safe to render HTML
+
+                                        # These are sanitized at Model/Plugin level, safe to render HTML
                                         $safeDescription = $field['description'] ?? '';
                                         $safeHelp = $field['help_text'] ?? '';
-
-                                        //Important: Sanitize with Purify to prevent XSS attacks
-                                        // $safeDescription = Stevebauman\Purify\Facades\Purify::clean($field['description'] ?? '');
-                                        // $safeHelp = Stevebauman\Purify\Facades\Purify::clean($field['help_text'] ?? '');
 
                                         // For code fields, if the value is an array, JSON encode it
                                         if ($field['field_type'] === 'code' && is_array($rawValue)) {
@@ -908,17 +962,60 @@ HTML;
                                                     </flux:select>
                                                 @endif
                                             </div>
-                                        @elseif($field['field_type'] === 'multi_string')
+                                            @elseif($field['field_type'] === 'multi_string')
+                                                <flux:field>
+                                                    <flux:label>{{ $field['name'] }}</flux:label>
+                                                    <flux:description>{!! $safeDescription !!}</flux:description>
+
+                                                    <div class="space-y-2 mt-2">
+                                                        @foreach($multiValues[$fieldKey] as $index => $item)
+                                                            <div class="flex gap-2 items-center"
+                                                                wire:key="multi-{{ $fieldKey }}-{{ $index }}">
+
+                                                                <flux:input
+                                                                    wire:model.defer="multiValues.{{ $fieldKey }}.{{ $index }}"
+                                                                    :placeholder="$field['placeholder'] ?? 'Value...'"
+                                                                    class="flex-1"
+                                                                />
+
+                                                                @if(count($multiValues[$fieldKey]) > 1)
+                                                                    <flux:button
+                                                                        variant="ghost"
+                                                                        icon="trash"
+                                                                        size="sm"
+                                                                        wire:click="removeMultiItem('{{ $fieldKey }}', {{ $index }})"
+                                                                    />
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+
+                                                        <flux:button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            icon="plus"
+                                                            wire:click="addMultiItem('{{ $fieldKey }}')"
+                                                        >
+                                                            Add Item
+                                                        </flux:button>
+                                                    </div>
+
+
+                                                    <flux:description>{!! $safeHelp !!}</flux:description>
+                                                </flux:field>
+                                        {{-- @elseif($field['field_type'] === 'multi_string')
                                             <flux:field>
                                                 <flux:label>{{ $field['name'] }}</flux:label>
                                                 <flux:description>{!! $safeDescription !!}</flux:description>
-                                                <flux:input
+
+
+                                                {{-- <flux:input
                                                     wire:model="configuration.{{ $fieldKey }}"
                                                     value="{{ $currentValue }}"
                                                     placeholder="{{ $field['placeholder'] ?? 'value1,value2' }}"
-                                                />
-                                                <flux:description>{!! $safeHelp !!}</flux:description>
-                                            </flux:field>
+                                                /> --}}
+
+                                                {{-- <flux:description>{!! $safeHelp !!}</flux:description>
+                                            </flux:field> --}}
                                         @else
                                             <flux:callout variant="warning">Field type "{{ $field['field_type'] }}" not yet supported</flux:callout>
                                         @endif
