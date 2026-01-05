@@ -3,7 +3,7 @@
 [![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
 
 TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
-It allows you to manage TRMNL devices, generate screens using **native plugins** (Screens API, Markup), **recipes** (100+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), ~500 from the [TRMNL catalog](https://usetrmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 35k downloads and 150+ stars, it’s the most popular community-driven BYOS.
+It allows you to manage TRMNL devices, generate screens using **native plugins** (Screens API, Markup), **recipes** (120+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), 600+ from the [TRMNL catalog](https://usetrmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 40k downloads and 160+ stars, it’s the most popular community-driven BYOS.
 
 ![Screenshot](README_byos-screenshot.png)
 ![Screenshot](README_byos-screenshot-dark.png)
