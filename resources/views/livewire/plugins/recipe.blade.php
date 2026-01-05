@@ -976,6 +976,8 @@ HTML;
                                                                     wire:model.defer="multiValues.{{ $fieldKey }}.{{ $index }}"
                                                                     :placeholder="$field['placeholder'] ?? 'Value...'"
                                                                     class="flex-1"
+                                                                    pattern="[^,]*"
+                                                                    title="Commas are not allowed in this field"
                                                                 />
 
                                                                 @if(count($multiValues[$fieldKey]) > 1)
