@@ -11,6 +11,7 @@ use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
+use App\Services\ImageGenerationService;
 use App\Services\Plugin\Parsers\ResponseParserRegistry;
 use App\Services\PluginImportService;
 use Carbon\Carbon;
@@ -44,6 +45,7 @@ class Plugin extends Model
         'no_bleed' => 'boolean',
         'dark_mode' => 'boolean',
         'preferred_renderer' => 'string',
+        'plugin_type' => 'string',
     ];
 
     protected static function boot()
@@ -133,6 +135,11 @@ class Plugin extends Model
 
     public function isDataStale(): bool
     {
+        // Image webhook plugins don't use data staleness - images are pushed directly
+        if ($this->plugin_type === 'image_webhook') {
+            return false;
+        }
+
         if ($this->data_strategy === 'webhook') {
             // Treat as stale if any webhook event has occurred in the past hour
             return $this->data_payload_updated_at && $this->data_payload_updated_at->gt(now()->subHour());
@@ -447,6 +454,10 @@ class Plugin extends Model
      */
     public function render(string $size = 'full', bool $standalone = true, ?Device $device = null): string
     {
+        if ($this->plugin_type !== 'recipe') {
+            throw new \InvalidArgumentException('Render method is only applicable for recipe plugins.');
+        }
+
         if ($this->render_markup) {
             $renderedContent = '';
 

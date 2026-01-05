@@ -280,6 +280,10 @@ class ImageGenerationService
     public static function resetIfNotCacheable(?Plugin $plugin): void
     {
         if ($plugin?->id) {
+            // Image webhook plugins have finalized images that shouldn't be reset
+            if ($plugin->plugin_type === 'image_webhook') {
+                return;
+            }
             // Check if any devices have custom dimensions or use non-standard DeviceModels
             $hasCustomDimensions = Device::query()
                 ->where(function ($query): void {

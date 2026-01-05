@@ -685,11 +685,11 @@ test('plugin render includes utc_offset and time_zone_iana in trmnl.user context
  * [Input, Expected Result, Forbidden String]
  */
 dataset('xss_vectors', [
-    'standard_script'          => ['Safe <script>alert(1)</script>', 'Safe ', '<script>'],
+    'standard_script' => ['Safe <script>alert(1)</script>', 'Safe ', '<script>'],
     'attribute_event_handlers' => ['<a onmouseover="alert(1)">Link</a>', '<a>Link</a>', 'onmouseover'],
-    'javascript_protocol'      => ['<a href="javascript:alert(1)">Click</a>', '<a>Click</a>', 'javascript:'],
-    'iframe_injection'         => ['Watch <iframe src="https://x.com"></iframe>', 'Watch ', '<iframe>'],
-    'img_onerror_fallback'     => ['Photo <img src=x onerror=alert(1)>', 'Photo <img src="x" alt="x">', 'onerror'],
+    'javascript_protocol' => ['<a href="javascript:alert(1)">Click</a>', '<a>Click</a>', 'javascript:'],
+    'iframe_injection' => ['Watch <iframe src="https://x.com"></iframe>', 'Watch ', '<iframe>'],
+    'img_onerror_fallback' => ['Photo <img src=x onerror=alert(1)>', 'Photo <img src="x" alt="x">', 'onerror'],
 ]);
 
 test('plugin model sanitizes template fields on save', function (string $input, string $expected, string $forbidden): void {
@@ -731,8 +731,8 @@ test('plugin model preserves multi_string csv format', function (): void {
         'data_strategy' => 'static',
         'polling_verb' => 'get',
         'configuration' => [
-            'tags' => 'laravel,pest,security'
-        ]
+            'tags' => 'laravel,pest,security',
+        ],
     ]);
 
     expect($plugin->fresh()->configuration['tags'])->toBe('laravel,pest,security');

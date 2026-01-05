@@ -31,6 +31,8 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('plugins/recipe/{plugin}', 'plugins.recipe')->name('plugins.recipe');
     Volt::route('plugins/markup', 'plugins.markup')->name('plugins.markup');
     Volt::route('plugins/api', 'plugins.api')->name('plugins.api');
+    Volt::route('plugins/image-webhook', 'plugins.image-webhook')->name('plugins.image-webhook');
+    Volt::route('plugins/image-webhook/{plugin}', 'plugins.image-webhook-instance')->name('plugins.image-webhook-instance');
     Volt::route('playlists', 'playlists.index')->name('playlists.index');
 
     Route::get('plugin_settings/{trmnlp_id}/edit', function (Request $request, string $trmnlp_id) {

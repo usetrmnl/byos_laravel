@@ -26,6 +26,8 @@ new class extends Component {
             ['name' => 'Markup', 'flux_icon_name' => 'code-bracket', 'detail_view_route' => 'plugins.markup'],
         'api' =>
             ['name' => 'API', 'flux_icon_name' => 'braces', 'detail_view_route' => 'plugins.api'],
+        'image-webhook' =>
+            ['name' => 'Image Webhook', 'flux_icon_name' => 'photo', 'detail_view_route' => 'plugins.image-webhook'],
     ];
 
     protected $rules = [
@@ -40,7 +42,12 @@ new class extends Component {
 
     public function refreshPlugins(): void
     {
-        $userPlugins = auth()->user()?->plugins?->makeHidden(['render_markup', 'data_payload'])->toArray();
+        // Only show recipe plugins in the main list (image_webhook has its own management page)
+        $userPlugins = auth()->user()?->plugins()
+            ->where('plugin_type', 'recipe')
+            ->get()
+            ->makeHidden(['render_markup', 'data_payload'])
+            ->toArray();
         $allPlugins = array_merge($this->native_plugins, $userPlugins ?? []);
         $allPlugins = array_values($allPlugins);
         $allPlugins = $this->sortPlugins($allPlugins);

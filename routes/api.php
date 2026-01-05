@@ -549,6 +549,91 @@ Route::post('custom_plugins/{plugin_uuid}', function (string $plugin_uuid) {
     return response()->json(['message' => 'Data updated successfully']);
 })->name('api.custom_plugins.webhook');
 
+Route::post('plugin_settings/{uuid}/image', function (Request $request, string $uuid) {
+    $plugin = Plugin::where('uuid', $uuid)->firstOrFail();
+
+    // Check if plugin is image_webhook type
+    if ($plugin->plugin_type !== 'image_webhook') {
+        return response()->json(['error' => 'Plugin is not an image webhook plugin'], 400);
+    }
+
+    // Accept image from either multipart form or raw binary
+    $image = null;
+    $extension = null;
+
+    if ($request->hasFile('image')) {
+        $file = $request->file('image');
+        $extension = mb_strtolower($file->getClientOriginalExtension());
+        $image = $file->get();
+    } elseif ($request->has('image')) {
+        // Base64 encoded image
+        $imageData = $request->input('image');
+        if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $matches)) {
+            $extension = mb_strtolower($matches[1]);
+            $image = base64_decode(mb_substr($imageData, mb_strpos($imageData, ',') + 1));
+        } else {
+            return response()->json(['error' => 'Invalid image format. Expected base64 data URI.'], 400);
+        }
+    } else {
+        // Try raw binary
+        $image = $request->getContent();
+        $contentType = $request->header('Content-Type', '');
+        $trimmedContent = mb_trim($image);
+
+        // Check if content is empty or just empty JSON
+        if (empty($image) || $trimmedContent === '' || $trimmedContent === '{}') {
+            return response()->json(['error' => 'No image data provided'], 400);
+        }
+
+        // If it's a JSON request without image field, return error
+        if (str_contains($contentType, 'application/json')) {
+            return response()->json(['error' => 'No image data provided'], 400);
+        }
+
+        // Detect image type from content
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_buffer($finfo, $image);
+        finfo_close($finfo);
+
+        $extension = match ($mimeType) {
+            'image/png' => 'png',
+            'image/bmp' => 'bmp',
+            default => null,
+        };
+
+        if (! $extension) {
+            return response()->json(['error' => 'Unsupported image format. Expected PNG or BMP.'], 400);
+        }
+    }
+
+    // Validate extension
+    $allowedExtensions = ['png', 'bmp'];
+    if (! in_array($extension, $allowedExtensions)) {
+        return response()->json(['error' => 'Unsupported image format. Expected PNG or BMP.'], 400);
+    }
+
+    // Generate a new UUID for each image upload to prevent device caching
+    $imageUuid = \Illuminate\Support\Str::uuid()->toString();
+    $filename = $imageUuid.'.'.$extension;
+    $path = 'images/generated/'.$filename;
+
+    // Save image to storage
+    Storage::disk('public')->put($path, $image);
+
+    // Update plugin's current_image field with the new UUID
+    $plugin->update([
+        'current_image' => $imageUuid,
+    ]);
+
+    // Clean up old images
+    ImageGenerationService::cleanupFolder();
+
+    return response()->json([
+        'message' => 'Image uploaded successfully',
+        'image_url' => url('storage/'.$path),
+    ]);
+})->name('api.plugin_settings.image');
+
 Route::get('plugin_settings/{trmnlp_id}/archive', function (Request $request, string $trmnlp_id) {
     if (! $trmnlp_id || mb_trim($trmnlp_id) === '') {
         return response()->json([
