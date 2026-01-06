@@ -737,3 +737,175 @@ test('plugin model preserves multi_string csv format', function (): void {
 
     expect($plugin->fresh()->configuration['tags'])->toBe('laravel,pest,security');
 });
+
+test('plugin duplicate copies all attributes except id and uuid', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Original Plugin',
+        'data_stale_minutes' => 30,
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://api.example.com/data',
+        'polling_verb' => 'get',
+        'polling_header' => 'Authorization: Bearer token123',
+        'polling_body' => '{"query": "test"}',
+        'render_markup' => '<div>Test markup</div>',
+        'markup_language' => 'blade',
+        'configuration' => ['api_key' => 'secret123'],
+        'configuration_template' => [
+            'custom_fields' => [
+                [
+                    'keyname' => 'api_key',
+                    'field_type' => 'string',
+                ],
+            ],
+        ],
+        'no_bleed' => true,
+        'dark_mode' => true,
+        'data_payload' => ['test' => 'data'],
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    // Refresh to ensure casts are applied
+    $original->refresh();
+    $duplicate->refresh();
+
+    expect($duplicate->id)->not->toBe($original->id)
+        ->and($duplicate->uuid)->not->toBe($original->uuid)
+        ->and($duplicate->name)->toBe('Original Plugin (Copy)')
+        ->and($duplicate->user_id)->toBe($original->user_id)
+        ->and($duplicate->data_stale_minutes)->toBe($original->data_stale_minutes)
+        ->and($duplicate->data_strategy)->toBe($original->data_strategy)
+        ->and($duplicate->polling_url)->toBe($original->polling_url)
+        ->and($duplicate->polling_verb)->toBe($original->polling_verb)
+        ->and($duplicate->polling_header)->toBe($original->polling_header)
+        ->and($duplicate->polling_body)->toBe($original->polling_body)
+        ->and($duplicate->render_markup)->toBe($original->render_markup)
+        ->and($duplicate->markup_language)->toBe($original->markup_language)
+        ->and($duplicate->configuration)->toBe($original->configuration)
+        ->and($duplicate->configuration_template)->toBe($original->configuration_template)
+        ->and($duplicate->no_bleed)->toBe($original->no_bleed)
+        ->and($duplicate->dark_mode)->toBe($original->dark_mode)
+        ->and($duplicate->data_payload)->toBe($original->data_payload)
+        ->and($duplicate->render_markup_view)->toBeNull();
+});
+
+test('plugin duplicate copies render_markup_view file content to render_markup', function (): void {
+    $user = User::factory()->create();
+
+    // Create a test blade file
+    $testViewPath = resource_path('views/recipes/test-duplicate.blade.php');
+    $testContent = '<div class="test-view">Test Content</div>';
+
+    // Ensure directory exists
+    if (! is_dir(dirname($testViewPath))) {
+        mkdir(dirname($testViewPath), 0755, true);
+    }
+
+    file_put_contents($testViewPath, $testContent);
+
+    try {
+        $original = Plugin::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'View Plugin',
+            'render_markup' => null,
+            'render_markup_view' => 'recipes.test-duplicate',
+            'markup_language' => null,
+        ]);
+
+        $duplicate = $original->duplicate();
+
+        expect($duplicate->render_markup)->toBe($testContent)
+            ->and($duplicate->markup_language)->toBe('blade')
+            ->and($duplicate->render_markup_view)->toBeNull()
+            ->and($duplicate->name)->toBe('View Plugin (Copy)');
+    } finally {
+        // Clean up test file
+        if (file_exists($testViewPath)) {
+            unlink($testViewPath);
+        }
+    }
+});
+
+test('plugin duplicate handles liquid file extension', function (): void {
+    $user = User::factory()->create();
+
+    // Create a test liquid file
+    $testViewPath = resource_path('views/recipes/test-duplicate-liquid.liquid');
+    $testContent = '<div class="test-view">{{ data.message }}</div>';
+
+    // Ensure directory exists
+    if (! is_dir(dirname($testViewPath))) {
+        mkdir(dirname($testViewPath), 0755, true);
+    }
+
+    file_put_contents($testViewPath, $testContent);
+
+    try {
+        $original = Plugin::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'Liquid Plugin',
+            'render_markup' => null,
+            'render_markup_view' => 'recipes.test-duplicate-liquid',
+            'markup_language' => null,
+        ]);
+
+        $duplicate = $original->duplicate();
+
+        expect($duplicate->render_markup)->toBe($testContent)
+            ->and($duplicate->markup_language)->toBe('liquid')
+            ->and($duplicate->render_markup_view)->toBeNull();
+    } finally {
+        // Clean up test file
+        if (file_exists($testViewPath)) {
+            unlink($testViewPath);
+        }
+    }
+});
+
+test('plugin duplicate handles missing view file gracefully', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Missing View Plugin',
+        'render_markup' => null,
+        'render_markup_view' => 'recipes.nonexistent-view',
+        'markup_language' => null,
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    expect($duplicate->render_markup_view)->toBeNull()
+        ->and($duplicate->name)->toBe('Missing View Plugin (Copy)');
+});
+
+test('plugin duplicate uses provided user_id', function (): void {
+    $user1 = User::factory()->create();
+    $user2 = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user1->id,
+        'name' => 'Original Plugin',
+    ]);
+
+    $duplicate = $original->duplicate($user2->id);
+
+    expect($duplicate->user_id)->toBe($user2->id)
+        ->and($duplicate->user_id)->not->toBe($original->user_id);
+});
+
+test('plugin duplicate falls back to original user_id when no user_id provided', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Original Plugin',
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    expect($duplicate->user_id)->toBe($original->user_id);
+});

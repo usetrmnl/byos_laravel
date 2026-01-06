@@ -370,6 +370,17 @@ HTML;
         }
     }
 
+    public function duplicatePlugin(): void
+    {
+        abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
+
+        // Use the model's duplicate method
+        $newPlugin = $this->plugin->duplicate(auth()->id());
+
+        // Redirect to the new plugin's detail page
+        $this->redirect(route('plugins.recipe', ['plugin' => $newPlugin]));
+    }
+
     public function deletePlugin(): void
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
@@ -427,6 +438,7 @@ HTML;
                 <flux:dropdown>
                     <flux:button icon="chevron-down" variant="primary"></flux:button>
                     <flux:menu>
+                        <flux:menu.item icon="document-duplicate" wire:click="duplicatePlugin">Duplicate Plugin</flux:menu.item>
                         <flux:modal.trigger name="delete-plugin">
                             <flux:menu.item icon="trash" variant="danger">Delete Plugin</flux:menu.item>
                         </flux:modal.trigger>

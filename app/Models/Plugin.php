@@ -11,7 +11,6 @@ use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
 use App\Liquid\Tags\TemplateTag;
-use App\Services\ImageGenerationService;
 use App\Services\Plugin\Parsers\ResponseParserRegistry;
 use App\Services\PluginImportService;
 use Carbon\Carbon;
@@ -25,6 +24,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Keepsuit\LaravelLiquid\LaravelLiquidExtension;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Keepsuit\Liquid\Extensions\StandardExtension;
@@ -455,7 +455,7 @@ class Plugin extends Model
     public function render(string $size = 'full', bool $standalone = true, ?Device $device = null): string
     {
         if ($this->plugin_type !== 'recipe') {
-            throw new \InvalidArgumentException('Render method is only applicable for recipe plugins.');
+            throw new InvalidArgumentException('Render method is only applicable for recipe plugins.');
         }
 
         if ($this->render_markup) {
@@ -605,5 +605,62 @@ class Plugin extends Model
             'quadrant' => '2x2',
             default => '1Tx1B',
         };
+    }
+
+    /**
+     * Duplicate the plugin, copying all attributes and handling render_markup_view
+     *
+     * @param  int|null  $userId  Optional user ID for the duplicate. If not provided, uses the original plugin's user_id.
+     * @return Plugin The newly created duplicate plugin
+     */
+    public function duplicate(?int $userId = null): self
+    {
+        // Get all attributes except id and uuid
+        // Use toArray() to get cast values (respects JSON casts)
+        $attributes = $this->toArray();
+        unset($attributes['id'], $attributes['uuid']);
+
+        // Handle render_markup_view - copy file content to render_markup
+        if ($this->render_markup_view) {
+            try {
+                $basePath = resource_path('views/'.str_replace('.', '/', $this->render_markup_view));
+                $paths = [
+                    $basePath.'.blade.php',
+                    $basePath.'.liquid',
+                ];
+
+                $fileContent = null;
+                $markupLanguage = null;
+                foreach ($paths as $path) {
+                    if (file_exists($path)) {
+                        $fileContent = file_get_contents($path);
+                        // Determine markup language based on file extension
+                        $markupLanguage = str_ends_with($path, '.liquid') ? 'liquid' : 'blade';
+                        break;
+                    }
+                }
+
+                if ($fileContent !== null) {
+                    $attributes['render_markup'] = $fileContent;
+                    $attributes['markup_language'] = $markupLanguage;
+                    $attributes['render_markup_view'] = null;
+                } else {
+                    // File doesn't exist, remove the view reference
+                    $attributes['render_markup_view'] = null;
+                }
+            } catch (Exception $e) {
+                // If file reading fails, remove the view reference
+                $attributes['render_markup_view'] = null;
+            }
+        }
+
+        // Append " (Copy)" to the name
+        $attributes['name'] = $this->name.' (Copy)';
+
+        // Set user_id - use provided userId or fall back to original plugin's user_id
+        $attributes['user_id'] = $userId ?? $this->user_id;
+
+        // Create and return the new plugin
+        return self::create($attributes);
     }
 }
