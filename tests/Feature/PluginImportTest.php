@@ -427,6 +427,65 @@ YAML;
         ->and($displayIncidentField['default'])->toBe('true');
 });
 
+it('throws exception when multi_string default value contains a comma', function (): void {
+    $user = User::factory()->create();
+
+    // YAML with a comma in the 'default' field of a multi_string
+    $invalidYaml = <<<YAML
+name: Test Plugin
+refresh_interval: 30
+strategy: static
+polling_verb: get
+static_data: '{"test": "data"}'
+custom_fields:
+  - keyname: api_key
+    field_type: multi_string
+    default: default-api-key1,default-api-key2
+    label: API Key
+YAML;
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => $invalidYaml,
+        'src/full.liquid' => getValidFullLiquid(),
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('invalid-default.zip', $zipContent);
+    $pluginImportService = new PluginImportService();
+
+    expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
+        ->toThrow(Exception::class, "Validation Error: The default value for multistring fields like `api_key` cannot contain commas.");
+});
+
+it('throws exception when multi_string placeholder contains a comma', function (): void {
+    $user = User::factory()->create();
+
+    // YAML with a comma in the 'placeholder' field
+    $invalidYaml = <<<YAML
+name: Test Plugin
+refresh_interval: 30
+strategy: static
+polling_verb: get
+static_data: '{"test": "data"}'
+custom_fields:
+  - keyname: api_key
+    field_type: multi_string
+    default: default-api-key
+    label: API Key
+    placeholder: "value1, value2"
+YAML;
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => $invalidYaml,
+        'src/full.liquid' => getValidFullLiquid(),
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('invalid-placeholder.zip', $zipContent);
+    $pluginImportService = new PluginImportService();
+
+    expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
+        ->toThrow(Exception::class, "Validation Error: The placeholder value for multistring fields like `api_key` cannot contain commas.");
+});
+
 // Helper methods
 function createMockZipFile(array $files): string
 {
