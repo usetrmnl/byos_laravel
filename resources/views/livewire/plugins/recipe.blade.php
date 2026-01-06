@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Device;
 use App\Models\Plugin;
+use App\Models\DeviceModel;
 use Illuminate\Support\Carbon;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Livewire\Volt\Component;
@@ -35,6 +37,8 @@ new class extends Component {
     public string $mashup_layout = 'full';
     public array $mashup_plugins = [];
     public array $configuration_template = [];
+    public ?int $preview_device_model_id = null;
+    public string $preview_size = 'full';
 
     public function mount(): void
     {
@@ -72,6 +76,12 @@ new class extends Component {
 
         $this->fillformFields();
         $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
+
+        // Set default preview device model
+        if ($this->preview_device_model_id === null) {
+            $defaultModel = DeviceModel::where('name', 'og_plus')->first() ?? DeviceModel::first();
+            $this->preview_device_model_id = $defaultModel?->id;
+        }
     }
 
     public function fillFormFields(): void
@@ -355,19 +365,44 @@ HTML;
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
 
+        $this->preview_size = $size;
+
         // If data strategy is polling and data_payload is null, fetch the data first
         if ($this->plugin->data_strategy === 'polling' && $this->plugin->data_payload === null) {
             $this->updateData();
         }
 
         try {
-            $previewMarkup = $this->plugin->render($size);
+            // Create a device object with og_plus model and the selected bitdepth
+            $device = $this->createPreviewDevice();
+            $previewMarkup = $this->plugin->render($size, true, $device);
             $this->dispatch('preview-updated', preview: $previewMarkup);
         } catch (LiquidException $e) {
             $this->dispatch('preview-error', message: $e->toLiquidErrorMessage());
         } catch (\Exception $e) {
             $this->dispatch('preview-error', message: $e->getMessage());
         }
+    }
+
+    private function createPreviewDevice(): \App\Models\Device
+    {
+        $deviceModel = DeviceModel::with(['palette'])->find($this->preview_device_model_id)
+            ?? DeviceModel::with(['palette'])->first();
+
+        $device = new Device();
+        $device->setRelation('deviceModel', $deviceModel);
+
+        return $device;
+    }
+
+    public function getDeviceModels()
+    {
+        return DeviceModel::whereKind('trmnl')->orderBy('label')->get();
+    }
+
+    public function updatedPreviewDeviceModelId(): void
+    {
+        $this->renderPreview($this->preview_size);
     }
 
     public function duplicatePlugin(): void
@@ -395,6 +430,7 @@ HTML;
         // and re-triggers the @if check in the Blade template
         $this->plugin = $this->plugin->fresh();
     }
+
 
 }
 ?>
@@ -580,8 +616,15 @@ HTML;
         </flux:modal>
 
         <flux:modal name="preview-plugin" class="min-w-[850px] min-h-[480px] space-y-6">
-            <div>
+            <div class="flex items-center gap-4">
                 <flux:heading size="lg">Preview {{ $plugin->name }}</flux:heading>
+                <flux:field class="w-48">
+                    <flux:select wire:model.live="preview_device_model_id">
+                        @foreach($this->getDeviceModels() as $model)
+                            <option value="{{ $model->id }}">{{ $model->label ?? $model->name }}</option>
+                        @endforeach
+                    </flux:select>
+                </flux:field>
             </div>
 
             <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden">

@@ -44,6 +44,7 @@ test('fetch device models job handles successful api response', function (): voi
                     'mime_type' => 'image/png',
                     'offset_x' => 0,
                     'offset_y' => 0,
+                    'kind' => 'trmnl',
                     'published_at' => '2023-01-01T00:00:00Z',
                 ],
             ],
@@ -74,6 +75,7 @@ test('fetch device models job handles successful api response', function (): voi
     expect($deviceModel->mime_type)->toBe('image/png');
     expect($deviceModel->offset_x)->toBe(0);
     expect($deviceModel->offset_y)->toBe(0);
+    // expect($deviceModel->kind)->toBe('trmnl');
     expect($deviceModel->source)->toBe('api');
 });
 
@@ -312,6 +314,7 @@ test('fetch device models job handles device model with partial data', function 
     expect($deviceModel->mime_type)->toBe('');
     expect($deviceModel->offset_x)->toBe(0);
     expect($deviceModel->offset_y)->toBe(0);
+    expect($deviceModel->kind)->toBeNull();
     expect($deviceModel->source)->toBe('api');
 });
 

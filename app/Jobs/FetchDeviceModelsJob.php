@@ -199,6 +199,7 @@ final class FetchDeviceModelsJob implements ShouldQueue
             'offset_x' => $modelData['offset_x'] ?? 0,
             'offset_y' => $modelData['offset_y'] ?? 0,
             'published_at' => $modelData['published_at'] ?? null,
+            'kind' => $modelData['kind'] ?? null,
             'source' => 'api',
         ];
 
