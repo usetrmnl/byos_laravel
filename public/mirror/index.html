@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>TRMNL BYOS Laravel Mirror</title>
+  <link rel="manifest" href="/mirror/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-76x76.png" sizes="76x76" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-120x120.png" sizes="120x120" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-152x152.png" sizes="152x152" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-167x167.png" sizes="167x167" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-180x180.png" sizes="180x180" />
+
+  <link rel="icon" type="image/png" href="/mirror/assets/favicon-16x16.png" sizes="16x16" />
+  <link rel="icon" type="image/png" href="/mirror/assets/favicon-32x32.png" sizes="32x32" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script>
+    var trmnl = {
+      refreshTimer: null,
+      renderedAt: 0,
+      ui: {},
+
+      showStatus: function (message) {
+        trmnl.ui.img.style.display = "none";
+        trmnl.ui.errorContainer.style.display = "flex";
+        trmnl.ui.errorMessage.textContent = message;
+      },
+
+      showScreen: function (src) {
+        trmnl.ui.img.src = src;
+        trmnl.ui.img.style.display = "block";
+        trmnl.ui.errorContainer.style.display = "none";
+      },
+
+      showSetupForm: function () {
+        var data = trmnl.getSettings();
+        trmnl.ui.apiKeyInput.value = data.api_key || "";
+        trmnl.ui.baseURLInput.value = data.base_url || "";
+        trmnl.ui.macAddressInput.value = data.mac_address || "";
+        trmnl.ui.displayModeSelect.value = data.display_mode || "";
+
+        trmnl.ui.setup.style.display = "flex";
+      },
+
+      saveSetup: function (event) {
+        event.preventDefault();
+
+        var apiKey = trmnl.ui.apiKeyInput.value;
+        var baseURL = trmnl.ui.baseURLInput.value;
+        var macAddress = trmnl.ui.macAddressInput.value;
+        var displayMode = trmnl.ui.displayModeSelect.value;
+
+        if (!apiKey) {
+          return;
+        }
+
+        trmnl.saveSettings({
+          api_key: apiKey,
+          base_url: baseURL,
+          mac_address: macAddress,
+          display_mode: displayMode
+        });
+
+        trmnl.fetchDisplay();
+      },
+
+      hideSetupForm: function () {
+        trmnl.ui.setup.style.display = "none";
+      },
+
+      fetchDisplay: function (opts) {
+        opts = opts || {};
+        clearTimeout(trmnl.refreshTimer);
+
+        if (!opts.quiet) {
+          trmnl.hideSetupForm();
+          trmnl.showStatus("Loading...");
+        }
+
+        var setup = trmnl.getSettings();
+        var apiKey = setup.api_key;
+        var displayMode = setup.display_mode;
+        var baseURL = setup.base_url || "https://your-byos-trmnl.com";
+        var macAddress = setup.mac_address || "00:00:00:00:00:01";
+
+        document.body.classList.remove("dark", "night")
+        if (displayMode) {
+          document.body.classList.add(displayMode)
+        }
+
+        var headers = {
+          "Access-Token": apiKey,
+          "id": macAddress
+        };
+
+        var url = baseURL + "/api/display";
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url, true);
+
+        for (var headerName in headers) {
+          if (headers.hasOwnProperty(headerName)) {
+            xhr.setRequestHeader(headerName, headers[headerName]);
+          }
+        }
+
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              console.log("Display response:", data);
+
+              if (data.status !== 0) {
+                trmnl.showStatus(
+                  "Error: " + (data.error || data.message || data.status)
+                );
+                return;
+              }
+
+              trmnl.showScreen(data.image_url);
+              trmnl.renderedAt = new Date();
+
+              if (data.refresh_rate) {
+                var refreshRate = 30;
+                refreshRate = data.refresh_rate;
+
+                console.log("Refreshing in " + refreshRate + " seconds...");
+                trmnl.refreshTimer = setTimeout(
+                  function () { trmnl.fetchDisplay({ quiet: true }); },
+                  1000 * refreshRate
+                );
+              }
+            } catch (e) {
+              trmnl.showStatus("Error processing response: " + e.message);
+            }
+          } else {
+            trmnl.showStatus(
+              "Failed to fetch screen: " + xhr.status + " " + xhr.statusText
+            );
+          }
+        };
+
+        xhr.onerror = function () {
+          trmnl.showStatus("Network error: Failed to connect or request was blocked.");
+        };
+
+        xhr.send();
+      },
+
+      getSettings: function () {
+        return JSON.parse(localStorage.getItem("settings")) || {};
+      },
+
+      saveSettings: function (data) {
+        var settings = trmnl.getSettings();
+
+        for (var key in data) {
+          if (data.hasOwnProperty(key)) {
+            settings[key] = data[key];
+          }
+        }
+
+        localStorage.setItem("settings", JSON.stringify(settings));
+        console.log("Settings saved:", settings);
+      },
+
+      init: function () {
+        // screen
+        trmnl.ui.img = document.getElementById("screen");
+        trmnl.ui.errorContainer = document.getElementById("error-container");
+        trmnl.ui.errorMessage = document.getElementById("error-message");
+
+        // settings
+        trmnl.ui.apiKeyInput = document.getElementById("api_key");
+        trmnl.ui.baseURLInput = document.getElementById("base_url");
+        trmnl.ui.macAddressInput = document.getElementById("mac_address");
+        trmnl.ui.displayModeSelect = document.getElementById("display_mode");
+        trmnl.ui.setup = document.getElementById("setup");
+
+        var settings = trmnl.getSettings();
+        if (!settings || !settings.api_key) {
+          trmnl.showSetupForm();
+        } else {
+          trmnl.fetchDisplay();
+        }
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+      trmnl.init();
+    });
+  </script>
+  <style>
+    body {
+      overflow: hidden;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    a {
+      color: #f54900;
+    }
+
+    #screen-container,
+    #setup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-y: scroll;
+    }
+
+    #setup {
+      background-color: #3d3d3e;
+    }
+
+    #setup-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      padding: 2em;
+      margin: 1em;
+      border-radius: 1em;
+      box-shadow: 0 0.5em 2em rgba(0, 0, 0, 1);
+    }
+
+    #setup-panel img {
+      margin-bottom: 2em;
+    }
+
+    #screen {
+      cursor: pointer;
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      background-color: #000000;
+      z-index: 1;
+    }
+
+    body.dark #screen,
+    body.night #screen {
+      filter: invert(1) hue-rotate(180deg);
+      background-color: #ffffff;
+    }
+
+    #red-overlay {
+      background-color: #ff0000;
+      mix-blend-mode: darken;
+      display: none;
+    }
+
+    body.night #red-overlay {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    #error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .dark #error-container,
+    .dark #screen-container,
+    .night #error-container,
+    .night #screen-container {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    #error-message {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    #setup {
+      z-index: 2;
+    }
+
+    .form-control {
+      font-size: 1.25em;
+      width: 14em;
+      padding: 0.5em;
+      border: 1px solid #ccc;
+      border-radius: 0.5em;
+      display: block;
+    }
+
+    label,
+    summary {
+      font-size: 1.25em;
+      margin-bottom: 0.5em;
+      cursor: pointer;
+    }
+
+    label {
+      display: block;
+    }
+
+    fieldset {
+      border: none;
+      margin: 0;
+      padding: 0;
+      margin-bottom: 2em;
+    }
+
+    .btn {
+      font-size: 1.25em;
+      padding: 0.5em 1em;
+      background-color: #f54900;
+      color: white;
+      border: none;
+      border-radius: 0.5em;
+      cursor: pointer;
+      display: block;
+      width: 100%;
+      margin-left: 0.5em;
+      margin-right: 0.5em;
+    }
+
+    .night #error-container .btn {
+      color: #000000;
+    }
+
+    select {
+      display: block;
+      width: 100%;
+      font-size: 1.25em;
+      padding: 0.5em;
+      border: 1px solid #ccc;
+      border-radius: 0.5em;
+      background-color: #ffffff;
+    }
+
+    #unsupported {
+      color: red;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="setup" style="display: none;">
+    <div id="setup-panel">
+      <img src="/mirror/assets/logo--brand.svg" alt="TRMNL Logo" />
+
+      <form onsubmit="return trmnl.saveSetup(event)">
+        <fieldset>
+          <label for="mac_address">Device MAC Address</label>
+          <input name="mac_address" id="mac_address" type="text" placeholder="00:00:00:00:00:01" class="form-control"
+            required />
+        </fieldset>
+
+        <fieldset>
+          <label for="api_key">Device API Key</label>
+          <input name="api_key" id="api_key" type="text" placeholder="API Key" class="form-control" required />
+        </fieldset>
+
+        <fieldset>
+          <select id="display_mode" name="display_mode">
+            <option value="" selected="selected">Light Mode</option>
+            <option value="dark">Dark Mode</option>
+            <option value="night">Night Mode</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <label for="base_url">Custom Server URL</label>
+          <input name="base_url" id="base_url" type="text" placeholder="https://your-byos-trmnl.com"
+            class="form-control" value="" />
+        </fieldset>
+
+        <button class="btn">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="screen-container">
+    <div id="red-overlay"></div>
+    <img id="screen" onclick="trmnl.showSetupForm()" style="display: none;">
+
+    <div id="error-container" style="display: none">
+      <div id="error-message"></div>
+      <div style="display: flex; margin-top: 1em">
+        <button class="btn" onclick="trmnl.showSetupForm()">Setup</button>
+        <button class="btn" onclick="trmnl.fetchDisplay()">Retry</button>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
