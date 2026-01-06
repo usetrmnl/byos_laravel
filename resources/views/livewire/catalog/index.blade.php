@@ -113,7 +113,8 @@ class extends Component
                 auth()->user(),
                 $plugin['zip_entry_path'] ?? null,
                 null,
-                $plugin['logo_url'] ?? null
+                $plugin['logo_url'] ?? null,
+                allowDuplicate: true
             );
 
             $this->dispatch('plugin-installed');

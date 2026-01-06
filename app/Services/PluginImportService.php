@@ -171,11 +171,12 @@ class PluginImportService
      * @param  string|null  $zipEntryPath  Optional path to specific plugin in monorepo
      * @param  string|null  $preferredRenderer  Optional preferred renderer (e.g., 'trmnl-liquid')
      * @param  string|null  $iconUrl  Optional icon URL to set on the plugin
+     * @param  bool  $allowDuplicate  If true, generate a new UUID for trmnlp_id if a plugin with the same trmnlp_id already exists
      * @return Plugin The created plugin instance
      *
      * @throws Exception If the ZIP file is invalid or required files are missing
      */
-    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null, $preferredRenderer = null, ?string $iconUrl = null): Plugin
+    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null, $preferredRenderer = null, ?string $iconUrl = null, bool $allowDuplicate = false): Plugin
     {
         // Download the ZIP file
         $response = Http::timeout(60)->get($zipUrl);
@@ -245,17 +246,26 @@ class PluginImportService
                 'custom_fields' => $settings['custom_fields'],
             ];
 
-            $plugin_updated = isset($settings['id'])
+            // Determine the trmnlp_id to use
+            $trmnlpId = $settings['id'] ?? Uuid::v7();
+
+            // If allowDuplicate is true and a plugin with this trmnlp_id already exists, generate a new UUID
+            if ($allowDuplicate && isset($settings['id']) && Plugin::where('user_id', $user->id)->where('trmnlp_id', $settings['id'])->exists()) {
+                $trmnlpId = Uuid::v7();
+            }
+
+            $plugin_updated = ! $allowDuplicate && isset($settings['id'])
                             && Plugin::where('user_id', $user->id)->where('trmnlp_id', $settings['id'])->exists();
+
             // Create a new plugin
             $plugin = Plugin::updateOrCreate(
                 [
-                    'user_id' => $user->id, 'trmnlp_id' => $settings['id'] ?? Uuid::v7(),
+                    'user_id' => $user->id, 'trmnlp_id' => $trmnlpId,
                 ],
                 [
                     'user_id' => $user->id,
                     'name' => $settings['name'] ?? 'Imported Plugin',
-                    'trmnlp_id' => $settings['id'] ?? Uuid::v7(),
+                    'trmnlp_id' => $trmnlpId,
                     'data_stale_minutes' => $settings['refresh_interval'] ?? 15,
                     'data_strategy' => $settings['strategy'] ?? 'static',
                     'polling_url' => $settings['polling_url'] ?? null,

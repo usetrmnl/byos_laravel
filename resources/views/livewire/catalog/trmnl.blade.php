@@ -164,7 +164,8 @@ class extends Component
                 auth()->user(),
                 null,
                 config('services.trmnl.liquid_enabled') ? 'trmnl-liquid' : null,
-                $recipe['icon_url'] ?? null
+                $recipe['icon_url'] ?? null,
+                allowDuplicate: true
             );
 
             $this->dispatch('plugin-installed');
