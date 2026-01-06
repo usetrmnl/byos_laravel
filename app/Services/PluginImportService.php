@@ -18,6 +18,32 @@ use ZipArchive;
 class PluginImportService
 {
     /**
+     * Validate YAML settings
+     *
+     * @param array $settings The parsed YAML settings
+     * @throws Exception
+     */
+    private function validateYAML(array $settings): void
+    {
+        if (!isset($settings['custom_fields']) || !is_array($settings['custom_fields'])) {
+            return;
+        }
+
+        foreach ($settings['custom_fields'] as $field) {
+            if (isset($field['field_type']) && $field['field_type'] === 'multi_string') {
+
+                if (isset($field['default']) && str_contains($field['default'], ',')) {
+                    throw new Exception("Validation Error: The default value for multistring fields like `{$field['keyname']}` cannot contain commas.");
+                }
+
+                if (isset($field['placeholder']) && str_contains($field['placeholder'], ',')) {
+                    throw new Exception("Validation Error: The placeholder value for multistring fields like `{$field['keyname']}` cannot contain commas.");
+                }
+
+            }
+        }
+    }
+    /**
      * Import a plugin from a ZIP file
      *
      * @param  UploadedFile  $zipFile  The uploaded ZIP file
@@ -58,6 +84,7 @@ class PluginImportService
             // Parse settings.yml
             $settingsYaml = File::get($filePaths['settingsYamlPath']);
             $settings = Yaml::parse($settingsYaml);
+            $this->validateYAML($settings);
 
             // Read full.liquid content
             $fullLiquid = File::get($filePaths['fullLiquidPath']);
@@ -187,6 +214,7 @@ class PluginImportService
             // Parse settings.yml
             $settingsYaml = File::get($filePaths['settingsYamlPath']);
             $settings = Yaml::parse($settingsYaml);
+            $this->validateYAML($settings);
 
             // Read full.liquid content
             $fullLiquid = File::get($filePaths['fullLiquidPath']);
