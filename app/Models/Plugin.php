@@ -565,17 +565,30 @@ class Plugin extends Model
 
         if ($this->render_markup_view) {
             if ($standalone) {
-                return view('trmnl-layouts.single', [
+                $renderedView = view($this->render_markup_view, [
+                    'size' => $size,
+                    'data' => $this->data_payload,
+                    'config' => $this->configuration ?? [],
+                ])->render();
+
+                if ($size === 'full') {
+                    return view('trmnl-layouts.single', [
+                        'colorDepth' => $device?->colorDepth(),
+                        'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                        'noBleed' => $this->no_bleed,
+                        'darkMode' => $this->dark_mode,
+                        'scaleLevel' => $device?->scaleLevel(),
+                        'slot' => $renderedView,
+                    ])->render();
+                }
+
+                return view('trmnl-layouts.mashup', [
+                    'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
                     'colorDepth' => $device?->colorDepth(),
                     'deviceVariant' => $device?->deviceVariant() ?? 'og',
-                    'noBleed' => $this->no_bleed,
                     'darkMode' => $this->dark_mode,
                     'scaleLevel' => $device?->scaleLevel(),
-                    'slot' => view($this->render_markup_view, [
-                        'size' => $size,
-                        'data' => $this->data_payload,
-                        'config' => $this->configuration ?? [],
-                    ])->render(),
+                    'slot' => $renderedView,
                 ])->render();
             }
 
