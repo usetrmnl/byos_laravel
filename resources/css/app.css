@@ -72,3 +72,39 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+@layer components {
+    /* standard container for app */
+    .styled-container,
+    .tab-button {
+        @apply rounded-xl border bg-white dark:bg-stone-950 dark:border-zinc-700 text-stone-800 shadow-xs;
+    }
+
+    .tab-button {
+        @apply flex items-center gap-2 px-4 py-2 text-sm font-medium;
+        @apply rounded-b-none shadow-none bg-inherit;
+
+        /* This makes the button sit slightly over the box border */
+        margin-bottom: -1px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .tab-button.is-active {
+        @apply text-zinc-700 dark:text-zinc-300;
+        @apply border-b-white dark:border-b-zinc-800;
+
+        /* Z-index 10 ensures the bottom border of the tab hides the top border of the box */
+        z-index: 10;
+    }
+
+    .tab-button:not(.is-active) {
+        @apply text-zinc-500 border-transparent;
+    }
+
+    .tab-button:not(.is-active):hover {
+        @apply text-zinc-700 dark:text-zinc-300;
+        @apply border-zinc-300 dark:border-zinc-700;
+        cursor: pointer;
+    }
+}

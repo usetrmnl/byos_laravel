@@ -16,7 +16,7 @@ new class extends Component {
             @if($devices->isEmpty())
                 <div class="flex flex-col gap-6">
                     <div
-                        class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                        class="styled-container">
                         <div class="px-10 py-8">
                             <h1 class="text-xl font-medium dark:text-zinc-200">Add your first device</h1>
                             <flux:button href="{{ route('devices') }}" class="mt-4" icon="plus-circle" variant="primary"
@@ -30,7 +30,7 @@ new class extends Component {
             @foreach($devices as $device)
                 <div class="flex flex-col gap-6">
                     <div
-                        class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                        class="styled-container">
                         <div class="px-10 py-8">
                             @php
                                 $current_image_uuid =$device->current_screen_image;

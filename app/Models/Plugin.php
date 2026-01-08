@@ -153,105 +153,67 @@ class Plugin extends Model
 
     public function updateDataPayload(): void
     {
-        if ($this->data_strategy === 'polling' && $this->polling_url) {
-
-            $headers = ['User-Agent' => 'usetrmnl/byos_laravel', 'Accept' => 'application/json'];
-
-            if ($this->polling_header) {
-                // Resolve Liquid variables in the polling header
-                $resolvedHeader = $this->resolveLiquidVariables($this->polling_header);
-                $headerLines = explode("\n", mb_trim($resolvedHeader));
-                foreach ($headerLines as $line) {
-                    $parts = explode(':', $line, 2);
-                    if (count($parts) === 2) {
-                        $headers[mb_trim($parts[0])] = mb_trim($parts[1]);
-                    }
-                }
-            }
-
-            // Resolve Liquid variables in the entire polling_url field first, then split by newline
-            $resolvedPollingUrls = $this->resolveLiquidVariables($this->polling_url);
-            $urls = array_filter(
-                array_map('trim', explode("\n", $resolvedPollingUrls)),
-                fn ($url): bool => ! empty($url)
-            );
-
-            // If only one URL, use the original logic without nesting
-            if (count($urls) === 1) {
-                $url = reset($urls);
-                $httpRequest = Http::withHeaders($headers);
-
-                if ($this->polling_verb === 'post' && $this->polling_body) {
-                    // Resolve Liquid variables in the polling body
-                    $resolvedBody = $this->resolveLiquidVariables($this->polling_body);
-                    $httpRequest = $httpRequest->withBody($resolvedBody);
-                }
-
-                // URL is already resolved, use it directly
-                $resolvedUrl = $url;
-
-                try {
-                    // Make the request based on the verb
-                    $httpResponse = $this->polling_verb === 'post' ? $httpRequest->post($resolvedUrl) : $httpRequest->get($resolvedUrl);
-
-                    $response = $this->parseResponse($httpResponse);
-
-                    $this->update([
-                        'data_payload' => $response,
-                        'data_payload_updated_at' => now(),
-                    ]);
-                } catch (Exception $e) {
-                    Log::warning("Failed to fetch data from URL {$resolvedUrl}: ".$e->getMessage());
-                    $this->update([
-                        'data_payload' => ['error' => 'Failed to fetch data'],
-                        'data_payload_updated_at' => now(),
-                    ]);
-                }
-
-                return;
-            }
-
-            // Multiple URLs - use nested response logic
-            $combinedResponse = [];
-
-            foreach ($urls as $index => $url) {
-                $httpRequest = Http::withHeaders($headers);
-
-                if ($this->polling_verb === 'post' && $this->polling_body) {
-                    // Resolve Liquid variables in the polling body
-                    $resolvedBody = $this->resolveLiquidVariables($this->polling_body);
-                    $httpRequest = $httpRequest->withBody($resolvedBody);
-                }
-
-                // URL is already resolved, use it directly
-                $resolvedUrl = $url;
-
-                try {
-                    // Make the request based on the verb
-                    $httpResponse = $this->polling_verb === 'post' ? $httpRequest->post($resolvedUrl) : $httpRequest->get($resolvedUrl);
-
-                    $response = $this->parseResponse($httpResponse);
-
-                    // Check if response is an array at root level
-                    if (array_keys($response) === range(0, count($response) - 1)) {
-                        // Response is a sequential array, nest under .data
-                        $combinedResponse["IDX_{$index}"] = ['data' => $response];
-                    } else {
-                        // Response is an object or associative array, keep as is
-                        $combinedResponse["IDX_{$index}"] = $response;
-                    }
-                } catch (Exception $e) {
-                    // Log error and continue with other URLs
-                    Log::warning("Failed to fetch data from URL {$resolvedUrl}: ".$e->getMessage());
-                    $combinedResponse["IDX_{$index}"] = ['error' => 'Failed to fetch data'];
-                }
-            }
-
-            $this->update([
-                'data_payload' => $combinedResponse,
-                'data_payload_updated_at' => now(),
-            ]);
+        if ($this->data_strategy !== 'polling' || !$this->polling_url) {
+            return;
         }
+        $headers = ['User-Agent' => 'usetrmnl/byos_laravel', 'Accept' => 'application/json'];
+
+        // resolve headers
+        if ($this->polling_header) {
+            $resolvedHeader = $this->resolveLiquidVariables($this->polling_header);
+            $headerLines = explode("\n", mb_trim($resolvedHeader));
+            foreach ($headerLines as $line) {
+                $parts = explode(':', $line, 2);
+                if (count($parts) === 2) {
+                    $headers[mb_trim($parts[0])] = mb_trim($parts[1]);
+                }
+            }
+        }
+
+        // resolve and clean URLs
+        $resolvedPollingUrls = $this->resolveLiquidVariables($this->polling_url);
+        $urls = array_values(array_filter( // array_values ensures 0, 1, 2...
+            array_map('trim', explode("\n", $resolvedPollingUrls)),
+            fn ($url): bool => filled($url)
+        ));
+
+        $combinedResponse = [];
+
+        // Loop through all URLs (Handles 1 or many)
+        foreach ($urls as $index => $url) {
+            $httpRequest = Http::withHeaders($headers);
+
+            if ($this->polling_verb === 'post' && $this->polling_body) {
+                $resolvedBody = $this->resolveLiquidVariables($this->polling_body);
+                $httpRequest = $httpRequest->withBody($resolvedBody);
+            }
+
+            try {
+                $httpResponse = ($this->polling_verb === 'post')
+                    ? $httpRequest->post($url)
+                    : $httpRequest->get($url);
+
+                $response = $this->parseResponse($httpResponse);
+
+                // Nest if it's a sequential array
+                if (array_keys($response) === range(0, count($response) - 1)) {
+                    $combinedResponse["IDX_{$index}"] = ['data' => $response];
+                } else {
+                    $combinedResponse["IDX_{$index}"] = $response;
+                }
+            } catch (Exception $e) {
+                Log::warning("Failed to fetch data from URL {$url}: ".$e->getMessage());
+                $combinedResponse["IDX_{$index}"] = ['error' => 'Failed to fetch data'];
+            }
+        }
+
+        // unwrap IDX_0 if only one URL
+        $finalPayload = (count($urls) === 1) ? reset($combinedResponse) : $combinedResponse;
+
+        $this->update([
+            'data_payload' => $finalPayload,
+            'data_payload_updated_at' => now(),
+        ]);
     }
 
     private function parseResponse(Response $httpResponse): array

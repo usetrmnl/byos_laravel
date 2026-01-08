@@ -99,6 +99,35 @@ test('updateDataPayload handles multiple URLs with IDX_ prefixes', function (): 
     expect($plugin->data_payload['IDX_2'])->toBe(['headline' => 'test']);
 });
 
+test('updateDataPayload skips empty lines in polling_url and maintains sequential IDX keys', function (): void {
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        // empty lines and extra spaces between the URL to generate empty entries
+        'polling_url' => "https://api1.example.com/data\n  \n\nhttps://api2.example.com/weather\n ",
+        'polling_verb' => 'get',
+    ]);
+
+    // Mock only the valid URLs
+    Http::fake([
+        'https://api1.example.com/data' => Http::response(['item' => 'first'], 200),
+        'https://api2.example.com/weather' => Http::response(['item' => 'second'], 200),
+    ]);
+
+    $plugin->updateDataPayload();
+
+    // payload should only have 2 items, and they should be indexed 0 and 1
+    expect($plugin->data_payload)->toHaveCount(2);
+    expect($plugin->data_payload)->toHaveKey('IDX_0');
+    expect($plugin->data_payload)->toHaveKey('IDX_1');
+
+    // data is correct
+    expect($plugin->data_payload['IDX_0'])->toBe(['item' => 'first']);
+    expect($plugin->data_payload['IDX_1'])->toBe(['item' => 'second']);
+
+    // no empty index exists
+    expect($plugin->data_payload)->not->toHaveKey('IDX_2');
+});
+
 test('updateDataPayload handles single URL without nesting', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',

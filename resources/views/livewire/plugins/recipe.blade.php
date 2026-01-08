@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Computed;
 
 new class extends Component {
     public Plugin $plugin;
@@ -295,8 +296,6 @@ new class extends Component {
         return $this->configuration[$key] ?? $default;
     }
 
-
-
     public function renderExample(string $example)
     {
         switch ($example) {
@@ -431,6 +430,17 @@ HTML;
         $this->plugin = $this->plugin->fresh();
     }
 
+    // Laravel Livewire computed property: access with $this->parsed_urls
+    #[Computed]
+    private function parsedUrls()
+    {
+        try {
+            return $this->plugin->resolveLiquidVariables($this->polling_url);
+
+        } catch (\Exception $e) {
+            return 'PARSE_ERROR: ' . $e->getMessage();
+        }
+    }
 
 }
 ?>
@@ -733,15 +743,62 @@ HTML;
                     </div>
 
                     @if($data_strategy === 'polling')
-                        <div class="mb-4">
-                            <flux:textarea label="Polling URL" description="You can use configuration variables with Liquid syntax. Supports multiple requests via line break separation" wire:model="polling_url" id="polling_url"
+                    <flux:label>Polling URL</flux:label>
+
+                    <div x-data="{ subTab: 'settings' }" class="mt-2 mb-4">
+                        <div class="flex">
+                            <button
+                                @click="subTab = 'settings'"
+                                class="tab-button"
+                                :class="subTab === 'settings' ? 'is-active' : ''"
+                            >
+                                <flux:icon.cog-6-tooth class="size-4"/>
+                                Settings
+                            </button>
+
+                            <button
+                                @click="subTab = 'preview'"
+                                class="tab-button"
+                                :class="subTab === 'preview' ? 'is-active' : ''"
+                            >
+                                <flux:icon.eye class="size-4" />
+                                Preview URL
+                            </button>
+                        </div>
+
+                        <div class="flex-col p-4 bg-transparent rounded-tl-none styled-container">
+                            <div x-show="subTab === 'settings'">
+                                <flux:field>
+                                    <flux:description>Enter the URL(s) to poll for data:</flux:description>
+                                    <flux:textarea
+                                        wire:model.live="polling_url"
                                         placeholder="https://example.com/api"
-                                        class="block w-full" type="text" name="polling_url" autofocus>
-                            </flux:input>
-                            <flux:button icon="cloud-arrow-down" wire:click="updateData" class="block mt-2 w-full">
+                                        rows="5"
+                                    />
+                                    <flux:description>
+                                        {!! 'Hint: Supports multiple requests via line break separation. You can also use configuration variables with <a href="https://help.usetrmnl.com/en/articles/12689499-dynamic-polling-urls">Liquid syntax</a>. ' !!}
+                                    </flux:description>
+                                </flux:field>
+                            </div>
+
+                            <div x-show="subTab === 'preview'" x-cloak>
+                                <flux:field>
+                                    <flux:description>Preview computed URLs here (readonly):</flux:description>
+                                    <flux:textarea
+                                        readonly
+                                        placeholder="Nothing to show..."
+                                        rows="5"
+                                    >
+                                        {{ $this->parsed_urls }}
+                                    </flux:textarea>
+                                </flux:field>
+                            </div>
+
+                            <flux:button variant="primary" icon="cloud-arrow-down" wire:click="updateData" class="w-full mt-4">
                                 Fetch data now
                             </flux:button>
                         </div>
+                    </div>
 
                         <div class="mb-4">
                             <flux:radio.group wire:model.live="polling_verb" label="Polling Verb" variant="segmented">
@@ -904,9 +961,6 @@ HTML;
                             <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
                         </div>
                     </flux:field>
-
-
-
 
                 </div>
             @else

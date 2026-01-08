@@ -309,7 +309,7 @@ new class extends Component {
 <div class="bg-muted flex flex-col items-center justify-center gap-6 p-6 md:p-10">
     <div class="flex flex-col gap-6">
         <div
-            class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+            class="styled-container">
             <div class="px-10 py-8">
                 @php
                     $current_image_uuid =$device->current_screen_image;
