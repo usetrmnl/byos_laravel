@@ -733,15 +733,62 @@ HTML;
                     </div>
 
                     @if($data_strategy === 'polling')
-                        <div class="mb-4">
-                            <flux:textarea label="Polling URL" description="You can use configuration variables with Liquid syntax. Supports multiple requests via line break separation" wire:model="polling_url" id="polling_url"
+                    <flux:label>Polling URL</flux:label>
+
+                    <div x-data="{ subTab: 'settings' }" class="mt-2 mb-4">
+                        <div class="flex">
+                            <button
+                                @click="subTab = 'settings'"
+                                class="tab-button"
+                                :class="subTab === 'settings' ? 'is-active' : ''"
+                            >
+                                <flux:icon.cog-6-tooth class="size-4"/>
+                                Settings
+                            </button>
+
+                            <button
+                                @click="subTab = 'preview'"
+                                class="tab-button"
+                                :class="subTab === 'preview' ? 'is-active' : ''"
+                            >
+                                <flux:icon.eye class="size-4" />
+                                Preview URL
+                            </button>
+                        </div>
+
+                        <div class="flex-col p-4 border border-zinc-700 rounded-b-xl rounded-tr-xl shadow-2xl">
+                            <div x-show="subTab === 'settings'" x-transition:enter.opacity.duration.150ms>
+                                <flux:field>
+                                    <flux:description>Enter the URL(s) to poll for data:</flux:description>
+                                    <flux:textarea
+                                        wire:model.live="polling_url"
                                         placeholder="https://example.com/api"
-                                        class="block w-full" type="text" name="polling_url" autofocus>
-                            </flux:input>
-                            <flux:button icon="cloud-arrow-down" wire:click="updateData" class="block mt-2 w-full">
+                                        rows="5"
+                                    />
+                                    <flux:description>
+                                        {!! 'Hint: Supports multiple requests via line break separation. You can also use configuration variables with <a href="https://help.usetrmnl.com/en/articles/12689499-dynamic-polling-urls">Liquid syntax</a>. ' !!}
+                                    </flux:description>
+                                </flux:field>
+                            </div>
+
+                            <div x-show="subTab === 'preview'" x-cloak x-transition:enter.opacity.duration.150ms>
+                                <flux:field>
+                                    <flux:description>Preview computed URLs here (readonly):</flux:description>
+                                    <flux:textarea
+                                        readonly
+                                        placeholder="Nothing to show..."
+                                        rows="5"
+                                    >
+                                        {{ $this->plugin->resolveLiquidVariables($this->polling_url) }}
+                                    </flux:textarea>
+                                </flux:field>
+                            </div>
+
+                            <flux:button variant="primary" icon="cloud-arrow-down" wire:click="updateData" class="w-full mt-4">
                                 Fetch data now
                             </flux:button>
                         </div>
+                    </div>
 
                         <div class="mb-4">
                             <flux:radio.group wire:model.live="polling_verb" label="Polling Verb" variant="segmented">
@@ -904,9 +951,6 @@ HTML;
                             <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
                         </div>
                     </flux:field>
-
-
-
 
                 </div>
             @else

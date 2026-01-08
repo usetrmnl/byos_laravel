@@ -72,3 +72,29 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+.tab-button {
+    @apply flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all;
+    @apply rounded-t-lg border-t border-x border-transparent;
+
+    /* This makes the button sit slightly over the box border */
+    margin-bottom: -1px;
+    position: relative;
+    z-index: 1;
+}
+
+.tab-button.is-active {
+    @apply text-white border-zinc-700;
+    /* Z-index 10 ensures the bottom border of the tab hides the top border of the box */
+    z-index: 10;
+    border-bottom: 1px solid theme('colors.zinc.800');
+}
+
+.tab-button:not(.is-active) {
+    @apply text-zinc-500;
+}
+
+.tab-button:not(.is-active):hover {
+    @apply bg-zinc-700/50 text-zinc-300 border-zinc-700/50;
+    cursor: pointer;
+}
