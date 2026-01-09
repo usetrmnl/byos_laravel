@@ -368,6 +368,10 @@ new class extends Component {
                                     <flux:menu.item icon="arrow-up-circle">Update Firmware</flux:menu.item>
                                 </flux:modal.trigger>
                                 <flux:menu.item icon="bars-3" href="{{ route('devices.logs', $device) }}" wire:navigate>Show Logs</flux:menu.item>
+                                <flux:modal.trigger name="mirror-url">
+                                    <flux:menu.item icon="link">Mirror URL</flux:menu.item>
+                                </flux:modal.trigger>
+                                <flux:menu.separator/>
                                 <flux:modal.trigger name="delete-device">
                                     <flux:menu.item icon="trash" variant="danger">Delete Device</flux:menu.item>
                                 </flux:modal.trigger>
@@ -497,6 +501,26 @@ new class extends Component {
                     </div>
                 </flux:modal>
 
+
+                <flux:modal name="mirror-url" class="md:w-96">
+                    @php
+                        $mirrorUrl = url('/mirror/index.html') . '?mac_address=' . urlencode($device->mac_address) . '&api_key=' . urlencode($device->api_key);
+                    @endphp
+
+                    <div class="space-y-6">
+                        <div>
+                            <flux:heading size="lg">Mirror WebUI</flux:heading>
+                            <flux:subheading>Mirror this device onto older devices with a web browser — Safari is supported back to iOS 9.</flux:subheading>
+                        </div>
+
+                        <flux:input
+                            label="Mirror URL"
+                            value="{{$mirrorUrl}}"
+                            readonly
+                            copyable
+                        />
+                    </div>
+                </flux:modal>
 
                 @if(!$device->mirror_device_id)
                     @if($current_image_path)
