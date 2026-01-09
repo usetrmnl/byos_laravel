@@ -478,7 +478,6 @@ HTML;
                         </flux:modal.trigger>
                     </flux:menu>
                 </flux:dropdown>
-
             </flux:button.group>
             <flux:button.group>
                 <flux:modal.trigger name="add-to-playlist">
@@ -488,6 +487,10 @@ HTML;
                 <flux:dropdown>
                     <flux:button icon="chevron-down" variant="primary"></flux:button>
                     <flux:menu>
+                        <flux:modal.trigger name="trmnlp-settings">
+                            <flux:menu.item icon="cog">Recipe Settings</flux:menu.item>
+                        </flux:modal.trigger>
+                        <flux:menu.separator />
                         <flux:menu.item icon="document-duplicate" wire:click="duplicatePlugin">Duplicate Plugin</flux:menu.item>
                         <flux:modal.trigger name="delete-plugin">
                             <flux:menu.item icon="trash" variant="danger">Delete Plugin</flux:menu.item>
@@ -646,6 +649,8 @@ HTML;
             </div>
         </flux:modal>
 
+        <livewire:plugins.recipes.settings :plugin="$plugin" />
+
         <livewire:plugins.config-modal :plugin="$plugin" />
 
         <div class="mt-5 mb-5">
@@ -734,7 +739,7 @@ HTML;
                         @endif
                         <div class="mb-4">
                             <flux:modal.trigger name="configuration-modal">
-                                <flux:button icon="cog" class="block mt-1 w-full">Configuration</flux:button>
+                                <flux:button icon="variable" class="block mt-1 w-full">Configuration Fields</flux:button>
                             </flux:modal.trigger>
                         </div>
                     @endif
