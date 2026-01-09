@@ -29,3 +29,6 @@ yarn-error.log
 /.junie/guidelines.md
 /CLAUDE.md
 /.mcp.json
+/.ai
+.DS_Store
+/boost.json
