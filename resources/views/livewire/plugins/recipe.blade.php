@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Computed;
 
 new class extends Component {
     public Plugin $plugin;
@@ -295,8 +296,6 @@ new class extends Component {
         return $this->configuration[$key] ?? $default;
     }
 
-
-
     public function renderExample(string $example)
     {
         switch ($example) {
@@ -431,6 +430,17 @@ HTML;
         $this->plugin = $this->plugin->fresh();
     }
 
+    // Laravel Livewire computed property: access with $this->parsed_urls
+    #[Computed]
+    private function parsedUrls()
+    {
+        try {
+            return $this->plugin->resolveLiquidVariables($this->polling_url);
+
+        } catch (\Exception $e) {
+            return 'PARSE_ERROR: ' . $e->getMessage();
+        }
+    }
 
 }
 ?>
@@ -779,7 +789,7 @@ HTML;
                                         placeholder="Nothing to show..."
                                         rows="5"
                                     >
-                                        {{ $this->plugin->resolveLiquidVariables($this->polling_url) }}
+                                        {{ $this->parsed_urls }}
                                     </flux:textarea>
                                 </flux:field>
                             </div>
