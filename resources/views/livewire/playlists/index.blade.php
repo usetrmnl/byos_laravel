@@ -332,7 +332,7 @@ new class extends Component {
             @endforeach
 
             @if($devices->isEmpty() || $devices->every(fn($device) => $device->playlists->isEmpty()))
-                <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                <div class="styled-container">
                     <div class="px-10 py-8">
                         <h1 class="text-xl font-medium dark:text-zinc-200">No playlists found</h1>
                         <p class="text-sm dark:text-zinc-400 mt-2">Add playlists to your devices to see them here.</p>

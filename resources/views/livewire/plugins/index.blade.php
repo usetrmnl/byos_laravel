@@ -395,7 +395,7 @@ new class extends Component {
                     wire:key="plugin-{{ $plugin['id'] ?? $plugin['name'] ?? $index }}"
                     x-data="{ pluginName: {{ json_encode(strtolower($plugin['name'] ?? '')) }} }"
                     x-show="searchTerm.length <= 1 || pluginName.includes(searchTerm.toLowerCase())"
-                    class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                    class="styled-container">
                     <a href="{{ ($plugin['detail_view_route']) ? route($plugin['detail_view_route']) : route('plugins.recipe', ['plugin' => $plugin['id']]) }}"
                        class="block h-full">
                         <div class="flex items-center space-x-4 px-10 py-8 h-full">
