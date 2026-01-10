@@ -434,6 +434,10 @@ HTML;
     #[Computed]
     private function parsedUrls()
     {
+        if (!isset($this->polling_url)) {
+            return null;
+        }
+
         try {
             return $this->plugin->resolveLiquidVariables($this->polling_url);
 
