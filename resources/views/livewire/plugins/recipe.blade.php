@@ -766,8 +766,8 @@ HTML;
                             </button>
                         </div>
 
-                        <div class="flex-col p-4 border border-zinc-700 rounded-b-xl rounded-tr-xl shadow-2xl">
-                            <div x-show="subTab === 'settings'" x-transition:enter.opacity.duration.150ms>
+                        <div class="flex-col p-4 bg-transparent rounded-tl-none styled-container">
+                            <div x-show="subTab === 'settings'">
                                 <flux:field>
                                     <flux:description>Enter the URL(s) to poll for data:</flux:description>
                                     <flux:textarea
@@ -781,7 +781,7 @@ HTML;
                                 </flux:field>
                             </div>
 
-                            <div x-show="subTab === 'preview'" x-cloak x-transition:enter.opacity.duration.150ms>
+                            <div x-show="subTab === 'preview'" x-cloak>
                                 <flux:field>
                                     <flux:description>Preview computed URLs here (readonly):</flux:description>
                                     <flux:textarea
