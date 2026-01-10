@@ -32,3 +32,5 @@ yarn-error.log
 /.ai
 .DS_Store
 /boost.json
+/.gemini
+/GEMINI.md
