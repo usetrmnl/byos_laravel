@@ -20,12 +20,13 @@ class PluginImportService
     /**
      * Validate YAML settings
      *
-     * @param array $settings The parsed YAML settings
+     * @param  array  $settings  The parsed YAML settings
+     *
      * @throws Exception
      */
     private function validateYAML(array $settings): void
     {
-        if (!isset($settings['custom_fields']) || !is_array($settings['custom_fields'])) {
+        if (! isset($settings['custom_fields']) || ! is_array($settings['custom_fields'])) {
             return;
         }
 
@@ -43,6 +44,7 @@ class PluginImportService
             }
         }
     }
+
     /**
      * Import a plugin from a ZIP file
      *
@@ -73,12 +75,17 @@ class PluginImportService
             $zip->extractTo($tempDir);
             $zip->close();
 
-            // Find the required files (settings.yml and full.liquid/full.blade.php)
+            // Find the required files (settings.yml and full.liquid/full.blade.php/shared.liquid/shared.blade.php)
             $filePaths = $this->findRequiredFiles($tempDir, $zipEntryPath);
 
             // Validate that we found the required files
-            if (! $filePaths['settingsYamlPath'] || ! $filePaths['fullLiquidPath']) {
-                throw new Exception('Invalid ZIP structure. Required files settings.yml and full.liquid are missing.'); // full.blade.php
+            if (! $filePaths['settingsYamlPath']) {
+                throw new Exception('Invalid ZIP structure. Required file settings.yml is missing.');
+            }
+
+            // Validate that we have at least one template file
+            if (! $filePaths['fullLiquidPath'] && ! $filePaths['sharedLiquidPath'] && ! $filePaths['sharedBladePath']) {
+                throw new Exception('Invalid ZIP structure. At least one of the following files is required: full.liquid, full.blade.php, shared.liquid, or shared.blade.php.');
             }
 
             // Parse settings.yml
@@ -86,20 +93,37 @@ class PluginImportService
             $settings = Yaml::parse($settingsYaml);
             $this->validateYAML($settings);
 
-            // Read full.liquid content
-            $fullLiquid = File::get($filePaths['fullLiquidPath']);
-
-            // Prepend shared.liquid content if available
-            if ($filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
-                $sharedLiquid = File::get($filePaths['sharedLiquidPath']);
-                $fullLiquid = $sharedLiquid."\n".$fullLiquid;
-            }
-
-            // Check if the file ends with .liquid to set markup language
+            // Determine which template file to use and read its content
+            $templatePath = null;
             $markupLanguage = 'blade';
-            if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
+
+            if ($filePaths['fullLiquidPath']) {
+                $templatePath = $filePaths['fullLiquidPath'];
+                $fullLiquid = File::get($templatePath);
+
+                // Prepend shared.liquid or shared.blade.php content if available
+                if ($filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
+                    $sharedLiquid = File::get($filePaths['sharedLiquidPath']);
+                    $fullLiquid = $sharedLiquid."\n".$fullLiquid;
+                } elseif ($filePaths['sharedBladePath'] && File::exists($filePaths['sharedBladePath'])) {
+                    $sharedBlade = File::get($filePaths['sharedBladePath']);
+                    $fullLiquid = $sharedBlade."\n".$fullLiquid;
+                }
+
+                // Check if the file ends with .liquid to set markup language
+                if (pathinfo((string) $templatePath, PATHINFO_EXTENSION) === 'liquid') {
+                    $markupLanguage = 'liquid';
+                    $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+                }
+            } elseif ($filePaths['sharedLiquidPath']) {
+                $templatePath = $filePaths['sharedLiquidPath'];
+                $fullLiquid = File::get($templatePath);
                 $markupLanguage = 'liquid';
                 $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+            } elseif ($filePaths['sharedBladePath']) {
+                $templatePath = $filePaths['sharedBladePath'];
+                $fullLiquid = File::get($templatePath);
+                $markupLanguage = 'blade';
             }
 
             // Ensure custom_fields is properly formatted
@@ -204,12 +228,17 @@ class PluginImportService
             $zip->extractTo($tempDir);
             $zip->close();
 
-            // Find the required files (settings.yml and full.liquid/full.blade.php)
+            // Find the required files (settings.yml and full.liquid/full.blade.php/shared.liquid/shared.blade.php)
             $filePaths = $this->findRequiredFiles($tempDir, $zipEntryPath);
 
             // Validate that we found the required files
-            if (! $filePaths['settingsYamlPath'] || ! $filePaths['fullLiquidPath']) {
-                throw new Exception('Invalid ZIP structure. Required files settings.yml and full.liquid/full.blade.php are missing.');
+            if (! $filePaths['settingsYamlPath']) {
+                throw new Exception('Invalid ZIP structure. Required file settings.yml is missing.');
+            }
+
+            // Validate that we have at least one template file
+            if (! $filePaths['fullLiquidPath'] && ! $filePaths['sharedLiquidPath'] && ! $filePaths['sharedBladePath']) {
+                throw new Exception('Invalid ZIP structure. At least one of the following files is required: full.liquid, full.blade.php, shared.liquid, or shared.blade.php.');
             }
 
             // Parse settings.yml
@@ -217,20 +246,37 @@ class PluginImportService
             $settings = Yaml::parse($settingsYaml);
             $this->validateYAML($settings);
 
-            // Read full.liquid content
-            $fullLiquid = File::get($filePaths['fullLiquidPath']);
-
-            // Prepend shared.liquid content if available
-            if ($filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
-                $sharedLiquid = File::get($filePaths['sharedLiquidPath']);
-                $fullLiquid = $sharedLiquid."\n".$fullLiquid;
-            }
-
-            // Check if the file ends with .liquid to set markup language
+            // Determine which template file to use and read its content
+            $templatePath = null;
             $markupLanguage = 'blade';
-            if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
+
+            if ($filePaths['fullLiquidPath']) {
+                $templatePath = $filePaths['fullLiquidPath'];
+                $fullLiquid = File::get($templatePath);
+
+                // Prepend shared.liquid or shared.blade.php content if available
+                if ($filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
+                    $sharedLiquid = File::get($filePaths['sharedLiquidPath']);
+                    $fullLiquid = $sharedLiquid."\n".$fullLiquid;
+                } elseif ($filePaths['sharedBladePath'] && File::exists($filePaths['sharedBladePath'])) {
+                    $sharedBlade = File::get($filePaths['sharedBladePath']);
+                    $fullLiquid = $sharedBlade."\n".$fullLiquid;
+                }
+
+                // Check if the file ends with .liquid to set markup language
+                if (pathinfo((string) $templatePath, PATHINFO_EXTENSION) === 'liquid') {
+                    $markupLanguage = 'liquid';
+                    $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+                }
+            } elseif ($filePaths['sharedLiquidPath']) {
+                $templatePath = $filePaths['sharedLiquidPath'];
+                $fullLiquid = File::get($templatePath);
                 $markupLanguage = 'liquid';
                 $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+            } elseif ($filePaths['sharedBladePath']) {
+                $templatePath = $filePaths['sharedBladePath'];
+                $fullLiquid = File::get($templatePath);
+                $markupLanguage = 'blade';
             }
 
             // Ensure custom_fields is properly formatted
@@ -310,6 +356,7 @@ class PluginImportService
         $settingsYamlPath = null;
         $fullLiquidPath = null;
         $sharedLiquidPath = null;
+        $sharedBladePath = null;
 
         // If zipEntryPath is specified, look for files in that specific directory first
         if ($zipEntryPath) {
@@ -327,6 +374,8 @@ class PluginImportService
 
                     if (File::exists($targetDir.'/shared.liquid')) {
                         $sharedLiquidPath = $targetDir.'/shared.liquid';
+                    } elseif (File::exists($targetDir.'/shared.blade.php')) {
+                        $sharedBladePath = $targetDir.'/shared.blade.php';
                     }
                 }
 
@@ -342,15 +391,18 @@ class PluginImportService
 
                     if (File::exists($targetDir.'/src/shared.liquid')) {
                         $sharedLiquidPath = $targetDir.'/src/shared.liquid';
+                    } elseif (File::exists($targetDir.'/src/shared.blade.php')) {
+                        $sharedBladePath = $targetDir.'/src/shared.blade.php';
                     }
                 }
 
                 // If we found the required files in the target directory, return them
-                if ($settingsYamlPath && $fullLiquidPath) {
+                if ($settingsYamlPath && ($fullLiquidPath || $sharedLiquidPath || $sharedBladePath)) {
                     return [
                         'settingsYamlPath' => $settingsYamlPath,
                         'fullLiquidPath' => $fullLiquidPath,
                         'sharedLiquidPath' => $sharedLiquidPath,
+                        'sharedBladePath' => $sharedBladePath,
                     ];
                 }
             }
@@ -367,9 +419,11 @@ class PluginImportService
                 $fullLiquidPath = $tempDir.'/src/full.blade.php';
             }
 
-            // Check for shared.liquid in the same directory
+            // Check for shared.liquid or shared.blade.php in the same directory
             if (File::exists($tempDir.'/src/shared.liquid')) {
                 $sharedLiquidPath = $tempDir.'/src/shared.liquid';
+            } elseif (File::exists($tempDir.'/src/shared.blade.php')) {
+                $sharedBladePath = $tempDir.'/src/shared.blade.php';
             }
         } else {
             // Search for the files in the extracted directory structure
@@ -386,20 +440,24 @@ class PluginImportService
                     $fullLiquidPath = $filepath;
                 } elseif ($filename === 'shared.liquid') {
                     $sharedLiquidPath = $filepath;
+                } elseif ($filename === 'shared.blade.php') {
+                    $sharedBladePath = $filepath;
                 }
             }
 
-            // Check if shared.liquid exists in the same directory as full.liquid
-            if ($settingsYamlPath && $fullLiquidPath && ! $sharedLiquidPath) {
+            // Check if shared.liquid or shared.blade.php exists in the same directory as full.liquid
+            if ($settingsYamlPath && $fullLiquidPath && ! $sharedLiquidPath && ! $sharedBladePath) {
                 $fullLiquidDir = dirname((string) $fullLiquidPath);
                 if (File::exists($fullLiquidDir.'/shared.liquid')) {
                     $sharedLiquidPath = $fullLiquidDir.'/shared.liquid';
+                } elseif (File::exists($fullLiquidDir.'/shared.blade.php')) {
+                    $sharedBladePath = $fullLiquidDir.'/shared.blade.php';
                 }
             }
 
             // If we found the files but they're not in the src folder,
             // check if they're in the root of the ZIP or in a subfolder
-            if ($settingsYamlPath && $fullLiquidPath) {
+            if ($settingsYamlPath && ($fullLiquidPath || $sharedLiquidPath || $sharedBladePath)) {
                 // If the files are in the root of the ZIP, create a src folder and move them there
                 $srcDir = dirname((string) $settingsYamlPath);
 
@@ -410,17 +468,25 @@ class PluginImportService
 
                     // Copy the files to the src directory
                     File::copy($settingsYamlPath, $newSrcDir.'/settings.yml');
-                    File::copy($fullLiquidPath, $newSrcDir.'/full.liquid');
 
-                    // Copy shared.liquid if it exists
+                    // Copy full.liquid or full.blade.php if it exists
+                    if ($fullLiquidPath) {
+                        $extension = pathinfo((string) $fullLiquidPath, PATHINFO_EXTENSION);
+                        File::copy($fullLiquidPath, $newSrcDir.'/full.'.$extension);
+                        $fullLiquidPath = $newSrcDir.'/full.'.$extension;
+                    }
+
+                    // Copy shared.liquid or shared.blade.php if it exists
                     if ($sharedLiquidPath) {
                         File::copy($sharedLiquidPath, $newSrcDir.'/shared.liquid');
                         $sharedLiquidPath = $newSrcDir.'/shared.liquid';
+                    } elseif ($sharedBladePath) {
+                        File::copy($sharedBladePath, $newSrcDir.'/shared.blade.php');
+                        $sharedBladePath = $newSrcDir.'/shared.blade.php';
                     }
 
                     // Update the paths
                     $settingsYamlPath = $newSrcDir.'/settings.yml';
-                    $fullLiquidPath = $newSrcDir.'/full.liquid';
                 }
             }
         }
@@ -429,6 +495,7 @@ class PluginImportService
             'settingsYamlPath' => $settingsYamlPath,
             'fullLiquidPath' => $fullLiquidPath,
             'sharedLiquidPath' => $sharedLiquidPath,
+            'sharedBladePath' => $sharedBladePath,
         ];
     }
 

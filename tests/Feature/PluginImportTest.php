@@ -83,19 +83,34 @@ it('throws exception for invalid zip file', function (): void {
         ->toThrow(Exception::class, 'Could not open the ZIP file.');
 });
 
-it('throws exception for missing required files', function (): void {
+it('throws exception for missing settings.yml', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
-        'src/settings.yml' => getValidSettingsYaml(),
-        // Missing full.liquid
+        'src/full.liquid' => getValidFullLiquid(),
+        // Missing settings.yml
     ]);
 
     $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
 
     $pluginImportService = new PluginImportService();
     expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
-        ->toThrow(Exception::class, 'Invalid ZIP structure. Required files settings.yml and full.liquid are missing.');
+        ->toThrow(Exception::class, 'Invalid ZIP structure. Required file settings.yml is missing.');
+});
+
+it('throws exception for missing template files', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        // Missing all template files
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
+
+    $pluginImportService = new PluginImportService();
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
+        ->toThrow(Exception::class, 'Invalid ZIP structure. At least one of the following files is required: full.liquid, full.blade.php, shared.liquid, or shared.blade.php.');
 });
 
 it('sets default values when settings are missing', function (): void {
@@ -431,7 +446,7 @@ it('throws exception when multi_string default value contains a comma', function
     $user = User::factory()->create();
 
     // YAML with a comma in the 'default' field of a multi_string
-    $invalidYaml = <<<YAML
+    $invalidYaml = <<<'YAML'
 name: Test Plugin
 refresh_interval: 30
 strategy: static
@@ -453,14 +468,14 @@ YAML;
     $pluginImportService = new PluginImportService();
 
     expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
-        ->toThrow(Exception::class, "Validation Error: The default value for multistring fields like `api_key` cannot contain commas.");
+        ->toThrow(Exception::class, 'Validation Error: The default value for multistring fields like `api_key` cannot contain commas.');
 });
 
 it('throws exception when multi_string placeholder contains a comma', function (): void {
     $user = User::factory()->create();
 
     // YAML with a comma in the 'placeholder' field
-    $invalidYaml = <<<YAML
+    $invalidYaml = <<<'YAML'
 name: Test Plugin
 refresh_interval: 30
 strategy: static
@@ -483,7 +498,45 @@ YAML;
     $pluginImportService = new PluginImportService();
 
     expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
-        ->toThrow(Exception::class, "Validation Error: The placeholder value for multistring fields like `api_key` cannot contain commas.");
+        ->toThrow(Exception::class, 'Validation Error: The placeholder value for multistring fields like `api_key` cannot contain commas.');
+});
+
+it('imports plugin with only shared.liquid file', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        'src/shared.liquid' => '<div class="shared-content">{{ data.title }}</div>',
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
+
+    $pluginImportService = new PluginImportService();
+    $plugin = $pluginImportService->importFromZip($zipFile, $user);
+
+    expect($plugin)->toBeInstanceOf(Plugin::class)
+        ->and($plugin->markup_language)->toBe('liquid')
+        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">')
+        ->and($plugin->render_markup)->toContain('<div class="shared-content">{{ data.title }}</div>');
+});
+
+it('imports plugin with only shared.blade.php file', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        'src/shared.blade.php' => '<div class="shared-content">{{ $data["title"] }}</div>',
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
+
+    $pluginImportService = new PluginImportService();
+    $plugin = $pluginImportService->importFromZip($zipFile, $user);
+
+    expect($plugin)->toBeInstanceOf(Plugin::class)
+        ->and($plugin->markup_language)->toBe('blade')
+        ->and($plugin->render_markup)->toBe('<div class="shared-content">{{ $data["title"] }}</div>')
+        ->and($plugin->render_markup)->not->toContain('<div class="view view--{{ size }}">');
 });
 
 // Helper methods
