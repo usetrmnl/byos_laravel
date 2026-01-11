@@ -46,6 +46,7 @@ class Plugin extends Model
         'dark_mode' => 'boolean',
         'preferred_renderer' => 'string',
         'plugin_type' => 'string',
+        'alias' => 'boolean',
     ];
 
     protected static function boot()
@@ -153,7 +154,7 @@ class Plugin extends Model
 
     public function updateDataPayload(): void
     {
-        if ($this->data_strategy !== 'polling' || !$this->polling_url) {
+        if ($this->data_strategy !== 'polling' || ! $this->polling_url) {
             return;
         }
         $headers = ['User-Agent' => 'usetrmnl/byos_laravel', 'Accept' => 'application/json'];

@@ -26,11 +26,44 @@ class ImageGenerationService
     public static function generateImage(string $markup, $deviceId): string
     {
         $device = Device::with(['deviceModel', 'palette', 'deviceModel.palette', 'user'])->find($deviceId);
+        $uuid = self::generateImageFromModel(
+            markup: $markup,
+            deviceModel: $device->deviceModel,
+            user: $device->user,
+            palette: $device->palette ?? $device->deviceModel?->palette,
+            device: $device
+        );
+
+        $device->update(['current_screen_image' => $uuid]);
+        Log::info("Device $device->id: updated with new image: $uuid");
+
+        return $uuid;
+    }
+
+    /**
+     * Generate an image from markup using a DeviceModel
+     *
+     * @param  string  $markup  The HTML markup to render
+     * @param  DeviceModel|null  $deviceModel  The device model to use for image generation
+     * @param  \App\Models\User|null  $user  Optional user for timezone settings
+     * @param  \App\Models\DevicePalette|null  $palette  Optional palette, falls back to device model's palette
+     * @param  Device|null  $device  Optional device for legacy devices without DeviceModel
+     * @return string The UUID of the generated image
+     */
+    public static function generateImageFromModel(
+        string $markup,
+        ?DeviceModel $deviceModel = null,
+        ?\App\Models\User $user = null,
+        ?\App\Models\DevicePalette $palette = null,
+        ?Device $device = null
+    ): string {
         $uuid = Uuid::uuid4()->toString();
 
         try {
-            // Get image generation settings from DeviceModel if available, otherwise use device settings
-            $imageSettings = self::getImageSettings($device);
+            // Get image generation settings from DeviceModel or Device (for legacy devices)
+            $imageSettings = $deviceModel
+                ? self::getImageSettingsFromModel($deviceModel)
+                : ($device ? self::getImageSettings($device) : self::getImageSettingsFromModel(null));
 
             $fileExtension = $imageSettings['mime_type'] === 'image/bmp' ? 'bmp' : 'png';
             $outputPath = Storage::disk('public')->path('/images/generated/'.$uuid.'.'.$fileExtension);
@@ -45,7 +78,7 @@ class ImageGenerationService
             $browserStage->html($markup);
 
             // Set timezone from user or fall back to app timezone
-            $timezone = $device->user->timezone ?? config('app.timezone');
+            $timezone = $user?->timezone ?? config('app.timezone');
             $browserStage->timezone($timezone);
 
             if (config('app.puppeteer_window_size_strategy') === 'v2') {
@@ -65,12 +98,12 @@ class ImageGenerationService
                 $browserStage->setBrowsershotOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']);
             }
 
-            // Get palette from device or fallback to device model's default palette
-            $palette = $device->palette ?? $device->deviceModel?->palette;
+            // Get palette from parameter or fallback to device model's default palette
             $colorPalette = null;
-
             if ($palette && $palette->colors) {
                 $colorPalette = $palette->colors;
+            } elseif ($deviceModel?->palette && $deviceModel->palette->colors) {
+                $colorPalette = $deviceModel->palette->colors;
             }
 
             $imageStage = new ImageStage();
@@ -107,8 +140,7 @@ class ImageGenerationService
                 throw new RuntimeException('Image file is empty: '.$outputPath);
             }
 
-            $device->update(['current_screen_image' => $uuid]);
-            Log::info("Device $device->id: updated with new image: $uuid");
+            Log::info("Generated image: $uuid");
 
             return $uuid;
 
@@ -125,22 +157,7 @@ class ImageGenerationService
     {
         // If device has a DeviceModel, use its settings
         if ($device->deviceModel) {
-            /** @var DeviceModel $model */
-            $model = $device->deviceModel;
-
-            return [
-                'width' => $model->width,
-                'height' => $model->height,
-                'colors' => $model->colors,
-                'bit_depth' => $model->bit_depth,
-                'scale_factor' => $model->scale_factor,
-                'rotation' => $model->rotation,
-                'mime_type' => $model->mime_type,
-                'offset_x' => $model->offset_x,
-                'offset_y' => $model->offset_y,
-                'image_format' => self::determineImageFormatFromModel($model),
-                'use_model_settings' => true,
-            ];
+            return self::getImageSettingsFromModel($device->deviceModel);
         }
 
         // Fallback to device settings
@@ -160,6 +177,43 @@ class ImageGenerationService
             'offset_x' => 0,
             'offset_y' => 0,
             'image_format' => $imageFormat,
+            'use_model_settings' => false,
+        ];
+    }
+
+    /**
+     * Get image generation settings from a DeviceModel
+     */
+    private static function getImageSettingsFromModel(?DeviceModel $deviceModel): array
+    {
+        if ($deviceModel) {
+            return [
+                'width' => $deviceModel->width,
+                'height' => $deviceModel->height,
+                'colors' => $deviceModel->colors,
+                'bit_depth' => $deviceModel->bit_depth,
+                'scale_factor' => $deviceModel->scale_factor,
+                'rotation' => $deviceModel->rotation,
+                'mime_type' => $deviceModel->mime_type,
+                'offset_x' => $deviceModel->offset_x,
+                'offset_y' => $deviceModel->offset_y,
+                'image_format' => self::determineImageFormatFromModel($deviceModel),
+                'use_model_settings' => true,
+            ];
+        }
+
+        // Default settings if no device model provided
+        return [
+            'width' => 800,
+            'height' => 480,
+            'colors' => 2,
+            'bit_depth' => 1,
+            'scale_factor' => 1.0,
+            'rotation' => 0,
+            'mime_type' => 'image/png',
+            'offset_x' => 0,
+            'offset_y' => 0,
+            'image_format' => ImageFormat::AUTO->value,
             'use_model_settings' => false,
         ];
     }

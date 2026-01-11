@@ -11,21 +11,18 @@ new class extends Component {
     public Plugin $plugin;
     public string|null $trmnlp_id = null;
     public string|null $uuid = null;
+    public bool $alias = false;
 
     public int $resetIndex = 0;
 
     public function mount(): void
-    {
-        $this->loadData();
-    }
-
-    public function loadData(): void
     {
         $this->resetErrorBag();
         // Reload data
         $this->plugin = $this->plugin->fresh();
         $this->trmnlp_id = $this->plugin->trmnlp_id;
         $this->uuid = $this->plugin->uuid;
+        $this->alias = $this->plugin->alias ?? false;
     }
 
     public function saveTrmnlpId(): void
@@ -41,14 +38,20 @@ new class extends Component {
                     ->where('user_id', auth()->id())
                     ->ignore($this->plugin->id),
             ],
+            'alias' => 'boolean',
         ]);
 
         $this->plugin->update([
             'trmnlp_id' => empty($this->trmnlp_id) ? null : $this->trmnlp_id,
+            'alias' => $this->alias,
         ]);
 
-        //$this->loadData(); // Reload to ensure we have the latest data
         Flux::modal('trmnlp-settings')->close();
+    }
+
+    public function getAliasUrlProperty(): string
+    {
+        return url("/api/display/{$this->uuid}/alias");
     }
 };?>
 
@@ -70,6 +73,23 @@ new class extends Component {
                     <flux:error name="trmnlp_id" />
                     <flux:description>Recipe ID in the TRMNL Recipe Catalog. If set, it can be used with <code>trmnlp</code>. </flux:description>
                 </flux:field>
+
+                <flux:field>
+                    <flux:checkbox wire:model.live="alias" label="Enable Alias" />
+                    <flux:description>Enable a public alias URL for this recipe.</flux:description>
+                </flux:field>
+
+                @if($alias)
+                    <flux:field>
+                        <flux:label>Alias URL</flux:label>
+                        <flux:input
+                            value="{{ $this->aliasUrl }}"
+                            readonly
+                            copyable
+                        />
+                        <flux:description>Use this URL to access the recipe image directly. Add <code>?device-model=name</code> to specify a device model.</flux:description>
+                    </flux:field>
+                @endif
             </div>
 
             <div class="flex gap-2 mt-4">
