@@ -803,7 +803,7 @@ HTML;
                                 </flux:field>
                             </div>
 
-                            <flux:button variant="primary" icon="cloud-arrow-down" wire:click="updateData" class="w-full mt-4">
+                            <flux:button icon="cloud-arrow-down" wire:click="updateData" class="w-full mt-4">
                                 Fetch data now
                             </flux:button>
                         </div>
