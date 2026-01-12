@@ -76,7 +76,7 @@ new class extends Component {
 
                 <flux:field>
                     <flux:checkbox wire:model.live="alias" label="Enable Alias" />
-                    <flux:description>Enable a public alias URL for this recipe.</flux:description>
+                    <flux:description>Enable an Alias URL for this recipe. Your server does not need to be exposed to the internet, but your device must be able to reach the URL. <a href="https://help.usetrmnl.com/en/articles/10701448-alias-plugin">Docs</a></flux:description>
                 </flux:field>
 
                 @if($alias)
@@ -87,7 +87,7 @@ new class extends Component {
                             readonly
                             copyable
                         />
-                        <flux:description>Use this URL to access the recipe image directly. Add <code>?device-model=name</code> to specify a device model.</flux:description>
+                        <flux:description>Copy this URL to your TRMNL Dashboard. By default, image is created for TRMNL OG; use parameter <code>?device-model=</code> to specify a device model.</flux:description>
                     </flux:field>
                 @endif
             </div>
