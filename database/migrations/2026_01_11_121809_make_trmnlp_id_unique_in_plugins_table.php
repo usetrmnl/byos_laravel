@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\Plugin;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,16 +13,16 @@ return new class extends Migration
     public function up(): void
     {
         // Find and handle duplicate (user_id, trmnlp_id) combinations
-        $duplicates = DB::table('plugins')
-            ->select('user_id', 'trmnlp_id', DB::raw('COUNT(*) as count'))
+        $duplicates = Plugin::query()
+            ->selectRaw('user_id, trmnlp_id, COUNT(*) as duplicate_count')
             ->whereNotNull('trmnlp_id')
             ->groupBy('user_id', 'trmnlp_id')
-            ->having('count', '>', 1)
+            ->havingRaw('COUNT(*) > ?', [1])
             ->get();
 
         // For each duplicate combination, keep the first one (by id) and set others to null
         foreach ($duplicates as $duplicate) {
-            $plugins = DB::table('plugins')
+            $plugins = Plugin::query()
                 ->where('user_id', $duplicate->user_id)
                 ->where('trmnlp_id', $duplicate->trmnlp_id)
                 ->orderBy('id')
@@ -37,9 +37,7 @@ return new class extends Migration
                     continue;
                 }
 
-                DB::table('plugins')
-                    ->where('id', $plugin->id)
-                    ->update(['trmnlp_id' => null]);
+                $plugin->update(['trmnlp_id' => null]);
             }
         }
 
