@@ -950,7 +950,7 @@ HTML;
                         />
                         <div
                             x-data="codeEditorFormComponent({
-                                isDisabled: false,
+                                isDisabled: @js((bool)$plugin->render_markup_view),
                                 language: 'liquid',
                                 state: $wire.entangle('markup_code'),
                                 textareaId: @js($textareaId)
