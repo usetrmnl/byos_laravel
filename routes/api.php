@@ -18,15 +18,13 @@ use Illuminate\Support\Str;
 Route::get('/display', function (Request $request) {
     $mac_address = $request->header('id');
     $access_token = $request->header('access-token');
-    $device = Device::where('mac_address', mb_strtoupper($mac_address ?? ''))
-        ->where('api_key', $access_token)
-        ->first();
+    $device = Device::where('api_key', $access_token)->first();
 
     if (! $device) {
         // Check if there's a user with assign_new_devices enabled
         $auto_assign_user = User::where('assign_new_devices', true)->first();
 
-        if ($auto_assign_user) {
+        if ($auto_assign_user && $mac_address) {
             // Create a new device and assign it to this user
             $device = Device::create([
                 'mac_address' => mb_strtoupper($mac_address ?? ''),
@@ -39,7 +37,7 @@ Route::get('/display', function (Request $request) {
             ]);
         } else {
             return response()->json([
-                'message' => 'MAC Address not registered or invalid access token',
+                'message' => 'MAC Address not registered (or not set), or invalid access token',
             ], 404);
         }
     }

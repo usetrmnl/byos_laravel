@@ -263,7 +263,7 @@ test('invalid device credentials return error', function (): void {
     ])->get('/api/display');
 
     $response->assertNotFound()
-        ->assertJson(['message' => 'MAC Address not registered or invalid access token']);
+        ->assertJson(['message' => 'MAC Address not registered (or not set), or invalid access token']);
 });
 
 test('log endpoint requires valid device credentials', function (): void {
