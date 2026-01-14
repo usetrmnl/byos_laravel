@@ -34,3 +34,6 @@ yarn-error.log
 /boost.json
 /.gemini
 /GEMINI.md
+/.claude
+/AGENTS.md
+/opencode.json
