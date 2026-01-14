@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Keepsuit\Liquid\Filters\FiltersProvider;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\Exception\CommonMarkException;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /**
  * String, Markup, and HTML filters for Liquid templates
@@ -57,5 +58,51 @@ class StringMarkup extends FiltersProvider
     public function strip_html(string $html): string
     {
         return strip_tags($html);
+    }
+
+    /**
+     * Generate a QR code as SVG from the input text
+     *
+     * @param  string  $text  The text to encode in the QR code
+     * @param  int|null  $moduleSize  Optional module size (defaults to 11, which equals 319px)
+     * @param  string|null  $errorCorrection  Optional error correction level: 'l', 'm', 'q', 'h' (defaults to 'm')
+     * @return string The SVG QR code
+     */
+    public function qr_code(string $text, ?int $moduleSize = null, ?string $errorCorrection = null): string
+    {
+        // Default module_size is 11
+        // Size calculation: (21 modules for QR code + 4 modules margin on each side * 2) * module_size
+        // = (21 + 8) * module_size = 29 * module_size
+        $moduleSize = $moduleSize ?? 11;
+        $size = 29 * $moduleSize;
+
+        $qrCode = QrCode::format('svg')
+            ->size($size);
+
+        // Set error correction level if provided
+        if ($errorCorrection !== null) {
+            $qrCode->errorCorrection($errorCorrection);
+        }
+
+        $svg = (string) $qrCode->generate($text);
+
+        // Add class="qr-code" to the SVG element
+        // The SVG may start with <?xml...> and then <svg, so we need to find the <svg tag
+        // Match <svg followed by whitespace or attributes, and insert class before the first attribute or closing >
+        if (preg_match('/<svg\s+([^>]*)>/', $svg, $matches)) {
+            $attributes = $matches[1];
+            // Check if class already exists
+            if (mb_strpos($attributes, 'class=') === false) {
+                $svg = preg_replace('/<svg\s+([^>]*)>/', '<svg class="qr-code" $1>', $svg, 1);
+            } else {
+                // If class exists, add qr-code to it
+                $svg = preg_replace('/(<svg\s+[^>]*class=["\'])([^"\']*)(["\'][^>]*>)/', '$1$2 qr-code$3', $svg, 1);
+            }
+        } else {
+            // Fallback: simple replacement if no attributes
+            $svg = preg_replace('/<svg>/', '<svg class="qr-code">', $svg, 1);
+        }
+
+        return $svg;
     }
 }
