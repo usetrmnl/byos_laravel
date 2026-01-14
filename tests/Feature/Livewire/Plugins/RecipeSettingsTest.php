@@ -6,7 +6,6 @@ use App\Models\Plugin;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Livewire\Volt\Volt;
 
 uses(RefreshDatabase::class);
 
@@ -21,7 +20,7 @@ test('recipe settings can save trmnlp_id', function (): void {
 
     $trmnlpId = (string) Str::uuid();
 
-    Volt::test('plugins.recipes.settings', ['plugin' => $plugin])
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
         ->set('trmnlp_id', $trmnlpId)
         ->call('saveTrmnlpId')
         ->assertHasNoErrors();
@@ -43,7 +42,7 @@ test('recipe settings validates trmnlp_id is unique per user', function (): void
         'trmnlp_id' => null,
     ]);
 
-    Volt::test('plugins.recipes.settings', ['plugin' => $newPlugin])
+    Livewire::test('plugins.recipes.settings', ['plugin' => $newPlugin])
         ->set('trmnlp_id', 'existing-id-123')
         ->call('saveTrmnlpId')
         ->assertHasErrors(['trmnlp_id' => 'unique']);
@@ -67,7 +66,7 @@ test('recipe settings allows same trmnlp_id for different users', function (): v
 
     $this->actingAs($user2);
 
-    Volt::test('plugins.recipes.settings', ['plugin' => $plugin2])
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin2])
         ->set('trmnlp_id', 'shared-id-123')
         ->call('saveTrmnlpId')
         ->assertHasNoErrors();
@@ -86,7 +85,7 @@ test('recipe settings allows same trmnlp_id for the same plugin', function (): v
         'trmnlp_id' => $trmnlpId,
     ]);
 
-    Volt::test('plugins.recipes.settings', ['plugin' => $plugin])
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
         ->set('trmnlp_id', $trmnlpId)
         ->call('saveTrmnlpId')
         ->assertHasNoErrors();
@@ -103,7 +102,7 @@ test('recipe settings can clear trmnlp_id', function (): void {
         'trmnlp_id' => 'some-id',
     ]);
 
-    Volt::test('plugins.recipes.settings', ['plugin' => $plugin])
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
         ->set('trmnlp_id', '')
         ->call('saveTrmnlpId')
         ->assertHasNoErrors();

@@ -2,7 +2,7 @@
 
 use App\Console\Commands\ExampleRecipesSeederCommand;
 use App\Services\PluginImportService;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
 

@@ -1,6 +1,6 @@
 <?php
 
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Livewire\Attributes\Modelable;
 
 new class extends Component
@@ -40,7 +40,7 @@ new class extends Component
 } ?>
 
 
-<div 
+<div
     x-data="codeMirrorComponent(@js($language), @js($theme), @js($readonly), @js($placeholder), @js($height), @js($id ?: uniqid()))"
     x-init="init()"
     wire:ignore
@@ -58,7 +58,7 @@ new class extends Component
             <span>Loading editor...</span>
         </div>
     </div>
-    
+
     <!-- Editor container -->
     <div x-show="!isLoading" x-ref="editor" style="height: {{ $height }};"></div>
 </div>

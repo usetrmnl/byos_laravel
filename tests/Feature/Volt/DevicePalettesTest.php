@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\DevicePalette;
 use App\Models\User;
-use Livewire\Volt\Volt;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -25,7 +24,7 @@ test('component loads all device palettes on mount', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index');
+    $component = Livewire::test('device-palettes.index');
 
     $palettes = $component->get('devicePalettes');
     expect($palettes)->toHaveCount($initialCount + 3);
@@ -36,7 +35,7 @@ test('can open modal to create new device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('openDevicePaletteModal');
 
     $component
@@ -51,7 +50,7 @@ test('can create a new device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('description', 'Test Palette Description')
         ->set('grays', 16)
@@ -76,7 +75,7 @@ test('can create a grayscale-only palette without colors', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'grayscale-palette')
         ->set('grays', 256)
         ->set('colors', [])
@@ -102,7 +101,7 @@ test('can open modal to edit existing device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('openDevicePaletteModal', $palette->id);
 
     $component
@@ -125,7 +124,7 @@ test('can update an existing device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('openDevicePaletteModal', $palette->id)
         ->set('name', 'updated-palette')
         ->set('description', 'Updated Description')
@@ -153,7 +152,7 @@ test('can delete a device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('deleteDevicePalette', $palette->id);
 
     expect(DevicePalette::find($palette->id))->toBeNull();
@@ -175,7 +174,7 @@ test('can duplicate a device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('duplicateDevicePalette', $palette->id);
 
     $component
@@ -192,7 +191,7 @@ test('can add a color to the colors array', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colorInput', '#FF0000')
         ->call('addColor');
 
@@ -207,7 +206,7 @@ test('cannot add duplicate colors', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colors', ['#FF0000'])
         ->set('colorInput', '#FF0000')
         ->call('addColor');
@@ -222,7 +221,7 @@ test('can add multiple colors', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colorInput', '#FF0000')
         ->call('addColor')
         ->set('colorInput', '#00FF00')
@@ -239,7 +238,7 @@ test('can remove a color from the colors array', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colors', ['#FF0000', '#00FF00', '#0000FF'])
         ->call('removeColor', 1);
 
@@ -251,7 +250,7 @@ test('removing color reindexes array', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colors', ['#FF0000', '#00FF00', '#0000FF'])
         ->call('removeColor', 0);
 
@@ -271,7 +270,7 @@ test('can open modal in view-only mode for api-sourced palette', function (): vo
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('openDevicePaletteModal', $palette->id, true);
 
     $component
@@ -284,7 +283,7 @@ test('name is required when creating device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('grays', 16)
         ->call('saveDevicePalette');
 
@@ -301,7 +300,7 @@ test('name must be unique when creating device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'existing-name')
         ->set('grays', 16)
         ->call('saveDevicePalette');
@@ -320,7 +319,7 @@ test('name can be same when updating device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('openDevicePaletteModal', $palette->id)
         ->set('grays', 16)
         ->call('saveDevicePalette');
@@ -333,7 +332,7 @@ test('grays is required when creating device palette', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('grays', null)
         ->call('saveDevicePalette');
@@ -346,7 +345,7 @@ test('grays must be at least 1', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('grays', 0)
         ->call('saveDevicePalette');
@@ -359,7 +358,7 @@ test('grays must be at most 256', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('grays', 257)
         ->call('saveDevicePalette');
@@ -372,7 +371,7 @@ test('colors must be valid hex format', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('grays', 16)
         ->set('colors', ['invalid-color', '#FF0000'])
@@ -386,7 +385,7 @@ test('color input must be valid hex format when adding color', function (): void
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colorInput', 'invalid-color')
         ->call('addColor');
 
@@ -398,7 +397,7 @@ test('color input accepts valid hex format', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colorInput', '#FF0000')
         ->call('addColor');
 
@@ -410,7 +409,7 @@ test('color input accepts lowercase hex format', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('colorInput', '#ff0000')
         ->call('addColor');
 
@@ -422,7 +421,7 @@ test('description can be null', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('grays', 16)
         ->set('description', null)
@@ -439,7 +438,7 @@ test('framework class can be empty string', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('grays', 16)
         ->set('framework_class', '')
@@ -456,7 +455,7 @@ test('empty colors array is saved as null', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('grays', 16)
         ->set('colors', [])
@@ -473,7 +472,7 @@ test('component resets form after saving', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'test-palette')
         ->set('description', 'Test Description')
         ->set('grays', 16)
@@ -503,7 +502,7 @@ test('component handles palette with null colors when editing', function (): voi
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('openDevicePaletteModal', $palette->id);
 
     $component->assertSet('colors', []);
@@ -524,7 +523,7 @@ test('component handles palette with string colors when editing', function (): v
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('openDevicePaletteModal', $palette->id);
 
     $component->assertSet('colors', ['#FF0000', '#00FF00']);
@@ -538,7 +537,7 @@ test('component refreshes palette list after creating', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->set('name', 'new-palette')
         ->set('grays', 16)
         ->call('saveDevicePalette');
@@ -566,7 +565,7 @@ test('component refreshes palette list after deleting', function (): void {
 
     $this->actingAs($user);
 
-    $component = Volt::test('device-palettes.index')
+    $component = Livewire::test('device-palettes.index')
         ->call('deleteDevicePalette', $palette1->id);
 
     $palettes = $component->get('devicePalettes');

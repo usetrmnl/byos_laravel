@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Lazy;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Symfony\Component\Yaml\Yaml;
 
 new

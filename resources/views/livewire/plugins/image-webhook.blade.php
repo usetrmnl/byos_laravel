@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Plugin;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Illuminate\Support\Str;
 
 new class extends Component {
@@ -50,7 +50,7 @@ new class extends Component {
     public function deleteInstance(int $pluginId): void
     {
         abort_unless(auth()->user() !== null, 403);
-        
+
         $plugin = Plugin::where('id', $pluginId)
             ->where('user_id', auth()->id())
             ->where('plugin_type', 'image_webhook')

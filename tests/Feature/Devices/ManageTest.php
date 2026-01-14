@@ -2,7 +2,6 @@
 
 use App\Models\Device;
 use App\Models\User;
-use Livewire\Volt\Volt;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -27,7 +26,7 @@ test('user can create a new device', function (): void {
         'friendly_id' => 'test-device-1',
     ];
 
-    $response = Volt::test('devices.manage')
+    $response = Livewire::test('devices.manage')
         ->set('name', $deviceData['name'])
         ->set('mac_address', $deviceData['mac_address'])
         ->set('api_key', $deviceData['api_key'])
@@ -52,7 +51,7 @@ test('device creation requires required fields', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $response = Volt::test('devices.manage')
+    $response = Livewire::test('devices.manage')
         ->set('name', '')
         ->set('mac_address', '')
         ->set('api_key', '')
@@ -75,14 +74,14 @@ test('user can toggle proxy cloud for their device', function (): void {
         'proxy_cloud' => false,
     ]);
 
-    $response = Volt::test('devices.manage')
+    $response = Livewire::test('devices.manage')
         ->call('toggleProxyCloud', $device);
 
     $response->assertHasNoErrors();
     expect($device->fresh()->proxy_cloud)->toBeTrue();
 
     // Toggle back to false
-    $response = Volt::test('devices.manage')
+    $response = Livewire::test('devices.manage')
         ->call('toggleProxyCloud', $device);
 
     expect($device->fresh()->proxy_cloud)->toBeFalse();
@@ -98,7 +97,7 @@ test('user cannot toggle proxy cloud for other users devices', function (): void
         'proxy_cloud' => false,
     ]);
 
-    $response = Volt::test('devices.manage')
+    $response = Livewire::test('devices.manage')
         ->call('toggleProxyCloud', $device);
 
     $response->assertStatus(403);

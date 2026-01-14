@@ -5,7 +5,7 @@ use App\Models\DeviceModel;
 use App\Models\Firmware;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new class extends Component {
 

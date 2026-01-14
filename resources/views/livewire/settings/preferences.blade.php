@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new class extends Component {
     public ?int $assign_new_device_id = null;

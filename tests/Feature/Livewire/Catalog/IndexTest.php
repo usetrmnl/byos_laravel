@@ -4,7 +4,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
-use Livewire\Volt\Volt;
 use Symfony\Component\Yaml\Yaml;
 
 beforeEach(function (): void {
@@ -19,7 +18,7 @@ it('can render catalog component', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    $component = Volt::test('catalog.index');
+    $component = Livewire::test('catalog.index');
 
     $component->assertSee('No plugins available');
 });
@@ -59,7 +58,7 @@ it('loads plugins from catalog URL', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    $component = Volt::test('catalog.index');
+    $component = Livewire::test('catalog.index');
 
     $component->assertSee('Test Plugin');
     $component->assertSee('testuser');
@@ -102,7 +101,7 @@ it('hides preview button when screenshot_url is missing', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.index')
+    Livewire::test('catalog.index')
         ->assertSee('Test Plugin Without Screenshot')
         ->assertDontSeeHtml('variant="subtle" icon="eye"');
 });
@@ -114,7 +113,7 @@ it('shows error when plugin not found', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    $component = Volt::test('catalog.index');
+    $component = Livewire::test('catalog.index');
 
     $component->call('installPlugin', 'non-existent-plugin');
 
@@ -146,7 +145,7 @@ it('shows error when zip_url is missing', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    $component = Volt::test('catalog.index');
+    $component = Livewire::test('catalog.index');
 
     $component->call('installPlugin', 'test-plugin');
 
@@ -189,7 +188,7 @@ it('can preview a plugin', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.index')
+    Livewire::test('catalog.index')
         ->assertSee('Test Plugin')
         ->call('previewPlugin', 'test-plugin')
         ->assertSet('previewingPlugin', 'test-plugin')

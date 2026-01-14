@@ -8,9 +8,9 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
+new #[Layout('layouts.auth')] class extends Component {
     #[Validate('required|string|email')]
     public string $email = '';
 
@@ -131,10 +131,10 @@ new #[Layout('components.layouts.auth')] class extends Component {
         </div>
 
         <div class="flex items-center justify-end">
-            <flux:button 
-                variant="outline" 
-                type="button" 
-                class="w-full" 
+            <flux:button
+                variant="outline"
+                type="button"
+                class="w-full"
                 href="{{ route('auth.oidc.redirect') }}"
             >
                 {{ __('Continue with OIDC') }}

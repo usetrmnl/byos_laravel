@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Password;
 use Livewire\Attributes\Layout;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
+new #[Layout('layouts.auth')] class extends Component {
     public string $email = '';
 
     /**
