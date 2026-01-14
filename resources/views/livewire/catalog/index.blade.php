@@ -81,6 +81,7 @@ class extends Component
                             'logo_url' => Arr::get($plugin, 'logo_url'),
                             'screenshot_url' => Arr::get($plugin, 'screenshot_url'),
                             'learn_more_url' => Arr::get($plugin, 'author_bio.learn_more_url'),
+                            'preferred_renderer' => Arr::get($plugin, 'byos.byos_laravel.renderer'),
                         ];
                     })
                     ->sortBy('name')
@@ -112,7 +113,7 @@ class extends Component
                 $plugin['zip_url'],
                 auth()->user(),
                 $plugin['zip_entry_path'] ?? null,
-                null,
+                config('services.trmnl.liquid_enabled') ? $plugin['preferred_renderer'] : null,
                 $plugin['logo_url'] ?? null,
                 allowDuplicate: true
             );
