@@ -2,7 +2,7 @@
 
 use App\Models\Plugin;
 use Illuminate\Validation\Rule;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 /*
  * This component contains the TRMNL Plugin Settings modal

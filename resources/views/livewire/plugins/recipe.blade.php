@@ -5,7 +5,7 @@ use App\Models\Plugin;
 use App\Models\DeviceModel;
 use Illuminate\Support\Carbon;
 use Keepsuit\Liquid\Exceptions\LiquidException;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;

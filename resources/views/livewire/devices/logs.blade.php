@@ -2,7 +2,7 @@
 
 use App\Models\Device;
 use App\Models\DeviceLog;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new class extends Component {
     public Device $device;

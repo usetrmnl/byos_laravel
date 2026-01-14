@@ -2,7 +2,7 @@
 
 use App\Models\DeviceModel;
 use App\Models\DevicePalette;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new class extends Component
 {

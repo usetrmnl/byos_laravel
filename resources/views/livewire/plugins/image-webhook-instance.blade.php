@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Plugin;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new class extends Component {
     public Plugin $plugin;
@@ -17,7 +17,7 @@ new class extends Component {
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
         abort_unless($this->plugin->plugin_type === 'image_webhook', 404);
-        
+
         $this->name = $this->plugin->name;
     }
 
@@ -272,11 +272,11 @@ new class extends Component {
                         copyable
                     />
                     <flux:description class="mt-2">POST an image (PNG or BMP) to this URL to update the displayed image.</flux:description>
-                    
+
                     <flux:callout variant="warning" icon="exclamation-circle" class="mt-4">
                         <flux:callout.text>Images must be posted in a format that can directly be read by the device. You need to take care of image format, dithering, and bit-depth. Check device logs if the image is not shown.</flux:callout.text>
                     </flux:callout>
-                    
+
                 </div>
             </div>
 

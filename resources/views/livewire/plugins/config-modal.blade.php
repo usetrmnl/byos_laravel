@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Plugin;
-use Livewire\Volt\Component;
+use Livewire\Component;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 

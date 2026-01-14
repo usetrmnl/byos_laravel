@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
-use Livewire\Volt\Volt;
 
 it('loads newest TRMNL recipes on mount', function (): void {
     Http::fake([
@@ -25,7 +24,7 @@ it('loads newest TRMNL recipes on mount', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->assertSee('Install')
         ->assertDontSeeHtml('variant="subtle" icon="eye"')
@@ -50,7 +49,7 @@ it('shows preview button when screenshot_url is provided', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->assertSee('Preview');
 });
@@ -88,7 +87,7 @@ it('searches TRMNL recipes when search term is provided', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Initial Recipe')
         ->set('search', 'weather')
         ->assertSee('Weather Search Result')
@@ -118,7 +117,7 @@ it('installs plugin successfully when user is authenticated', function (): void 
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->call('installPlugin', '123')
         ->assertSee('Error installing plugin'); // This will fail because we don't have a real zip file
@@ -142,7 +141,7 @@ it('shows error when user is not authenticated', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->call('installPlugin', '123')
         ->assertStatus(403); // This will return 403 because user is not authenticated
@@ -171,7 +170,7 @@ it('shows error when plugin installation fails', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->call('installPlugin', '123')
         ->assertSee('Error installing plugin'); // This will fail because the zip content is invalid
@@ -205,7 +204,7 @@ it('previews a recipe with async fetch', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Weather Chum')
         ->call('previewRecipe', '123')
         ->assertSet('previewingRecipe', '123')
@@ -247,7 +246,7 @@ it('supports pagination and loading more recipes', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Recipe Page 1')
         ->assertDontSee('Recipe Page 2')
         ->assertSee('Load next page')
@@ -276,7 +275,7 @@ it('resets pagination when search term changes', function (): void {
 
     Livewire::withoutLazyLoading();
 
-    Volt::test('catalog.trmnl')
+    Livewire::test('catalog.trmnl')
         ->assertSee('Initial 1')
         ->call('loadMore')
         ->set('search', 'weather')

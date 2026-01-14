@@ -1,4 +1,4 @@
-<x-layouts.auth.card>
+<x-layouts::auth.card>
     <div class="flex flex-col gap-6">
         <x-auth-header title="TRMNL BYOS Laravel" description="Server is up and running."/>
     </div>
@@ -50,7 +50,7 @@
                      return null;
                  });
                  $latestVersion = Arr::get($response, 'tag_name');
-                 
+
                  if ($latestVersion && version_compare($latestVersion, config('app.version'), '>')) {
                      $newVersion = $latestVersion;
                  }
@@ -67,4 +67,4 @@
             @endif
         @endif
     @endauth
-</x-layouts.auth.card>
+</x-layouts::auth.card>

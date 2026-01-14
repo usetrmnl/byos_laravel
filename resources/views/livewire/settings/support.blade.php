@@ -1,3 +1,8 @@
+<?php
+    use Livewire\Component;
+    new class extends Component {}
+?>
+
 <section class="w-full">
     @include('partials.settings-heading')
 

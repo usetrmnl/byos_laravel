@@ -2,7 +2,7 @@
 
 use App\Jobs\GenerateScreenJob;
 use Illuminate\Support\Collection;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new class extends Component {
 
