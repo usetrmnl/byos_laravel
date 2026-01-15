@@ -2,7 +2,8 @@
 
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public function mount()
     {
         return view('livewire.device-dashboard', ['devices' => auth()->user()->devices()->paginate(10)]);

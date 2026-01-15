@@ -1,17 +1,23 @@
 <?php
 
-use Livewire\Component;
 use Livewire\Attributes\Modelable;
+use Livewire\Component;
 
 new class extends Component
 {
     #[Modelable]
     public $model = '';
+
     public $language = 'html';
+
     public $theme = 'auto';
+
     public $readonly = false;
+
     public $placeholder = '';
+
     public $height = '200px';
+
     public $id = '';
 
     public function mount($language = 'html', $theme = 'auto', $readonly = false, $placeholder = '', $height = '200px', $id = '')
@@ -23,7 +29,6 @@ new class extends Component
         $this->height = $height;
         $this->id = $id;
     }
-
 
     public function toJSON()
     {

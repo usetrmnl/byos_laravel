@@ -2,32 +2,38 @@
 
 use App\Console\Commands\ExampleRecipesSeederCommand;
 use App\Services\PluginImportService;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Illuminate\Support\Str;
 
-new class extends Component {
+new class extends Component
+{
     use WithFileUploads;
 
     public string $name;
+
     public int $data_stale_minutes = 60;
-    public string $data_strategy = "polling";
+
+    public string $data_strategy = 'polling';
+
     public string $polling_url;
-    public string $polling_verb = "get";
+
+    public string $polling_verb = 'get';
+
     public $polling_header;
+
     public $polling_body;
+
     public array $plugins;
+
     public $zipFile;
 
     public string $sortBy = 'date_asc';
 
     public array $native_plugins = [
-        'markup' =>
-            ['name' => 'Markup', 'flux_icon_name' => 'code-bracket', 'detail_view_route' => 'plugins.markup'],
-        'api' =>
-            ['name' => 'API', 'flux_icon_name' => 'braces', 'detail_view_route' => 'plugins.api'],
-        'image-webhook' =>
-            ['name' => 'Image Webhook', 'flux_icon_name' => 'photo', 'detail_view_route' => 'plugins.image-webhook'],
+        'markup' => ['name' => 'Markup', 'flux_icon_name' => 'code-bracket', 'detail_view_route' => 'plugins.markup'],
+        'api' => ['name' => 'API', 'flux_icon_name' => 'braces', 'detail_view_route' => 'plugins.api'],
+        'image-webhook' => ['name' => 'Image Webhook', 'flux_icon_name' => 'photo', 'detail_view_route' => 'plugins.image-webhook'],
     ];
 
     protected $rules = [
@@ -60,29 +66,31 @@ new class extends Component {
 
         switch ($this->sortBy) {
             case 'name_asc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     return strcasecmp($a['name'] ?? '', $b['name'] ?? '');
                 });
                 break;
 
             case 'name_desc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     return strcasecmp($b['name'] ?? '', $a['name'] ?? '');
                 });
                 break;
 
             case 'date_desc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     $aDate = $a['created_at'] ?? '1970-01-01';
                     $bDate = $b['created_at'] ?? '1970-01-01';
+
                     return strcmp($bDate, $aDate);
                 });
                 break;
 
             case 'date_asc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     $aDate = $a['created_at'] ?? '1970-01-01';
                     $bDate = $b['created_at'] ?? '1970-01-01';
+
                     return strcmp($aDate, $bDate);
                 });
                 break;
@@ -113,7 +121,7 @@ new class extends Component {
         abort_unless(auth()->user() !== null, 403);
         $this->validate();
 
-        \App\Models\Plugin::create([
+        App\Models\Plugin::create([
             'uuid' => Str::uuid(),
             'user_id' => auth()->id(),
             'name' => $this->name,
@@ -137,7 +145,6 @@ new class extends Component {
         $this->refreshPlugins();
     }
 
-
     public function importZip(PluginImportService $pluginImportService): void
     {
         abort_unless(auth()->user() !== null, 403);
@@ -153,11 +160,10 @@ new class extends Component {
             $this->reset(['zipFile']);
 
             Flux::modal('import-zip')->close();
-        } catch (\Exception $e) {
-            $this->addError('zipFile', 'Error installing plugin: ' . $e->getMessage());
+        } catch (Exception $e) {
+            $this->addError('zipFile', 'Error installing plugin: '.$e->getMessage());
         }
     }
-
 };
 ?>
 

@@ -1,11 +1,12 @@
 <?php
 
 use App\Models\Device;
-use App\Models\DeviceLog;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Device $device;
+
     public $logs;
 
     public function mount(Device $device)

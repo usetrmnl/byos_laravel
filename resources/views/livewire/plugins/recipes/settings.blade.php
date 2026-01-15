@@ -7,10 +7,14 @@ use Livewire\Component;
 /*
  * This component contains the TRMNL Plugin Settings modal
  */
-new class extends Component {
+new class extends Component
+{
     public Plugin $plugin;
-    public string|null $trmnlp_id = null;
-    public string|null $uuid = null;
+
+    public ?string $trmnlp_id = null;
+
+    public ?string $uuid = null;
+
     public bool $alias = false;
 
     public int $resetIndex = 0;
@@ -53,7 +57,7 @@ new class extends Component {
     {
         return url("/api/display/{$this->uuid}/alias");
     }
-};?>
+}; ?>
 
 <flux:modal name="trmnlp-settings" class="min-w-[400px] space-y-6">
     <div wire:key="trmnlp-settings-form-{{ $resetIndex }}" class="space-y-6">

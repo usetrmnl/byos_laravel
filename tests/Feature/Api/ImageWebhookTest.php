@@ -38,7 +38,7 @@ test('can upload image to image webhook plugin via multipart form', function ():
 
     // File should exist with the new UUID
     Storage::disk('public')->assertExists("images/generated/{$plugin->current_image}.png");
-    
+
     // Image URL should contain the new UUID
     expect($response->json('image_url'))
         ->toContain($plugin->current_image);
@@ -70,7 +70,7 @@ test('can upload image to image webhook plugin via raw binary', function (): voi
 
     // File should exist with the new UUID
     Storage::disk('public')->assertExists("images/generated/{$plugin->current_image}.png");
-    
+
     // Image URL should contain the new UUID
     expect($response->json('image_url'))
         ->toContain($plugin->current_image);
@@ -102,7 +102,7 @@ test('can upload image to image webhook plugin via base64 data URI', function ()
 
     // File should exist with the new UUID
     Storage::disk('public')->assertExists("images/generated/{$plugin->current_image}.png");
-    
+
     // Image URL should contain the new UUID
     expect($response->json('image_url'))
         ->toContain($plugin->current_image);

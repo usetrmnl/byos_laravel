@@ -1,26 +1,30 @@
 <?php
 
 use App\Models\Plugin;
-use Livewire\Component;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Livewire\Component;
 
 /*
  * This component contains the configuation modal
  */
-new class extends Component {
+new class extends Component
+{
     public Plugin $plugin;
+
     public array $configuration_template = [];
+
     public array $configuration = []; // holds config data
 
     public array $multiValues = [];    // UI boxes for multi_string
+
     public array $xhrSelectOptions = [];
+
     public array $searchQueries = [];
 
     // ------------------------------------This section contains one-off functions for the form------------------------------------------------
     public function mount(): void
     {
-        $this -> loadData();
+        $this->loadData();
     }
 
     public function loadData(): void
@@ -38,7 +42,7 @@ new class extends Component {
                 $fieldKey = $field['keyname'];
                 $rawValue = $this->configuration[$fieldKey] ?? ($field['default'] ?? '');
 
-                $currentValue = is_array($rawValue) ? '' : (string)$rawValue;
+                $currentValue = is_array($rawValue) ? '' : (string) $rawValue;
 
                 $this->multiValues[$fieldKey] = $currentValue !== ''
                     ? array_values(array_filter(explode(',', $currentValue)))
@@ -51,10 +55,11 @@ new class extends Component {
      * Triggered by @close on the modal to discard any typed but unsaved changes
      */
     public int $resetIndex = 0; // Add this property
+
     public function resetForm(): void
     {
         $this->loadData();
-        $this->resetIndex++;  // Increment to force DOM refresh
+        ++$this->resetIndex;  // Increment to force DOM refresh
     }
 
     public function saveConfiguration()
@@ -131,7 +136,7 @@ new class extends Component {
             if ($query !== null) {
                 $requestData = [
                     'function' => $fieldKey,
-                    'query' => $query
+                    'query' => $query,
                 ];
             }
 
@@ -144,7 +149,7 @@ new class extends Component {
             } else {
                 $this->xhrSelectOptions[$fieldKey] = [];
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->xhrSelectOptions[$fieldKey] = [];
         }
     }
@@ -152,11 +157,11 @@ new class extends Component {
     public function searchXhrSelect(string $fieldKey, string $endpoint): void
     {
         $query = $this->searchQueries[$fieldKey] ?? '';
-        if (!empty($query)) {
+        if (! empty($query)) {
             $this->loadXhrSelectOptions($fieldKey, $endpoint, $query);
         }
     }
-};?>
+}; ?>
 
     <flux:modal name="configuration-modal" @close="resetForm" class="md:w-96">
         <div wire:key="config-form-{{ $resetIndex }}" class="space-y-6">

@@ -10,11 +10,15 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
-new #[Layout('layouts.auth')] class extends Component {
+new #[Layout('layouts.auth')] class extends Component
+{
     #[Locked]
     public string $token = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
 
     /**
@@ -56,7 +60,7 @@ new #[Layout('layouts.auth')] class extends Component {
         // If the password was successfully reset, we will redirect the user back to
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
-        if ($status != Password::PasswordReset) {
+        if ($status !== Password::PasswordReset) {
             $this->addError('email', __($status));
 
             return;

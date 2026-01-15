@@ -22,9 +22,9 @@ test('config modal correctly loads multi_string defaults into UI boxes', functio
                 'field_type' => 'multi_string',
                 'name' => 'Reading Days',
                 'default' => 'alpha,beta',
-            ]]
+            ]],
         ],
-        'configuration' => ['tags' => 'alpha,beta']
+        'configuration' => ['tags' => 'alpha,beta'],
     ]);
 
     Livewire::test('plugins.config-modal', ['plugin' => $plugin])
@@ -45,8 +45,8 @@ test('config modal validates against commas in multi_string boxes', function ():
                 'keyname' => 'tags',
                 'field_type' => 'multi_string',
                 'name' => 'Reading Days',
-            ]]
-        ]
+            ]],
+        ],
     ]);
 
     Livewire::test('plugins.config-modal', ['plugin' => $plugin])
@@ -72,9 +72,9 @@ test('config modal merges multi_string boxes into a single CSV string on save', 
                 'keyname' => 'items',
                 'field_type' => 'multi_string',
                 'name' => 'Reading Days',
-            ]]
+            ]],
         ],
-        'configuration' => []
+        'configuration' => [],
     ]);
 
     Livewire::test('plugins.config-modal', ['plugin' => $plugin])
@@ -96,7 +96,7 @@ test('config modal resetForm clears dirty state and increments resetIndex', func
         'user_id' => $user->id,
         'name' => 'Test Plugin',
         'data_strategy' => 'static',
-        'configuration' => ['simple_key' => 'original_value']
+        'configuration' => ['simple_key' => 'original_value'],
     ]);
 
     Livewire::test('plugins.config-modal', ['plugin' => $plugin])
@@ -114,7 +114,7 @@ test('config modal dispatches update event for parent warning refresh', function
         'uuid' => Str::uuid(),
         'user_id' => $user->id,
         'name' => 'Test Plugin',
-        'data_strategy' => 'static'
+        'data_strategy' => 'static',
     ]);
 
     Livewire::test('plugins.config-modal', ['plugin' => $plugin])

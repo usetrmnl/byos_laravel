@@ -4,7 +4,7 @@
     'heading' => null,
 ])
 
-<?php if ($expandable && $heading): ?>
+<?php if ($expandable && $heading) { ?>
 
 <ui-disclosure
     {{ $attributes->class('group/disclosure') }}
@@ -30,7 +30,7 @@
     </div>
 </ui-disclosure>
 
-<?php elseif ($heading): ?>
+<?php } elseif ($heading) { ?>
 
 <div {{ $attributes->class('block space-y-[2px]') }}>
     <div class="px-1 py-2">
@@ -42,10 +42,10 @@
     </div>
 </div>
 
-<?php else: ?>
+<?php } else { ?>
 
 <div {{ $attributes->class('block space-y-[2px]') }}>
     {{ $slot }}
 </div>
 
-<?php endif; ?>
+<?php } ?>
