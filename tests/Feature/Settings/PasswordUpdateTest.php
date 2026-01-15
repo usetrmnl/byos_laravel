@@ -12,7 +12,7 @@ test('password can be updated', function (): void {
 
     $this->actingAs($user);
 
-    $response = Livewire::test('settings.password')
+    $response = Livewire::test('pages::settings.password')
         ->set('current_password', 'password')
         ->set('password', 'new-password')
         ->set('password_confirmation', 'new-password')
@@ -20,7 +20,7 @@ test('password can be updated', function (): void {
 
     $response->assertHasNoErrors();
 
-    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+    $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
 });
 
 test('correct password must be provided to update password', function (): void {
@@ -30,7 +30,7 @@ test('correct password must be provided to update password', function (): void {
 
     $this->actingAs($user);
 
-    $response = Livewire::test('settings.password')
+    $response = Livewire::test('pages::settings.password')
         ->set('current_password', 'wrong-password')
         ->set('password', 'new-password')
         ->set('password_confirmation', 'new-password')

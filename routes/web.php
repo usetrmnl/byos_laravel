@@ -9,12 +9,6 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
-    Route::redirect('settings', 'settings/preferences');
-    Route::livewire('settings/preferences', 'settings.preferences')->name('settings.preferences');
-    Route::livewire('settings/profile', 'settings.profile')->name('settings.profile');
-    Route::livewire('settings/password', 'settings.password')->name('settings.password');
-    Route::livewire('settings/appearance', 'settings.appearance')->name('settings.appearance');
-    Route::livewire('settings/support', 'settings.support')->name('settings.support');
 
     Route::livewire('/dashboard', 'device-dashboard')->name('dashboard');
 
@@ -44,3 +38,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+require __DIR__.'/settings.php';

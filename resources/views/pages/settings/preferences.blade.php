@@ -42,7 +42,7 @@ new class extends Component
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout heading="Preferences" subheading="Update your preferences">
+    <x-pages::settings.layout heading="Preferences" subheading="Update your preferences">
         <form wire:submit="updatePreferences" class="my-6 w-full space-y-6">
 
             <flux:select wire:model="timezone" label="Timezone">
@@ -72,5 +72,5 @@ new class extends Component
             </div>
         </form>
 
-    </x-settings.layout>
+    </x-pages::settings.layout>
 </section>

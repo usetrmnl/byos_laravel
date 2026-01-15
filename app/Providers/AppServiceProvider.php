@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\OidcProvider;
+use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind('qr-code', fn (): QrCodeService => new QrCodeService);
     }
 
     /**
