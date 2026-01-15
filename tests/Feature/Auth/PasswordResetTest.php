@@ -17,9 +17,7 @@ test('reset password link can be requested', function (): void {
 
     $user = User::factory()->create();
 
-    Livewire::test('auth.forgot-password')
-        ->set('email', $user->email)
-        ->call('sendPasswordResetLink');
+    $this->post(route('password.request'), ['email' => $user->email]);
 
     Notification::assertSentTo($user, ResetPassword::class);
 });
@@ -29,14 +27,12 @@ test('reset password screen can be rendered', function (): void {
 
     $user = User::factory()->create();
 
-    Livewire::test('auth.forgot-password')
-        ->set('email', $user->email)
-        ->call('sendPasswordResetLink');
+    $this->post(route('password.request'), ['email' => $user->email]);
 
     Notification::assertSentTo($user, ResetPassword::class, function ($notification): true {
-        $response = $this->get('/reset-password/'.$notification->token);
+        $response = $this->get(route('password.reset', $notification->token));
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         return true;
     });
@@ -47,19 +43,18 @@ test('password can be reset with valid token', function (): void {
 
     $user = User::factory()->create();
 
-    Livewire::test('auth.forgot-password')
-        ->set('email', $user->email)
-        ->call('sendPasswordResetLink');
+    $this->post(route('password.request'), ['email' => $user->email]);
 
     Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user): true {
-        $response = Livewire::test('auth.reset-password', ['token' => $notification->token])
-            ->set('email', $user->email)
-            ->set('password', 'password')
-            ->set('password_confirmation', 'password')
-            ->call('resetPassword');
+        $response = $this->post(route('password.update'), [
+            'token' => $notification->token,
+            'email' => $user->email,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
 
         $response
-            ->assertHasNoErrors()
+            ->assertSessionHasNoErrors()
             ->assertRedirect(route('login', absolute: false));
 
         return true;

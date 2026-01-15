@@ -10,9 +10,9 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 test('email verification screen can be rendered', function (): void {
     $user = User::factory()->unverified()->create();
 
-    $response = $this->actingAs($user)->get('/verify-email');
+    $response = $this->actingAs($user)->get(route('verification.notice'));
 
-    $response->assertStatus(200);
+    $response->assertOk();
 });
 
 test('email can be verified', function (): void {

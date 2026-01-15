@@ -7,7 +7,7 @@ new class extends Component {}
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout heading="Support" subheading="Support the development of this project">
+    <x-pages::settings.layout heading="Support" subheading="Support the development of this project">
 
         <div class="flex items-center gap-4">
             <div class="flex items-center justify-end gap-2">
@@ -35,5 +35,5 @@ new class extends Component {}
             </div>
 
         </div>
-    </x-settings.layout>
+    </x-pages::settings.layout>
 </section>

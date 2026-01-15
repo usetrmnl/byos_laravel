@@ -12,7 +12,7 @@ class DeviceAutoJoin extends Component
 
     public function mount(): void
     {
-        $this->deviceAutojoin = auth()->user()->assign_new_devices;
+        $this->deviceAutojoin = (bool) (auth()->user()->assign_new_devices ?? false);
         $this->isFirstUser = auth()->user()->id === 1;
 
     }
