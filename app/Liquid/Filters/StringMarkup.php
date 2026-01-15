@@ -2,12 +2,12 @@
 
 namespace App\Liquid\Filters;
 
+use App\Facades\QrCode;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Keepsuit\Liquid\Filters\FiltersProvider;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\Exception\CommonMarkException;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /**
  * String, Markup, and HTML filters for Liquid templates
@@ -84,25 +84,6 @@ class StringMarkup extends FiltersProvider
             $qrCode->errorCorrection($errorCorrection);
         }
 
-        $svg = (string) $qrCode->generate($text);
-
-        // Add class="qr-code" to the SVG element
-        // The SVG may start with <?xml...> and then <svg, so we need to find the <svg tag
-        // Match <svg followed by whitespace or attributes, and insert class before the first attribute or closing >
-        if (preg_match('/<svg\s+([^>]*)>/', $svg, $matches)) {
-            $attributes = $matches[1];
-            // Check if class already exists
-            if (mb_strpos($attributes, 'class=') === false) {
-                $svg = preg_replace('/<svg\s+([^>]*)>/', '<svg class="qr-code" $1>', $svg, 1);
-            } else {
-                // If class exists, add qr-code to it
-                $svg = preg_replace('/(<svg\s+[^>]*class=["\'])([^"\']*)(["\'][^>]*>)/', '$1$2 qr-code$3', $svg, 1);
-            }
-        } else {
-            // Fallback: simple replacement if no attributes
-            $svg = preg_replace('/<svg>/', '<svg class="qr-code">', $svg, 1);
-        }
-
-        return $svg;
+        return $qrCode->generate($text);
     }
 }

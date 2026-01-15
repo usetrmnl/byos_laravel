@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind('qr-code', fn (): QrCodeService => new QrCodeService);
+        $this->app->bind('qr-code', fn () => new QrCodeService);
     }
 
     /**
