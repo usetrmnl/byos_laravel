@@ -467,7 +467,7 @@ YAML;
     $zipFile = UploadedFile::fake()->createWithContent('invalid-default.zip', $zipContent);
     $pluginImportService = new PluginImportService();
 
-    expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
         ->toThrow(Exception::class, 'Validation Error: The default value for multistring fields like `api_key` cannot contain commas.');
 });
 
@@ -497,7 +497,7 @@ YAML;
     $zipFile = UploadedFile::fake()->createWithContent('invalid-placeholder.zip', $zipContent);
     $pluginImportService = new PluginImportService();
 
-    expect(fn () => $pluginImportService->importFromZip($zipFile, $user))
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
         ->toThrow(Exception::class, 'Validation Error: The placeholder value for multistring fields like `api_key` cannot contain commas.');
 });
 

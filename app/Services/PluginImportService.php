@@ -33,11 +33,11 @@ class PluginImportService
         foreach ($settings['custom_fields'] as $field) {
             if (isset($field['field_type']) && $field['field_type'] === 'multi_string') {
 
-                if (isset($field['default']) && str_contains($field['default'], ',')) {
+                if (isset($field['default']) && str_contains((string) $field['default'], ',')) {
                     throw new Exception("Validation Error: The default value for multistring fields like `{$field['keyname']}` cannot contain commas.");
                 }
 
-                if (isset($field['placeholder']) && str_contains($field['placeholder'], ',')) {
+                if (isset($field['placeholder']) && str_contains((string) $field['placeholder'], ',')) {
                     throw new Exception("Validation Error: The placeholder value for multistring fields like `{$field['keyname']}` cannot contain commas.");
                 }
 
@@ -159,7 +159,7 @@ class PluginImportService
                         : null,
                     'polling_body' => $settings['polling_body'] ?? null,
                     'markup_language' => $markupLanguage,
-                    'render_markup' => $fullLiquid,
+                    'render_markup' => $fullLiquid ?? null,
                     'configuration_template' => $configurationTemplate,
                     'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
                 ]);
@@ -321,7 +321,7 @@ class PluginImportService
                         : null,
                     'polling_body' => $settings['polling_body'] ?? null,
                     'markup_language' => $markupLanguage,
-                    'render_markup' => $fullLiquid,
+                    'render_markup' => $fullLiquid ?? null,
                     'configuration_template' => $configurationTemplate,
                     'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
                     'preferred_renderer' => $preferredRenderer,
