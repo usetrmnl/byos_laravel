@@ -73,7 +73,7 @@ class StringMarkup extends FiltersProvider
         // Default module_size is 11
         // Size calculation: (21 modules for QR code + 4 modules margin on each side * 2) * module_size
         // = (21 + 8) * module_size = 29 * module_size
-        $moduleSize = $moduleSize ?? 11;
+        $moduleSize ??= 11;
         $size = 29 * $moduleSize;
 
         $qrCode = QrCode::format('svg')

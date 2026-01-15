@@ -174,8 +174,8 @@ class Plugin extends Model
         // resolve and clean URLs
         $resolvedPollingUrls = $this->resolveLiquidVariables($this->polling_url);
         $urls = array_values(array_filter( // array_values ensures 0, 1, 2...
-            array_map('trim', explode("\n", $resolvedPollingUrls)),
-            fn ($url): bool => filled($url)
+            array_map(trim(...), explode("\n", $resolvedPollingUrls)),
+            filled(...)
         ));
 
         $combinedResponse = [];
@@ -624,7 +624,7 @@ class Plugin extends Model
                     // File doesn't exist, remove the view reference
                     $attributes['render_markup_view'] = null;
                 }
-            } catch (Exception $e) {
+            } catch (Exception) {
                 // If file reading fails, remove the view reference
                 $attributes['render_markup_view'] = null;
             }

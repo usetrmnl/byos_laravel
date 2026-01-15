@@ -61,9 +61,9 @@ class ImageGenerationService
 
         try {
             // Get image generation settings from DeviceModel or Device (for legacy devices)
-            $imageSettings = $deviceModel
+            $imageSettings = $deviceModel instanceof DeviceModel
                 ? self::getImageSettingsFromModel($deviceModel)
-                : ($device ? self::getImageSettings($device) : self::getImageSettingsFromModel(null));
+                : ($device instanceof Device ? self::getImageSettings($device) : self::getImageSettingsFromModel(null));
 
             $fileExtension = $imageSettings['mime_type'] === 'image/bmp' ? 'bmp' : 'png';
             $outputPath = Storage::disk('public')->path('/images/generated/'.$uuid.'.'.$fileExtension);
@@ -78,7 +78,7 @@ class ImageGenerationService
             $browserStage->html($markup);
 
             // Set timezone from user or fall back to app timezone
-            $timezone = $user?->timezone ?? config('app.timezone');
+            $timezone = $user->timezone ?? config('app.timezone');
             $browserStage->timezone($timezone);
 
             if (config('app.puppeteer_window_size_strategy') === 'v2') {
@@ -186,7 +186,7 @@ class ImageGenerationService
      */
     private static function getImageSettingsFromModel(?DeviceModel $deviceModel): array
     {
-        if ($deviceModel) {
+        if ($deviceModel instanceof DeviceModel) {
             return [
                 'width' => $deviceModel->width,
                 'height' => $deviceModel->height,

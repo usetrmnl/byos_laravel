@@ -156,9 +156,7 @@ test('can delete a device palette', function (): void {
         ->call('deleteDevicePalette', $palette->id);
 
     expect(DevicePalette::find($palette->id))->toBeNull();
-    $component->assertSet('devicePalettes', function ($palettes) use ($palette) {
-        return $palettes->where('id', $palette->id)->isEmpty();
-    });
+    $component->assertSet('devicePalettes', fn ($palettes) => $palettes->where('id', $palette->id)->isEmpty());
 });
 
 test('can duplicate a device palette', function (): void {
