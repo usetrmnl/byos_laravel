@@ -10,7 +10,10 @@ RUN apk add --no-cache composer
 RUN apk add --no-cache \
   imagemagick-dev \
   chromium \
-  libzip-dev
+  libzip-dev \
+  freetype-dev \
+  libpng-dev \
+  libjpeg-turbo-dev
 
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_DOCKER=1
@@ -19,8 +22,10 @@ RUN mkdir -p /usr/src/php/ext/imagick
 RUN chmod 777 /usr/src/php/ext/imagick
 RUN curl -fsSL https://github.com/Imagick/imagick/archive/refs/tags/3.8.0.tar.gz | tar xvz -C "/usr/src/php/ext/imagick" --strip 1
 
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+
 # Install PHP extensions
-RUN docker-php-ext-install imagick zip
+RUN docker-php-ext-install imagick zip gd
 
 # Composer uses its php binary, but we want it to use the container's one
 RUN rm -f /usr/bin/php84
