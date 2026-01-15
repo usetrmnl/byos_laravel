@@ -1,44 +1,68 @@
 <?php
 
 use App\Models\Device;
-use App\Models\Plugin;
 use App\Models\DeviceModel;
-use Illuminate\Support\Carbon;
-use Keepsuit\Liquid\Exceptions\LiquidException;
-use Livewire\Component;
-use Illuminate\Support\Facades\Blade;
+use App\Models\Plugin;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
-use Livewire\Attributes\On;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Blade;
+use Keepsuit\Liquid\Exceptions\LiquidException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Plugin $plugin;
-    public string|null $markup_code;
-    public string|null $view_content;
-    public string|null $markup_language;
+
+    public ?string $markup_code;
+
+    public ?string $view_content;
+
+    public ?string $markup_language;
 
     public string $name;
+
     public bool $no_bleed = false;
+
     public bool $dark_mode = false;
+
     public int $data_stale_minutes;
+
     public string $data_strategy;
-    public string|null $polling_url;
+
+    public ?string $polling_url;
+
     public string $polling_verb;
-    public string|null $polling_header;
-    public string|null $polling_body;
+
+    public ?string $polling_header;
+
+    public ?string $polling_body;
+
     public $data_payload;
+
     public ?Carbon $data_payload_updated_at;
+
     public array $checked_devices = [];
+
     public array $device_playlists = [];
+
     public array $device_playlist_names = [];
+
     public array $device_weekdays = [];
+
     public array $device_active_from = [];
+
     public array $device_active_until = [];
+
     public string $mashup_layout = 'full';
+
     public array $mashup_plugins = [];
+
     public array $configuration_template = [];
+
     public ?int $preview_device_model_id = null;
+
     public string $preview_size = 'full';
 
     public function mount(): void
@@ -50,10 +74,10 @@ new class extends Component {
 
         if ($this->plugin->render_markup_view) {
             try {
-                $basePath = resource_path('views/' . str_replace('.', '/', $this->plugin->render_markup_view));
+                $basePath = resource_path('views/'.str_replace('.', '/', $this->plugin->render_markup_view));
                 $paths = [
-                    $basePath . '.blade.php',
-                    $basePath . '.liquid',
+                    $basePath.'.blade.php',
+                    $basePath.'.liquid',
                 ];
 
                 $this->view_content = null;
@@ -63,7 +87,7 @@ new class extends Component {
                         break;
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->view_content = null;
             }
         } else {
@@ -103,7 +127,7 @@ new class extends Component {
         $this->validate();
         $this->plugin->update([
             'render_markup' => $this->markup_code ?? null,
-            'markup_language' => $this->markup_language ?? null
+            'markup_language' => $this->markup_language ?? null,
         ]);
     }
 
@@ -136,7 +160,7 @@ new class extends Component {
         $this->validatePollingUrl();
 
         $validated = $this->validate();
-        $validated['data_payload'] = json_decode(Arr::get($validated,'data_payload'), true);
+        $validated['data_payload'] = json_decode(Arr::get($validated, 'data_payload'), true);
         $this->plugin->update($validated);
 
         foreach ($this->configuration_template as $fieldKey => $field) {
@@ -144,7 +168,7 @@ new class extends Component {
                 continue;
             }
 
-            if (!isset($this->multiValues[$fieldKey])) {
+            if (! isset($this->multiValues[$fieldKey])) {
                 continue;
             }
 
@@ -155,15 +179,15 @@ new class extends Component {
 
     protected function validatePollingUrl(): void
     {
-        if ($this->data_strategy === 'polling' && !empty($this->polling_url)) {
+        if ($this->data_strategy === 'polling' && ! empty($this->polling_url)) {
             try {
                 $resolvedUrl = $this->plugin->resolveLiquidVariables($this->polling_url);
 
-                if (!filter_var($resolvedUrl, FILTER_VALIDATE_URL)) {
+                if (! filter_var($resolvedUrl, FILTER_VALIDATE_URL)) {
                     $this->addError('polling_url', 'The polling URL must be a valid URL after resolving configuration variables.');
                 }
-            } catch (\Exception $e) {
-                $this->addError('polling_url', 'Error resolving Liquid variables: ' . $e->getMessage() . $e->getPrevious()?->getMessage());
+            } catch (Exception $e) {
+                $this->addError('polling_url', 'Error resolving Liquid variables: '.$e->getMessage().$e->getPrevious()?->getMessage());
             }
         }
     }
@@ -177,8 +201,8 @@ new class extends Component {
                 $this->data_payload = json_encode($this->plugin->data_payload, JSON_PRETTY_PRINT);
                 $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
 
-            } catch (\Exception $e) {
-                $this->dispatch('data-update-error', message: $e->getMessage() . $e->getPrevious()?->getMessage());
+            } catch (Exception $e) {
+                $this->dispatch('data-update-error', message: $e->getMessage().$e->getPrevious()?->getMessage());
             }
         }
     }
@@ -212,15 +236,17 @@ new class extends Component {
 
         // Validate that each checked device has a playlist selected
         foreach ($this->checked_devices as $deviceId) {
-            if (!isset($this->device_playlists[$deviceId]) || empty($this->device_playlists[$deviceId])) {
-                $this->addError('device_playlists.' . $deviceId, 'Please select a playlist for each device.');
+            if (! isset($this->device_playlists[$deviceId]) || empty($this->device_playlists[$deviceId])) {
+                $this->addError('device_playlists.'.$deviceId, 'Please select a playlist for each device.');
+
                 return;
             }
 
             // If creating new playlist, validate required fields
             if ($this->device_playlists[$deviceId] === 'new') {
-                if (!isset($this->device_playlist_names[$deviceId]) || empty($this->device_playlist_names[$deviceId])) {
-                    $this->addError('device_playlist_names.' . $deviceId, 'Playlist name is required when creating a new playlist.');
+                if (! isset($this->device_playlist_names[$deviceId]) || empty($this->device_playlist_names[$deviceId])) {
+                    $this->addError('device_playlist_names.'.$deviceId, 'Playlist name is required when creating a new playlist.');
+
                     return;
                 }
             }
@@ -231,15 +257,15 @@ new class extends Component {
 
             if ($this->device_playlists[$deviceId] === 'new') {
                 // Create new playlist
-                $playlist = \App\Models\Playlist::create([
+                $playlist = App\Models\Playlist::create([
                     'device_id' => $deviceId,
                     'name' => $this->device_playlist_names[$deviceId],
-                    'weekdays' => !empty($this->device_weekdays[$deviceId] ?? null) ? $this->device_weekdays[$deviceId] : null,
+                    'weekdays' => ! empty($this->device_weekdays[$deviceId] ?? null) ? $this->device_weekdays[$deviceId] : null,
                     'active_from' => $this->device_active_from[$deviceId] ?? null,
                     'active_until' => $this->device_active_until[$deviceId] ?? null,
                 ]);
             } else {
-                $playlist = \App\Models\Playlist::findOrFail($this->device_playlists[$deviceId]);
+                $playlist = App\Models\Playlist::findOrFail($this->device_playlists[$deviceId]);
             }
 
             // Add plugin to playlist
@@ -253,11 +279,11 @@ new class extends Component {
             } else {
                 // Create mashup
                 $pluginIds = array_merge([$this->plugin->id], array_map('intval', $this->mashup_plugins));
-                \App\Models\PlaylistItem::createMashup(
+                App\Models\PlaylistItem::createMashup(
                     $playlist,
                     $this->mashup_layout,
                     $pluginIds,
-                    $this->plugin->name . ' Mashup',
+                    $this->plugin->name.' Mashup',
                     $maxOrder + 1
                 );
             }
@@ -271,23 +297,24 @@ new class extends Component {
             'device_active_from',
             'device_active_until',
             'mashup_layout',
-            'mashup_plugins'
+            'mashup_plugins',
         ]);
         Flux::modal('add-to-playlist')->close();
     }
 
     public function getDevicePlaylists($deviceId)
     {
-        return \App\Models\Playlist::where('device_id', $deviceId)->get();
+        return App\Models\Playlist::where('device_id', $deviceId)->get();
     }
 
     public function hasAnyPlaylistSelected(): bool
     {
         foreach ($this->checked_devices as $deviceId) {
-            if (isset($this->device_playlists[$deviceId]) && !empty($this->device_playlists[$deviceId])) {
+            if (isset($this->device_playlists[$deviceId]) && ! empty($this->device_playlists[$deviceId])) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -315,7 +342,7 @@ new class extends Component {
     public function renderLayoutWithTitleBar(): string
     {
         if ($this->markup_language === 'liquid') {
-            return <<<HTML
+            return <<<'HTML'
 <div class="view view--{{ size }}">
     <div class="layout">
         <!-- ADD YOUR CONTENT HERE-->
@@ -327,9 +354,9 @@ new class extends Component {
 HTML;
         }
 
-        return <<<HTML
+        return <<<'HTML'
 @props(['size' => 'full'])
-<x-trmnl::view size="{{\$size}}">
+<x-trmnl::view size="{{$size}}">
     <x-trmnl::layout>
         <!-- ADD YOUR CONTENT HERE-->
     </x-trmnl::layout>
@@ -341,7 +368,7 @@ HTML;
     public function renderLayoutBlank(): string
     {
         if ($this->markup_language === 'liquid') {
-            return <<<HTML
+            return <<<'HTML'
 <div class="view view--{{ size }}">
     <div class="layout">
         <!-- ADD YOUR CONTENT HERE-->
@@ -350,9 +377,9 @@ HTML;
 HTML;
         }
 
-        return <<<HTML
+        return <<<'HTML'
 @props(['size' => 'full'])
-<x-trmnl::view size="{{\$size}}">
+<x-trmnl::view size="{{$size}}">
     <x-trmnl::layout>
         <!-- ADD YOUR CONTENT HERE-->
     </x-trmnl::layout>
@@ -378,12 +405,12 @@ HTML;
             $this->dispatch('preview-updated', preview: $previewMarkup);
         } catch (LiquidException $e) {
             $this->dispatch('preview-error', message: $e->toLiquidErrorMessage());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->dispatch('preview-error', message: $e->getMessage());
         }
     }
 
-    private function createPreviewDevice(): \App\Models\Device
+    private function createPreviewDevice(): Device
     {
         $deviceModel = DeviceModel::with(['palette'])->find($this->preview_device_model_id)
             ?? DeviceModel::with(['palette'])->first();
@@ -434,18 +461,17 @@ HTML;
     #[Computed]
     private function parsedUrls()
     {
-        if (!isset($this->polling_url)) {
+        if (! isset($this->polling_url)) {
             return null;
         }
 
         try {
             return $this->plugin->resolveLiquidVariables($this->polling_url);
 
-        } catch (\Exception $e) {
-            return 'PARSE_ERROR: ' . $e->getMessage();
+        } catch (Exception $e) {
+            return 'PARSE_ERROR: '.$e->getMessage();
         }
     }
-
 }
 ?>
 

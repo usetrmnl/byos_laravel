@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-new #[Layout('layouts.auth')] class extends Component {
+new #[Layout('layouts.auth')] class extends Component
+{
     /**
      * Send an email verification notification to the user.
      */

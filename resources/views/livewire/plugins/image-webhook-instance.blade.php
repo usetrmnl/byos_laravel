@@ -3,14 +3,22 @@
 use App\Models\Plugin;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Plugin $plugin;
+
     public string $name;
+
     public array $checked_devices = [];
+
     public array $device_playlists = [];
+
     public array $device_playlist_names = [];
+
     public array $device_weekdays = [];
+
     public array $device_active_from = [];
+
     public array $device_active_until = [];
 
     public function mount(): void
@@ -38,7 +46,6 @@ new class extends Component {
         $this->plugin->update(['name' => $this->name]);
     }
 
-
     public function addToPlaylist()
     {
         $this->validate([
@@ -46,14 +53,16 @@ new class extends Component {
         ]);
 
         foreach ($this->checked_devices as $deviceId) {
-            if (!isset($this->device_playlists[$deviceId]) || empty($this->device_playlists[$deviceId])) {
-                $this->addError('device_playlists.' . $deviceId, 'Please select a playlist for each device.');
+            if (! isset($this->device_playlists[$deviceId]) || empty($this->device_playlists[$deviceId])) {
+                $this->addError('device_playlists.'.$deviceId, 'Please select a playlist for each device.');
+
                 return;
             }
 
             if ($this->device_playlists[$deviceId] === 'new') {
-                if (!isset($this->device_playlist_names[$deviceId]) || empty($this->device_playlist_names[$deviceId])) {
-                    $this->addError('device_playlist_names.' . $deviceId, 'Playlist name is required when creating a new playlist.');
+                if (! isset($this->device_playlist_names[$deviceId]) || empty($this->device_playlist_names[$deviceId])) {
+                    $this->addError('device_playlist_names.'.$deviceId, 'Playlist name is required when creating a new playlist.');
+
                     return;
                 }
             }
@@ -63,15 +72,15 @@ new class extends Component {
             $playlist = null;
 
             if ($this->device_playlists[$deviceId] === 'new') {
-                $playlist = \App\Models\Playlist::create([
+                $playlist = App\Models\Playlist::create([
                     'device_id' => $deviceId,
                     'name' => $this->device_playlist_names[$deviceId],
-                    'weekdays' => !empty($this->device_weekdays[$deviceId] ?? null) ? $this->device_weekdays[$deviceId] : null,
+                    'weekdays' => ! empty($this->device_weekdays[$deviceId] ?? null) ? $this->device_weekdays[$deviceId] : null,
                     'active_from' => $this->device_active_from[$deviceId] ?? null,
                     'active_until' => $this->device_active_until[$deviceId] ?? null,
                 ]);
             } else {
-                $playlist = \App\Models\Playlist::findOrFail($this->device_playlists[$deviceId]);
+                $playlist = App\Models\Playlist::findOrFail($this->device_playlists[$deviceId]);
             }
 
             $maxOrder = $playlist->items()->max('order') ?? 0;
@@ -96,16 +105,17 @@ new class extends Component {
 
     public function getDevicePlaylists($deviceId)
     {
-        return \App\Models\Playlist::where('device_id', $deviceId)->get();
+        return App\Models\Playlist::where('device_id', $deviceId)->get();
     }
 
     public function hasAnyPlaylistSelected(): bool
     {
         foreach ($this->checked_devices as $deviceId) {
-            if (isset($this->device_playlists[$deviceId]) && !empty($this->device_playlists[$deviceId])) {
+            if (isset($this->device_playlists[$deviceId]) && ! empty($this->device_playlists[$deviceId])) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -118,14 +128,14 @@ new class extends Component {
 
     public function getImagePath(): ?string
     {
-        if (!$this->plugin->current_image) {
+        if (! $this->plugin->current_image) {
             return null;
         }
 
         $extensions = ['png', 'bmp'];
         foreach ($extensions as $ext) {
             $path = 'images/generated/'.$this->plugin->current_image.'.'.$ext;
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            if (Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
                 return $path;
             }
         }

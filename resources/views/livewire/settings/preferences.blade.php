@@ -1,14 +1,11 @@
 <?php
 
-use App\Models\User;
-use App\Models\Device;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public ?int $assign_new_device_id = null;
 
     public ?string $timezone = null;

@@ -1,11 +1,13 @@
 <?php
 
 use App\Models\Plugin;
-use Livewire\Component;
 use Illuminate\Support\Str;
+use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public string $name = '';
+
     public array $instances = [];
 
     protected $rules = [

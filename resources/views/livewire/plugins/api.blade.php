@@ -1,12 +1,13 @@
 <?php
 
 use Livewire\Component;
-use Illuminate\Support\Collection;
 
-
-new class extends Component {
+new class extends Component
+{
     public $token;
+
     public $devices;
+
     public $selected_device;
 
     public function mount(): void

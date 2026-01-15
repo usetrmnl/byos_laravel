@@ -10,7 +10,8 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
-new #[Layout('layouts.auth')] class extends Component {
+new #[Layout('layouts.auth')] class extends Component
+{
     #[Validate('required|string|email')]
     public string $email = '';
 
@@ -28,7 +29,7 @@ new #[Layout('layouts.auth')] class extends Component {
 
         $this->ensureIsNotRateLimited();
 
-        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -47,7 +48,7 @@ new #[Layout('layouts.auth')] class extends Component {
      */
     protected function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -68,7 +69,7 @@ new #[Layout('layouts.auth')] class extends Component {
      */
     protected function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->email) . '|' . request()->ip());
+        return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
     }
 
     public function mount(): void

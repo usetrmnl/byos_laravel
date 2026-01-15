@@ -122,7 +122,7 @@ class extends Component
 
     public function loadMore(): void
     {
-        $this->page++;
+        ++$this->page;
 
         $term = mb_trim($this->search);
         if ($term === '' || mb_strlen($term) < 2) {
