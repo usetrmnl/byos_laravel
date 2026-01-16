@@ -81,11 +81,6 @@ class QrCodeService
             $this->size = 29 * $moduleSize;
         }
 
-        // Calculate margin: 4 modules on each side
-        // Module size = size / 29, so margin = (size / 29) * 4
-        $moduleSize = $this->size / 29;
-        $margin = (int) ($moduleSize * 4);
-
         // Map error correction level
         $errorCorrectionLevel = ErrorCorrectionLevel::valueOf('M'); // default
         if ($this->errorCorrection !== null) {
@@ -99,7 +94,7 @@ class QrCodeService
         }
 
         // Create renderer style with size and margin
-        $rendererStyle = new RendererStyle($this->size, $margin);
+        $rendererStyle = new RendererStyle($this->size, 0);
 
         // Create SVG renderer
         $renderer = new ImageRenderer(
