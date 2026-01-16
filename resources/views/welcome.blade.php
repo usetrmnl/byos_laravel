@@ -32,39 +32,6 @@
         @endif
     </header>
     @auth
-        @if(config('app.version'))
-            <flux:text class="text-xs">Version: <a href="https://github.com/usetrmnl/byos_laravel/releases/"
-                                                   target="_blank">{{ config('app.version') }}</a>
-            </flux:text>
-
-            @php
-                $response = Cache::remember('latest_release', 86400, function () {
-                     try {
-                         $response = Http::get('https://api.github.com/repos/usetrmnl/byos_laravel/releases/latest');
-                         if ($response->successful()) {
-                             return $response->json();
-                         }
-                     } catch (\Exception $e) {
-                         Log::debug('Failed to fetch latest release: ' . $e->getMessage());
-                     }
-                     return null;
-                 });
-                 $latestVersion = Arr::get($response, 'tag_name');
-
-                 if ($latestVersion && version_compare($latestVersion, config('app.version'), '>')) {
-                     $newVersion = $latestVersion;
-                 }
-            @endphp
-
-            @if(isset($newVersion))
-                <flux:callout class="text-xs mt-6" icon="arrow-down-circle">
-                    <flux:callout.heading>Update available</flux:callout.heading>
-                    <flux:callout.text>
-                        There is a newer version {{ $newVersion }} available. Update to the latest version for the best experience.
-                        <flux:callout.link href="https://github.com/usetrmnl/byos_laravel/releases/" target="_blank">Release notes</flux:callout.link>
-                    </flux:callout.text>
-                </flux:callout>
-            @endif
-        @endif
+        <livewire:update-check />
     @endauth
 </x-layouts::auth.card>

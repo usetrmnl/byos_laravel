@@ -27,6 +27,7 @@
         "livewire/livewire": "^4.0",
         "om/icalparser": "^3.2",
         "spatie/browsershot": "^5.0",
+        "spatie/laravel-settings": "^3.6",
         "stevebauman/purify": "^6.3",
         "symfony/yaml": "^7.3",
         "wnx/sidecar-browsershot": "^2.6"

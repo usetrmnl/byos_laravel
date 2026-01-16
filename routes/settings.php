@@ -20,4 +20,5 @@ Route::middleware(['auth'])->group(function () {
         )
         ->name('two-factor.show');
     Route::livewire('settings/support', 'pages::settings.support')->name('settings.support');
+    Route::livewire('settings/update', 'pages::settings.update')->name('settings.update');
 });
