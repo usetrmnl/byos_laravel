@@ -7,9 +7,6 @@
             @if(auth()?->user()?->oidc_sub === null)
                 <flux:navlist.item :href="route('user-password.edit')" wire:navigate>{{ __('Password') }}</flux:navlist.item>
             @endif
-            @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication() && auth()?->user()?->oidc_sub === null)
-                <flux:navlist.item :href="route('two-factor.show')" wire:navigate>{{ __('2FA') }}</flux:navlist.item>
-            @endif
             <flux:navlist.item :href="route('settings.support')" wire:navigate>{{ __('Support') }}</flux:navlist.item>
         </flux:navlist>
     </div>

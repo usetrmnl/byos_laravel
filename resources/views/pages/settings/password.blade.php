@@ -83,5 +83,11 @@ new class extends Component
                 </x-action-message>
             </div>
         </form>
+        @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication() && auth()?->user()?->oidc_sub === null)
+            <flux:heading class="mt-6">2FA</flux:heading>
+            <flux:subheading class="mb-4">Optionally, you can enable Two-Factor Authentication via TOTP</flux:subheading>
+
+            <flux:button :href="route('two-factor.show')" wire:navigate>{{ __('2FA Settings…') }}</flux:button>
+        @endif
     </x-pages::settings.layout>
 </section>
