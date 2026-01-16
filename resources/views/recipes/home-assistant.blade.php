@@ -1,5 +1,5 @@
 @php
-    $weatherEntity = collect($data)->first(function($entity) {
+    $weatherEntity = collect(Arr::get($data, 'data'))->first(function($entity) {
         return $entity['entity_id'] === 'weather.forecast_home';
     });
 @endphp
