@@ -264,7 +264,7 @@ new class extends Component
                                                 <flux:description>{!! $safeDescription !!}</flux:description>
                                                 <flux:select
                                                     wire:model="configuration.{{ $fieldKey }}"
-                                                    value="{{ $field['value'] }}"
+                                                    value="{{ Arr::get($field, 'value') }}"
                                                 >
                                                     <option value="">Select timezone...</option>
                                                     @foreach(timezone_identifiers_list() as $timezone)
