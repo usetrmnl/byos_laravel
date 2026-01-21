@@ -821,6 +821,26 @@ test('plugin duplicate copies all attributes except id and uuid', function (): v
         ->and($duplicate->render_markup_view)->toBeNull();
 });
 
+test('plugin duplicate sets trmnlp_id to null to avoid unique constraint violation', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Plugin with trmnlp_id',
+        'trmnlp_id' => 'test-trmnlp-id-123',
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    // Refresh to ensure casts are applied
+    $original->refresh();
+    $duplicate->refresh();
+
+    expect($duplicate->trmnlp_id)->toBeNull()
+        ->and($original->trmnlp_id)->toBe('test-trmnlp-id-123')
+        ->and($duplicate->name)->toBe('Plugin with trmnlp_id (Copy)');
+});
+
 test('plugin duplicate copies render_markup_view file content to render_markup', function (): void {
     $user = User::factory()->create();
 

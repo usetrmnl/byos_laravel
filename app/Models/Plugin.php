@@ -594,7 +594,7 @@ class Plugin extends Model
         // Get all attributes except id and uuid
         // Use toArray() to get cast values (respects JSON casts)
         $attributes = $this->toArray();
-        unset($attributes['id'], $attributes['uuid']);
+        unset($attributes['id'], $attributes['uuid'], $attributes['trmnlp_id']);
 
         // Handle render_markup_view - copy file content to render_markup
         if ($this->render_markup_view) {
