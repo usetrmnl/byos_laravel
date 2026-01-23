@@ -121,3 +121,30 @@ test('config modal dispatches update event for parent warning refresh', function
         ->call('saveConfiguration')
         ->assertDispatched('config-updated');
 });
+
+test('config modal saves password field values correctly', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $plugin = Plugin::create([
+        'uuid' => Str::uuid(),
+        'user_id' => $user->id,
+        'name' => 'Test Plugin',
+        'data_strategy' => 'static',
+        'configuration_template' => [
+            'custom_fields' => [[
+                'keyname' => 'api_key',
+                'field_type' => 'password',
+                'name' => 'API Key',
+            ]],
+        ],
+        'configuration' => [],
+    ]);
+
+    Livewire::test('plugins.config-modal', ['plugin' => $plugin])
+        ->set('configuration.api_key', 'my-secret-password-123')
+        ->call('saveConfiguration')
+        ->assertHasNoErrors();
+
+    expect($plugin->fresh()->configuration['api_key'])->toBe('my-secret-password-123');
+});

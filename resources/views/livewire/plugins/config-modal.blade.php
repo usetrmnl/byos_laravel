@@ -240,7 +240,7 @@ new class extends Component
                                                 <flux:description>{!! $safeDescription !!}</flux:description>
                                                 <flux:input
                                                     type="password"
-                                                    wire:model="local_configuration.{{ $fieldKey }}"
+                                                    wire:model="configuration.{{ $fieldKey }}"
                                                     value="{{ $currentValue }}"
                                                     viewable
                                                 />
