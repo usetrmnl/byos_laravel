@@ -60,8 +60,14 @@ class Plugin extends Model
         });
 
         static::updating(function ($model): void {
-            // Reset image cache when markup changes
-            if ($model->isDirty('render_markup')) {
+            // Reset image cache when any markup changes
+            if ($model->isDirty([
+                'render_markup',
+                'render_markup_half_horizontal',
+                'render_markup_half_vertical',
+                'render_markup_quadrant',
+                'render_markup_shared',
+            ])) {
                 $model->current_image = null;
             }
         });
@@ -421,7 +427,9 @@ class Plugin extends Model
             throw new InvalidArgumentException('Render method is only applicable for recipe plugins.');
         }
 
-        if ($this->render_markup) {
+        $markup = $this->getMarkupForSize($size);
+
+        if ($markup) {
             $renderedContent = '';
 
             if ($this->markup_language === 'liquid') {
@@ -471,7 +479,7 @@ class Plugin extends Model
                 // Check if external renderer should be used
                 if ($this->preferred_renderer === 'trmnl-liquid' && config('services.trmnl.liquid_enabled')) {
                     // Use external Ruby renderer - pass raw template without preprocessing
-                    $renderedContent = $this->renderWithExternalLiquidRenderer($this->render_markup, $context);
+                    $renderedContent = $this->renderWithExternalLiquidRenderer($markup, $context);
                 } else {
                     // Use PHP keepsuit/liquid renderer
                     // Create a custom environment with inline templates support
@@ -493,14 +501,14 @@ class Plugin extends Model
                     $environment->tagRegistry->register(TemplateTag::class);
 
                     // Apply Liquid replacements (including 'with' syntax conversion)
-                    $processedMarkup = $this->applyLiquidReplacements($this->render_markup);
+                    $processedMarkup = $this->applyLiquidReplacements($markup);
 
                     $template = $environment->parseString($processedMarkup);
                     $liquidContext = $environment->newRenderContext(data: $context);
                     $renderedContent = $template->render($liquidContext);
                 }
             } else {
-                $renderedContent = Blade::render($this->render_markup, [
+                $renderedContent = Blade::render($markup, [
                     'size' => $size,
                     'data' => $this->data_payload,
                     'config' => $this->configuration ?? [],
@@ -579,6 +587,30 @@ class Plugin extends Model
     public function getConfiguration(string $key, $default = null)
     {
         return $this->configuration[$key] ?? $default;
+    }
+
+    /**
+     * Get the appropriate markup for a given size, including shared prepending logic
+     *
+     * @param  string  $size  The layout size (full, half_horizontal, half_vertical, quadrant)
+     * @return string|null The markup code for the given size, with shared prepended if available
+     */
+    public function getMarkupForSize(string $size): ?string
+    {
+        $markup = match ($size) {
+            'full' => $this->render_markup,
+            'half_horizontal' => $this->render_markup_half_horizontal ?? $this->render_markup,
+            'half_vertical' => $this->render_markup_half_vertical ?? $this->render_markup,
+            'quadrant' => $this->render_markup_quadrant ?? $this->render_markup,
+            default => $this->render_markup,
+        };
+
+        // Prepend shared markup if it exists
+        if ($markup && $this->render_markup_shared) {
+            $markup = $this->render_markup_shared."\n".$markup;
+        }
+
+        return $markup;
     }
 
     public function getPreviewMashupLayoutForSize(string $size): string

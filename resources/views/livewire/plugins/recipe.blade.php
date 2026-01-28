@@ -65,6 +65,12 @@ new class extends Component
 
     public string $preview_size = 'full';
 
+    public array $markup_layouts = [];
+
+    public array $active_tabs = [];
+
+    public string $active_tab = 'full';
+
     public function mount(): void
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
@@ -91,7 +97,24 @@ new class extends Component
                 $this->view_content = null;
             }
         } else {
-            $this->markup_code = $this->plugin->render_markup;
+            // Initialize layout markups from plugin columns
+            $this->markup_layouts = [
+                'full' => $this->plugin->render_markup ?? '',
+                'half_horizontal' => $this->plugin->render_markup_half_horizontal ?? '',
+                'half_vertical' => $this->plugin->render_markup_half_vertical ?? '',
+                'quadrant' => $this->plugin->render_markup_quadrant ?? '',
+                'shared' => $this->plugin->render_markup_shared ?? '',
+            ];
+
+            // Set active tabs based on which layouts have content
+            $this->active_tabs = ['full']; // Full is always active
+            foreach (['half_horizontal', 'half_vertical', 'quadrant', 'shared'] as $layout) {
+                if (! empty($this->markup_layouts[$layout])) {
+                    $this->active_tabs[] = $layout;
+                }
+            }
+
+            $this->markup_code = $this->markup_layouts['full'];
             $this->markup_language = $this->plugin->markup_language ?? 'blade';
         }
 
@@ -125,10 +148,106 @@ new class extends Component
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
         $this->validate();
+
+        // Update markup_code for the active tab
+        if (isset($this->markup_layouts[$this->active_tab])) {
+            $this->markup_layouts[$this->active_tab] = $this->markup_code ?? '';
+        }
+
+        // Save all layout markups to respective columns
         $this->plugin->update([
-            'render_markup' => $this->markup_code ?? null,
+            'render_markup' => $this->markup_layouts['full'] ?? null,
+            'render_markup_half_horizontal' => ! empty($this->markup_layouts['half_horizontal']) ? $this->markup_layouts['half_horizontal'] : null,
+            'render_markup_half_vertical' => ! empty($this->markup_layouts['half_vertical']) ? $this->markup_layouts['half_vertical'] : null,
+            'render_markup_quadrant' => ! empty($this->markup_layouts['quadrant']) ? $this->markup_layouts['quadrant'] : null,
+            'render_markup_shared' => ! empty($this->markup_layouts['shared']) ? $this->markup_layouts['shared'] : null,
             'markup_language' => $this->markup_language ?? null,
         ]);
+    }
+
+    public function addLayoutTab(string $layout): void
+    {
+        if (! in_array($layout, $this->active_tabs, true)) {
+            $this->active_tabs[] = $layout;
+            if (! isset($this->markup_layouts[$layout])) {
+                $this->markup_layouts[$layout] = '';
+            }
+            $this->switchTab($layout);
+        }
+    }
+
+    public function removeLayoutTab(string $layout): void
+    {
+        if ($layout !== 'full') {
+            $this->active_tabs = array_values(array_filter($this->active_tabs, fn ($tab) => $tab !== $layout));
+            if (isset($this->markup_layouts[$layout])) {
+                $this->markup_layouts[$layout] = '';
+            }
+            if ($this->active_tab === $layout) {
+                $this->active_tab = 'full';
+                $this->markup_code = $this->markup_layouts['full'] ?? '';
+            }
+        }
+    }
+
+    public function switchTab(string $layout): void
+    {
+        if (in_array($layout, $this->active_tabs, true)) {
+            // Save current tab's content before switching
+            if (isset($this->markup_layouts[$this->active_tab])) {
+                $this->markup_layouts[$this->active_tab] = $this->markup_code ?? '';
+            }
+
+            $this->active_tab = $layout;
+            $this->markup_code = $this->markup_layouts[$layout] ?? '';
+        }
+    }
+
+    public function toggleLayoutTab(string $layout): void
+    {
+        if ($layout === 'full') {
+            return;
+        }
+
+        if (in_array($layout, $this->active_tabs, true)) {
+            $this->removeLayoutTab($layout);
+        } else {
+            $this->addLayoutTab($layout);
+        }
+    }
+
+    public function getAvailableLayouts(): array
+    {
+        return [
+            'half_horizontal' => 'Half Horizontal',
+            'half_vertical' => 'Half Vertical',
+            'quadrant' => 'Quadrant',
+            'shared' => 'Shared',
+        ];
+    }
+
+    public function getLayoutLabel(string $layout): string
+    {
+        return match ($layout) {
+            'full' => $this->getFullTabLabel(),
+            'half_horizontal' => 'Half Horizontal',
+            'half_vertical' => 'Half Vertical',
+            'quadrant' => 'Quadrant',
+            'shared' => 'Shared',
+            default => ucfirst($layout),
+        };
+    }
+
+    public function getFullTabLabel(): string
+    {
+        // Return "Full" if any layout-specific markup exists, otherwise "Responsive"
+        if (! empty($this->markup_layouts['half_horizontal'])
+            || ! empty($this->markup_layouts['half_vertical'])
+            || ! empty($this->markup_layouts['quadrant'])) {
+            return 'Full';
+        }
+
+        return 'Responsive';
     }
 
     protected array $rules = [
@@ -1018,41 +1137,75 @@ HTML;
         @if(!$plugin->render_markup_view)
             <form wire:submit="saveMarkup">
                 <div class="mb-4">
-                    <flux:field>
-                        @php
-                            $textareaId = 'code-' . uniqid();
-                        @endphp
-                        <flux:label>{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}</flux:label>
-                        <flux:textarea
-                            wire:model="markup_code"
-                            id="{{ $textareaId }}"
-                            placeholder="Enter your HTML code here..."
-                            rows="25"
-                            hidden
-                        />
-                        <div
-                            x-data="codeEditorFormComponent({
-                                isDisabled: false,
-                                language: 'liquid',
-                                state: $wire.entangle('markup_code'),
-                                textareaId: @js($textareaId)
-                            })"
-                            wire:ignore
-                            wire:key="cm-{{ $textareaId }}"
-                            class="min-h-[300px] h-[300px] overflow-hidden resize-y"
-                        >
-                            <!-- Loading state -->
-                            <div x-show="isLoading" class="flex items-center justify-center h-full">
-                                <div class="flex items-center space-x-2">
-                                    <flux:icon.loading />
-                                </div>
-                            </div>
+                    <div>
+                        <div class="flex items-end">
+                            @foreach($active_tabs as $tab)
+                                <button
+                                    type="button"
+                                    wire:click="switchTab('{{ $tab }}')"
+                                    class="tab-button {{ $active_tab === $tab ? 'is-active' : '' }}"
+                                    wire:key="tab-{{ $tab }}"
+                                >
+                                    {{ $this->getLayoutLabel($tab) }}
+                                </button>
+                            @endforeach
 
-                            <!-- Editor container -->
-                            <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                            <flux:dropdown>
+                                <flux:button icon="plus" variant="ghost" size="sm" class="m-0.5"></flux:button>
+                                <flux:menu>
+                                    @foreach($this->getAvailableLayouts() as $layout => $label)
+                                        <flux:menu.item wire:click="toggleLayoutTab('{{ $layout }}')">
+                                            <div class="flex items-center gap-2">
+                                                @if(in_array($layout, $active_tabs, true))
+                                                    <flux:icon.check class="size-4" />
+                                                @else
+                                                    <span class="inline-block w-4 h-4"></span>
+                                                @endif
+                                                <span>{{ $label }}</span>
+                                            </div>
+                                        </flux:menu.item>
+                                    @endforeach
+                                </flux:menu>
+                            </flux:dropdown>
                         </div>
-                    </flux:field>
 
+                        <div class="flex-col p-4 bg-transparent rounded-tl-none styled-container">
+                            <flux:field>
+                                @php
+                                    $textareaId = 'code-' . $plugin->id;
+                                @endphp
+                                <flux:label>{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}</flux:label>
+                                <flux:textarea
+                                    wire:model="markup_code"
+                                    id="{{ $textareaId }}"
+                                    placeholder="Enter your HTML code here..."
+                                    rows="25"
+                                    hidden
+                                />
+                                <div
+                                    x-data="codeEditorFormComponent({
+                                        isDisabled: false,
+                                        language: @js($markup_language === 'liquid' ? 'liquid' : 'html'),
+                                        state: $wire.entangle('markup_code'),
+                                        textareaId: @js($textareaId)
+                                    })"
+                                    wire:ignore
+                                    wire:key="cm-{{ $textareaId }}"
+                                    class="min-h-[300px] h-[300px] overflow-hidden resize-y"
+                                >
+                                    <!-- Loading state -->
+                                    <div x-show="isLoading" class="flex items-center justify-center h-full">
+                                        <div class="flex items-center space-x-2">
+                                            <flux:icon.loading />
+                                        </div>
+                                    </div>
+
+                                    <!-- Editor container -->
+                                    <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                                </div>
+                            </flux:field>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex">

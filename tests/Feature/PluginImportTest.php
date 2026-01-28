@@ -52,8 +52,10 @@ it('imports plugin with shared.liquid file', function (): void {
     $pluginImportService = new PluginImportService();
     $plugin = $pluginImportService->importFromZip($zipFile, $user);
 
-    expect($plugin->render_markup)->toContain('{% comment %}Shared styles{% endcomment %}')
-        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">');
+    expect($plugin->render_markup_shared)->toBe('{% comment %}Shared styles{% endcomment %}')
+        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">')
+        ->and($plugin->getMarkupForSize('full'))->toContain('{% comment %}Shared styles{% endcomment %}')
+        ->and($plugin->getMarkupForSize('full'))->toContain('<div class="view view--{{ size }}">');
 });
 
 it('imports plugin with files in root directory', function (): void {
@@ -202,8 +204,10 @@ it('imports plugin from monorepo with shared.liquid in subdirectory', function (
     $pluginImportService = new PluginImportService();
     $plugin = $pluginImportService->importFromZip($zipFile, $user);
 
-    expect($plugin->render_markup)->toContain('{% comment %}Monorepo shared styles{% endcomment %}')
-        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">');
+    expect($plugin->render_markup_shared)->toBe('{% comment %}Monorepo shared styles{% endcomment %}')
+        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">')
+        ->and($plugin->getMarkupForSize('full'))->toContain('{% comment %}Monorepo shared styles{% endcomment %}')
+        ->and($plugin->getMarkupForSize('full'))->toContain('<div class="view view--{{ size }}">');
 });
 
 it('imports plugin from URL with zip_entry_path parameter', function (): void {
@@ -352,8 +356,10 @@ it('imports specific plugin from monorepo zip with zip_entry_path parameter', fu
     expect($plugin)->toBeInstanceOf(Plugin::class)
         ->and($plugin->user_id)->toBe($user->id)
         ->and($plugin->name)->toBe('Example Plugin 2') // Should import example-plugin2, not example-plugin
-        ->and($plugin->render_markup)->toContain('{% comment %}Plugin 2 shared styles{% endcomment %}')
-        ->and($plugin->render_markup)->toContain('<div class="plugin2-content">Plugin 2 content</div>');
+        ->and($plugin->render_markup_shared)->toBe('{% comment %}Plugin 2 shared styles{% endcomment %}')
+        ->and($plugin->render_markup)->toContain('<div class="plugin2-content">Plugin 2 content</div>')
+        ->and($plugin->getMarkupForSize('full'))->toContain('{% comment %}Plugin 2 shared styles{% endcomment %}')
+        ->and($plugin->getMarkupForSize('full'))->toContain('<div class="plugin2-content">Plugin 2 content</div>');
 });
 
 it('sets icon_url when importing from URL with iconUrl parameter', function (): void {
@@ -516,8 +522,8 @@ it('imports plugin with only shared.liquid file', function (): void {
 
     expect($plugin)->toBeInstanceOf(Plugin::class)
         ->and($plugin->markup_language)->toBe('liquid')
-        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">')
-        ->and($plugin->render_markup)->toContain('<div class="shared-content">{{ data.title }}</div>');
+        ->and($plugin->render_markup_shared)->toBe('<div class="shared-content">{{ data.title }}</div>')
+        ->and($plugin->render_markup)->toBeNull();
 });
 
 it('imports plugin with only shared.blade.php file', function (): void {
@@ -535,8 +541,8 @@ it('imports plugin with only shared.blade.php file', function (): void {
 
     expect($plugin)->toBeInstanceOf(Plugin::class)
         ->and($plugin->markup_language)->toBe('blade')
-        ->and($plugin->render_markup)->toBe('<div class="shared-content">{{ $data["title"] }}</div>')
-        ->and($plugin->render_markup)->not->toContain('<div class="view view--{{ size }}">');
+        ->and($plugin->render_markup_shared)->toBe('<div class="shared-content">{{ $data["title"] }}</div>')
+        ->and($plugin->render_markup)->toBeNull();
 });
 
 // Helper methods
