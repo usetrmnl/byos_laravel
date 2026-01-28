@@ -29,7 +29,7 @@ new class extends Component {}
             <div class="mt-3 flex items-center justify-start gap-2">
                 <flux:input value="laravel-trmnl" readonly copyable class="max-w-42"/>
                 <flux:button class="w-42"
-                             href="https://usetrmnl.com/?ref=laravel-trmnl"
+                             href="{{ config('services.trmnl.base_url') }}?ref=laravel-trmnl"
                              target="_blank"
                              icon:trailing="arrow-up-right">{{ __('Referral link') }}</flux:button>
             </div>

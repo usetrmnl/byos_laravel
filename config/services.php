@@ -36,6 +36,7 @@ return [
     ],
 
     'trmnl' => [
+        'base_url' => 'https://trmnl.com',
         'proxy_base_url' => env('TRMNL_PROXY_BASE_URL', 'https://trmnl.app'),
         'proxy_refresh_minutes' => env('TRMNL_PROXY_REFRESH_MINUTES', 15),
         'proxy_refresh_cron' => env('TRMNL_PROXY_REFRESH_CRON'),

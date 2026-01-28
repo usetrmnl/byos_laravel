@@ -12,7 +12,7 @@
             <div class="grid" style="gap: 9px;">
                 <div class="row row--center col--span-3 col--end">
                     <img class="weather-image" style="max-height: 150px; margin:auto;"
-                         src="https://usetrmnl.com/images/plugins/weather/wi-thermometer.svg">
+                         src="{{ config('services.trmnl.base_url') }}/images/plugins/weather/wi-thermometer.svg">
                 </div>
                 <div class="col col--span-3 col--end">
                     <div class="item h--full">
@@ -28,7 +28,7 @@
                     <div class="item">
                         <div class="meta"></div>
                         <div class="icon">
-                            {{-- <img class="weather-icon" src="https://usetrmnl.com/images/plugins/weather/wi-thermometer.svg"> --}}
+                            {{-- <img class="weather-icon" src="{{ config('services.trmnl.base_url') }}/images/plugins/weather/wi-thermometer.svg"> --}}
                         </div>
                         <div class="content">
                             <span class="value value--small">{{ $weatherEntity['attributes']['wind_speed'] }} {{ $weatherEntity['attributes']['wind_speed_unit'] }}</span>
@@ -39,7 +39,7 @@
                     <div class="item">
                         <div class="meta"></div>
                         <div class="icon">
-                            {{-- <img class="weather-icon" src="https://usetrmnl.com/images/weather/wi-raindrops.svg"> --}}
+                            {{-- <img class="weather-icon" src="{{ config('services.trmnl.base_url') }}/images/weather/wi-raindrops.svg"> --}}
                         </div>
                         <div class="content">
                             <span class="value value--small">{{ $weatherEntity['attributes']['humidity'] }}%</span>
@@ -50,7 +50,7 @@
                     <div class="item">
                         <div class="meta"></div>
                         <div class="icon">
-                            {{-- <img class="weather-icon" src="https://usetrmnl.com/images/weather/wi-day-sunny.svg"> --}}
+                            {{-- <img class="weather-icon" src="{{ config('services.trmnl.base_url') }}/images/weather/wi-day-sunny.svg"> --}}
                         </div>
                         <div class="content">
                             <span class="value value--xsmall">{{ Str::title($weatherEntity['state']) }}</span>

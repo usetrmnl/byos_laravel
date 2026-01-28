@@ -49,10 +49,13 @@ class extends Component
         try {
             $cacheKey = 'trmnl_recipes_newest_page_'.$this->page;
             $response = Cache::remember($cacheKey, 43200, function () {
-                $response = Http::timeout(10)->get('https://usetrmnl.com/recipes.json', [
-                    'sort-by' => 'newest',
-                    'page' => $this->page,
-                ]);
+                $response = Http::timeout(10)->get(
+                    config('services.trmnl.base_url').'/recipes.json',
+                    [
+                        'sort-by' => 'newest',
+                        'page' => $this->page,
+                    ]
+                );
 
                 if (! $response->successful()) {
                     throw new RuntimeException('Failed to fetch TRMNL recipes');
@@ -86,11 +89,14 @@ class extends Component
         try {
             $cacheKey = 'trmnl_recipes_search_'.md5($term).'_page_'.$this->page;
             $response = Cache::remember($cacheKey, 300, function () use ($term) {
-                $response = Http::get('https://usetrmnl.com/recipes.json', [
-                    'search' => $term,
-                    'sort-by' => 'newest',
-                    'page' => $this->page,
-                ]);
+                $response = Http::get(
+                    config('services.trmnl.base_url').'/recipes.json',
+                    [
+                        'search' => $term,
+                        'sort-by' => 'newest',
+                        'page' => $this->page,
+                    ]
+                );
 
                 if (! $response->successful()) {
                     throw new RuntimeException('Failed to search TRMNL recipes');
@@ -155,7 +161,7 @@ class extends Component
         abort_unless(auth()->user() !== null, 403);
 
         try {
-            $zipUrl = "https://usetrmnl.com/api/plugin_settings/{$recipeId}/archive";
+            $zipUrl = config('services.trmnl.base_url')."/api/plugin_settings/{$recipeId}/archive";
 
             $recipe = collect($this->recipes)->firstWhere('id', $recipeId);
 
@@ -183,16 +189,21 @@ class extends Component
         $this->previewData = [];
 
         try {
-            $response = Http::timeout(10)->get("https://usetrmnl.com/recipes/{$recipeId}.json");
+            $response = Http::timeout(10)->get(
+                config('services.trmnl.base_url')."/recipes/{$recipeId}.json"
+            );
 
             if ($response->successful()) {
                 $item = $response->json()['data'] ?? [];
                 $this->previewData = $this->mapRecipe($item);
             } else {
                 // Fallback to searching for the specific recipe if single endpoint doesn't exist
-                $response = Http::timeout(10)->get('https://usetrmnl.com/recipes.json', [
-                    'search' => $recipeId,
-                ]);
+                $response = Http::timeout(10)->get(
+                    config('services.trmnl.base_url').'/recipes.json',
+                    [
+                        'search' => $recipeId,
+                    ]
+                );
 
                 if ($response->successful()) {
                     $data = $response->json()['data'] ?? [];
@@ -240,7 +251,9 @@ class extends Component
                 'installs' => data_get($item, 'stats.installs'),
                 'forks' => data_get($item, 'stats.forks'),
             ],
-            'detail_url' => isset($item['id']) ? ('https://usetrmnl.com/recipes/'.$item['id']) : null,
+            'detail_url' => isset($item['id'])
+                ? config('services.trmnl.base_url').'/recipes/'.$item['id']
+                : null,
         ];
     }
 }; ?>

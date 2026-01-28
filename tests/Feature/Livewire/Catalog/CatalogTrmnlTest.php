@@ -8,7 +8,7 @@ use Livewire\Livewire;
 
 it('loads newest TRMNL recipes on mount', function (): void {
     Http::fake([
-        'usetrmnl.com/recipes.json*' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json*' => Http::response([
             'data' => [
                 [
                     'id' => 123,
@@ -33,7 +33,7 @@ it('loads newest TRMNL recipes on mount', function (): void {
 
 it('shows preview button when screenshot_url is provided', function (): void {
     Http::fake([
-        'usetrmnl.com/recipes.json*' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json*' => Http::response([
             'data' => [
                 [
                     'id' => 123,
@@ -57,7 +57,7 @@ it('shows preview button when screenshot_url is provided', function (): void {
 it('searches TRMNL recipes when search term is provided', function (): void {
     Http::fake([
         // First call (mount -> newest)
-        'usetrmnl.com/recipes.json?*' => Http::sequence()
+        config('services.trmnl.base_url').'/recipes.json?*' => Http::sequence()
             ->push([
                 'data' => [
                     [
@@ -98,7 +98,7 @@ it('installs plugin successfully when user is authenticated', function (): void 
     $user = User::factory()->create();
 
     Http::fake([
-        'usetrmnl.com/recipes.json*' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json*' => Http::response([
             'data' => [
                 [
                     'id' => 123,
@@ -110,7 +110,7 @@ it('installs plugin successfully when user is authenticated', function (): void 
                 ],
             ],
         ], 200),
-        'usetrmnl.com/api/plugin_settings/123/archive*' => Http::response('fake zip content', 200),
+        config('services.trmnl.base_url').'/api/plugin_settings/123/archive*' => Http::response('fake zip content', 200),
     ]);
 
     $this->actingAs($user);
@@ -125,7 +125,7 @@ it('installs plugin successfully when user is authenticated', function (): void 
 
 it('shows error when user is not authenticated', function (): void {
     Http::fake([
-        'usetrmnl.com/recipes.json*' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json*' => Http::response([
             'data' => [
                 [
                     'id' => 123,
@@ -151,7 +151,7 @@ it('shows error when plugin installation fails', function (): void {
     $user = User::factory()->create();
 
     Http::fake([
-        'usetrmnl.com/recipes.json*' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json*' => Http::response([
             'data' => [
                 [
                     'id' => 123,
@@ -163,7 +163,7 @@ it('shows error when plugin installation fails', function (): void {
                 ],
             ],
         ], 200),
-        'usetrmnl.com/api/plugin_settings/123/archive*' => Http::response('invalid zip content', 200),
+        config('services.trmnl.base_url').'/api/plugin_settings/123/archive*' => Http::response('invalid zip content', 200),
     ]);
 
     $this->actingAs($user);
@@ -178,7 +178,7 @@ it('shows error when plugin installation fails', function (): void {
 
 it('previews a recipe with async fetch', function (): void {
     Http::fake([
-        'usetrmnl.com/recipes.json*' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json*' => Http::response([
             'data' => [
                 [
                     'id' => 123,
@@ -190,7 +190,7 @@ it('previews a recipe with async fetch', function (): void {
                 ],
             ],
         ], 200),
-        'usetrmnl.com/recipes/123.json' => Http::response([
+        config('services.trmnl.base_url').'/recipes/123.json' => Http::response([
             'data' => [
                 'id' => 123,
                 'name' => 'Weather Chum Updated',
@@ -216,7 +216,7 @@ it('previews a recipe with async fetch', function (): void {
 
 it('supports pagination and loading more recipes', function (): void {
     Http::fake([
-        'usetrmnl.com/recipes.json?sort-by=newest&page=1' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json?sort-by=newest&page=1' => Http::response([
             'data' => [
                 [
                     'id' => 1,
@@ -229,7 +229,7 @@ it('supports pagination and loading more recipes', function (): void {
             ],
             'next_page_url' => '/recipes.json?page=2',
         ], 200),
-        'usetrmnl.com/recipes.json?sort-by=newest&page=2' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json?sort-by=newest&page=2' => Http::response([
             'data' => [
                 [
                     'id' => 2,
@@ -258,7 +258,7 @@ it('supports pagination and loading more recipes', function (): void {
 
 it('resets pagination when search term changes', function (): void {
     Http::fake([
-        'usetrmnl.com/recipes.json?sort-by=newest&page=1' => Http::sequence()
+        config('services.trmnl.base_url').'/recipes.json?sort-by=newest&page=1' => Http::sequence()
             ->push([
                 'data' => [['id' => 1, 'name' => 'Initial 1']],
                 'next_page_url' => '/recipes.json?page=2',
@@ -267,7 +267,7 @@ it('resets pagination when search term changes', function (): void {
                 'data' => [['id' => 3, 'name' => 'Initial 1 Again']],
                 'next_page_url' => null,
             ]),
-        'usetrmnl.com/recipes.json?search=weather&sort-by=newest&page=1' => Http::response([
+        config('services.trmnl.base_url').'/recipes.json?search=weather&sort-by=newest&page=1' => Http::response([
             'data' => [['id' => 2, 'name' => 'Weather Result']],
             'next_page_url' => null,
         ]),

@@ -17,8 +17,10 @@ test('firmware check command has correct signature', function (): void {
 
 test('firmware check command runs without errors', function (): void {
     // Mock the firmware API response
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'version' => '1.0.0',
             'url' => 'https://example.com/firmware.bin',
         ], 200),
@@ -33,8 +35,10 @@ test('firmware check command runs without errors', function (): void {
 
 test('firmware check command runs with download flag', function (): void {
     // Mock the firmware API response
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'version' => '1.0.0',
             'url' => 'https://example.com/firmware.bin',
         ], 200),
@@ -57,8 +61,10 @@ test('firmware check command runs with download flag', function (): void {
 
 test('firmware check command can run successfully', function (): void {
     // Mock the firmware API response
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'version' => '1.0.0',
             'url' => 'https://example.com/firmware.bin',
         ], 200),

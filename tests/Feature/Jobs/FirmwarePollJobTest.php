@@ -10,8 +10,10 @@ beforeEach(function (): void {
 });
 
 test('it creates new firmware record when polling', function (): void {
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'version' => '1.0.0',
             'url' => 'https://example.com/firmware.bin',
         ], 200),
@@ -32,8 +34,10 @@ test('it updates existing firmware record when polling', function (): void {
         'latest' => true,
     ]);
 
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'version' => '1.0.0',
             'url' => 'https://new-url.com/firmware.bin',
         ], 200),
@@ -52,8 +56,10 @@ test('it marks previous firmware as not latest when new version is found', funct
         'latest' => true,
     ]);
 
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'version' => '1.1.0',
             'url' => 'https://example.com/firmware.bin',
         ], 200),
@@ -66,8 +72,10 @@ test('it marks previous firmware as not latest when new version is found', funct
 });
 
 test('it handles connection exception gracefully', function (): void {
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => function (): void {
+        $baseUrl.'/api/firmware/latest' => function (): void {
             throw new ConnectionException('Connection failed');
         },
     ]);
@@ -79,8 +87,10 @@ test('it handles connection exception gracefully', function (): void {
 });
 
 test('it handles invalid response gracefully', function (): void {
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response(null, 200),
+        $baseUrl.'/api/firmware/latest' => Http::response(null, 200),
     ]);
 
     (new FirmwarePollJob)->handle();
@@ -90,8 +100,10 @@ test('it handles invalid response gracefully', function (): void {
 });
 
 test('it handles missing version in response gracefully', function (): void {
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'url' => 'https://example.com/firmware.bin',
         ], 200),
     ]);
@@ -103,8 +115,10 @@ test('it handles missing version in response gracefully', function (): void {
 });
 
 test('it handles missing url in response gracefully', function (): void {
+    $baseUrl = config('services.trmnl.base_url');
+
     Http::fake([
-        'https://usetrmnl.com/api/firmware/latest' => Http::response([
+        $baseUrl.'/api/firmware/latest' => Http::response([
             'version' => '1.0.0',
         ], 200),
     ]);

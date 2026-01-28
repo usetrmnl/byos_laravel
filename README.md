@@ -3,7 +3,7 @@
 [![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
 
 TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
-It allows you to manage TRMNL devices, generate screens using **native plugins** (Screens API, Markup), **recipes** (120+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), 600+ from the [TRMNL catalog](https://usetrmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 40k downloads and 160+ stars, it’s the most popular community-driven BYOS.
+It allows you to manage TRMNL devices, generate screens using **native plugins** (Screens API, Markup), **recipes** (120+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), 600+ from the [TRMNL catalog](https://trmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 40k downloads and 160+ stars, it’s the most popular community-driven BYOS.
 
 ![Screenshot](README_byos-screenshot.png)
 ![Screenshot](README_byos-screenshot-dark.png)
@@ -15,9 +15,9 @@ It allows you to manage TRMNL devices, generate screens using **native plugins**
 * 📡 Device Information – Display battery status, WiFi strength, firmware version, and more.
 * 🔍 Auto-Join – Automatically detects and adds devices from your local network.
 * 🖥️ Screen Generation – Supports Plugins (including Mashups), Recipes, API, Markup, or updates via Code.
-  * Support for TRMNL [Design Framework](https://usetrmnl.com/framework)
+  * Support for TRMNL [Design Framework](https://trmnl.com/framework)
   * Compatible open-source recipes are available in the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)
-  * Import from the [TRMNL community recipe catalog](https://usetrmnl.com/recipes)
+  * Import from the [TRMNL community recipe catalog](https://trmnl.com/recipes)
   * Supported Devices
     * TRMNL OG (1-bit & 2-bit)
     * SeeedStudio TRMNL 7,5" (OG) DIY Kit
@@ -43,7 +43,7 @@ It allows you to manage TRMNL devices, generate screens using **native plugins**
 ### Support ❤️
 This repo is maintained voluntarily by [@bnussbau](https://github.com/bnussbau).
 
-Support the development of this package by purchasing a TRMNL device through the referral link: https://usetrmnl.com/?ref=laravel-trmnl. At checkout, use the code `laravel-trmnl` to receive a $15 discount on your purchase.
+Support the development of this package by purchasing a TRMNL device through the referral link: https://trmnl.com/?ref=laravel-trmnl. At checkout, use the code `laravel-trmnl` to receive a $15 discount on your purchase.
 
 or
 
