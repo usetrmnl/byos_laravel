@@ -37,3 +37,5 @@ yarn-error.log
 /.claude
 /AGENTS.md
 /opencode.json
+/.cursor
+/.opencode
