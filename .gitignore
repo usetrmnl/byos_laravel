@@ -39,3 +39,4 @@ yarn-error.log
 /opencode.json
 /.cursor
 /.opencode
+/build.sh
