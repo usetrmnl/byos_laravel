@@ -79,7 +79,7 @@
                         <x-trmnl::label variant="primary">{{ $event['summary'] }}</x-trmnl::label>
                     </td>
                     <td>
-                        <x-trmnl::label variant="inverted">{{ $event['location'] ?? '—' }}</x-trmnl::label>
+                        <x-trmnl::label variant="inverted">{{ Str::limit($event['location'] ?? '—',100) }}</x-trmnl::label>
                     </td>
                 </tr>
             @empty
