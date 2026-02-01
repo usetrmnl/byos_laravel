@@ -45,6 +45,7 @@ test('device can fetch display data with valid credentials', function (): void {
             'update_firmware' => false,
             'firmware_url' => null,
             'special_function' => 'sleep',
+            'maximum_compatibility' => false,
         ]);
 
     expect($device->fresh())
@@ -93,6 +94,27 @@ test('display endpoint omits image_url_timeout when not configured', function ()
 
     $response->assertOk()
         ->assertJsonMissing(['image_url_timeout']);
+});
+
+test('display endpoint includes maximum_compatibility value when true for device', function (): void {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+        'maximum_compatibility' => true
+    ]);
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk()
+        ->assertJson([
+            'maximum_compatibility' => true,
+        ]);
 });
 
 test('new device is auto-assigned to user with auto-assign enabled', function (): void {
