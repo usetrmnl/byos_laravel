@@ -42,6 +42,7 @@ class Device extends Model
         'sleep_mode_to' => 'datetime:H:i',
         'special_function' => 'string',
         'pause_until' => 'datetime',
+        'maximum_compatibility' => 'boolean',
     ];
 
     public function getBatteryPercentAttribute(): int|float

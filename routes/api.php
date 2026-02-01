@@ -194,6 +194,7 @@ Route::get('/display', function (Request $request) {
         'update_firmware' => $device->update_firmware,
         'firmware_url' => $device->firmware_url,
         'special_function' => $device->special_function ?? 'sleep',
+        'maximum_compatibility' => $device->maximum_compatibility,
     ];
 
     if (config('services.trmnl.image_url_timeout')) {

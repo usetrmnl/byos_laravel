@@ -31,6 +31,9 @@ new class extends Component
 
     public $device_model_id;
 
+    // Signal to device to use high compatibility approaches when redrawing content
+    public $maximum_compatibility = false;
+
     // Sleep mode and special function
     public $sleep_mode_enabled = false;
 
@@ -81,6 +84,7 @@ new class extends Component
         $this->rotate = $device->rotate;
         $this->image_format = $device->image_format;
         $this->device_model_id = $device->device_model_id;
+        $this->maximum_compatibility = $device->maximum_compatibility;
         $this->deviceModels = DeviceModel::orderBy('label')->get()->sortBy(function ($deviceModel) {
             // Put TRMNL models at the top, then sort alphabetically within each group
             $isTrmnl = str_starts_with($deviceModel->label, 'TRMNL');
@@ -141,6 +145,7 @@ new class extends Component
             'rotate' => 'required|integer|min:0|max:359',
             'image_format' => 'required|string',
             'device_model_id' => 'nullable|exists:device_models,id',
+            'maximum_compatibility' => 'boolean',
             'sleep_mode_enabled' => 'boolean',
             'sleep_mode_from' => 'nullable|date_format:H:i',
             'sleep_mode_to' => 'nullable|date_format:H:i',
@@ -160,6 +165,7 @@ new class extends Component
             'rotate' => $this->rotate,
             'image_format' => $this->image_format,
             'device_model_id' => $deviceModelId,
+            'maximum_compatibility' => $this->maximum_compatibility,
             'sleep_mode_enabled' => $this->sleep_mode_enabled,
             'sleep_mode_from' => $this->sleep_mode_from,
             'sleep_mode_to' => $this->sleep_mode_to,
@@ -426,6 +432,8 @@ new class extends Component
                                 </flux:select.option>
                             @endforeach
                         </flux:select>
+
+                        <flux:checkbox wire:model="maximum_compatibility" label="Maximum Compatibility" description="Enable if experiencing display issues" />
 
                         @if(empty($device_model_id))
                             <flux:separator class="my-4" text="Advanced Device Settings" />
@@ -787,4 +795,3 @@ new class extends Component
         </div>
     </div>
 </div>
-
