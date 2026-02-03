@@ -143,7 +143,7 @@ class PlaylistItem extends Model
                 'deviceVariant' => $device?->deviceVariant() ?? 'og',
                 'scaleLevel' => $device?->scaleLevel(),
                 'slot' => $this->plugin instanceof Plugin
-                    ? $this->plugin->render('full', false)
+                    ? $this->plugin->render('full', false, $device)
                     : throw new Exception('Invalid plugin instance'),
             ])->render();
         }
@@ -157,7 +157,7 @@ class PlaylistItem extends Model
 
         foreach ($plugins as $index => $plugin) {
             $size = $this->getLayoutSize($index);
-            $pluginMarkups[] = $plugin->render($size, false);
+            $pluginMarkups[] = $plugin->render($size, false, $device);
         }
 
         return view('trmnl-layouts.mashup', [

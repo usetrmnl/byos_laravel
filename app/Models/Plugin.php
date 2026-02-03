@@ -447,6 +447,13 @@ class Plugin extends Model
                             'locale' => 'en',
                             'time_zone_iana' => $timezone,
                         ],
+                        'device' => [
+                            'friendly_id' => $device?->friendly_id,
+                            'percent_charged' => $device?->battery_percent,
+                            'wifi_strength' => $device?->wifi_strength,
+                            'height' => $device?->height,
+                            'width' => $device?->width,
+                        ],
                         'plugin_settings' => [
                             'instance_name' => $this->name,
                             'strategy' => $this->data_strategy,
