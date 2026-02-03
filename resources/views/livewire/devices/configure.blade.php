@@ -433,7 +433,7 @@ new class extends Component
                             @endforeach
                         </flux:select>
 
-                        <flux:checkbox wire:model="maximum_compatibility" label="Maximum Compatibility" description="Enable if experiencing display issues" />
+                        <flux:checkbox wire:model="maximum_compatibility" label="Maximum Compatibility" description="Resolves display issues caused by certain e-ink driver chips. Disables fast refresh. TRMNL Firmware 1.6.0+ required." />
 
                         @if(empty($device_model_id))
                             <flux:separator class="my-4" text="Advanced Device Settings" />
