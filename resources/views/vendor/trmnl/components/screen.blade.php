@@ -18,12 +18,12 @@
               href="{{ config('trmnl-blade.framework_css_url') }}">
     @else
         <link rel="stylesheet"
-              href="{{ config('services.trmnl.base_url') }}/css/{{ config('trmnl-blade.framework_version', '1.2.0') }}/plugins.css">
+              href="{{ config('services.trmnl.base_url') }}/css/{{ config('trmnl-blade.framework_css_version') ?? config('trmnl-blade.framework_version', '2.1.0') }}/plugins.css">
     @endif
     @if (config('trmnl-blade.framework_js_url'))
         <script src="{{ config('trmnl-blade.framework_js_url') }}"></script>
     @else
-        <script src="{{ config('services.trmnl.base_url') }}/js/{{ config('trmnl-blade.framework_version', '1.2.0') }}/plugins.js"></script>
+        <script src="{{ config('services.trmnl.base_url') }}/js/{{ config('trmnl-blade.framework_js_version') ?? config('trmnl-blade.framework_version', '2.1.0') }}/plugins.js"></script>
     @endif
     <title>{{ $title ?? config('app.name') }}</title>
 </head>
