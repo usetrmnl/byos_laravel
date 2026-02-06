@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Models\DeviceModel;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 
 it('allows a user to view the device models page', function (): void {
     $user = User::factory()->create();
@@ -86,4 +88,39 @@ it('redirects unauthenticated users from the device models page', function (): v
     $response = $this->get('/device-models');
 
     $response->assertRedirect('/login');
+});
+
+it('update from API runs job and refreshes device models', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
+        config('services.trmnl.base_url').'/api/models' => Http::response([
+            'data' => [
+                [
+                    'name' => 'api-model',
+                    'label' => 'API Model',
+                    'description' => 'From API',
+                    'width' => 800,
+                    'height' => 480,
+                    'colors' => 4,
+                    'bit_depth' => 2,
+                    'scale_factor' => 1.0,
+                    'rotation' => 0,
+                    'mime_type' => 'image/png',
+                    'offset_x' => 0,
+                    'offset_y' => 0,
+                    'kind' => 'trmnl',
+                    'published_at' => '2023-01-01T00:00:00Z',
+                ],
+            ],
+        ], 200),
+    ]);
+
+    $component = Livewire::test('device-models.index')
+        ->call('updateFromApi');
+
+    $deviceModels = $component->get('deviceModels');
+    expect($deviceModels->pluck('name')->toArray())->toContain('api-model');
 });
