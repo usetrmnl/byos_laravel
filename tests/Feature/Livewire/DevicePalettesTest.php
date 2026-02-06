@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\DevicePalette;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -569,4 +570,30 @@ test('component refreshes palette list after deleting', function (): void {
     $palettes = $component->get('devicePalettes');
     expect($palettes)->toHaveCount($initialCount + 1);
     expect(DevicePalette::count())->toBe($initialCount + 1);
+});
+
+test('update from API runs job and refreshes device palettes', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Http::fake([
+        'usetrmnl.com/api/palettes' => Http::response([
+            'data' => [
+                [
+                    'id' => 'api-palette',
+                    'name' => 'API Palette',
+                    'grays' => 4,
+                    'colors' => null,
+                    'framework_class' => '',
+                ],
+            ],
+        ], 200),
+        config('services.trmnl.base_url').'/api/models' => Http::response(['data' => []], 200),
+    ]);
+
+    $component = Livewire::test('device-palettes.index')
+        ->call('updateFromApi');
+
+    $devicePalettes = $component->get('devicePalettes');
+    expect($devicePalettes->pluck('name')->toArray())->toContain('api-palette');
 });

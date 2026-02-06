@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\FetchDeviceModelsJob;
 use App\Models\DevicePalette;
 use Livewire\Component;
 
@@ -57,6 +58,13 @@ new class extends Component
     public $editingDevicePaletteId;
 
     public $viewingDevicePaletteId;
+
+    public function updateFromApi(): void
+    {
+        FetchDeviceModelsJob::dispatchSync();
+        $this->devicePalettes = DevicePalette::all();
+        session()->flash('message', 'Device palettes updated from API.');
+    }
 
     public function openDevicePaletteModal(?string $devicePaletteId = null, bool $viewOnly = false): void
     {
@@ -202,9 +210,17 @@ new class extends Component
                         </flux:menu>
                     </flux:dropdown>
                 </div>
-                <flux:modal.trigger name="device-palette-modal">
-                    <flux:button wire:click="openDevicePaletteModal()" icon="plus" variant="primary">Add Device Palette</flux:button>
-                </flux:modal.trigger>
+                <flux:button.group>
+                    <flux:modal.trigger name="device-palette-modal">
+                        <flux:button wire:click="openDevicePaletteModal()" icon="plus" variant="primary">Add Device Palette</flux:button>
+                    </flux:modal.trigger>
+                    <flux:dropdown>
+                        <flux:button icon="chevron-down" variant="primary"></flux:button>
+                        <flux:menu>
+                            <flux:menu.item icon="arrow-path" wire:click="updateFromApi">Update from API</flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
+                </flux:button.group>
             </div>
             @if (session()->has('message'))
                 <div class="mb-4">
