@@ -18,7 +18,7 @@ ENV TRMNL_LIQUID_ENABLED=1
 # Switch to the root user so we can do root things
 USER root
 
-COPY --chown=www-data:www-data --from=bnussbau/trmnl-liquid-cli:0.1.0 /usr/local/bin/trmnl-liquid-cli /usr/local/bin/
+COPY --chown=www-data:www-data --from=bnussbau/trmnl-liquid-cli:0.2.0 /usr/local/bin/trmnl-liquid-cli /usr/local/bin/
 
 # Set the working directory
 WORKDIR /var/www/html
