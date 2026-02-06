@@ -31,6 +31,10 @@ new class extends Component
 
     public $device_model_id;
 
+    public $is_mirror = false;
+
+    public $mirror_device_id = null;
+
     // Signal to device to use high compatibility approaches when redrawing content
     public $maximum_compatibility = false;
 
@@ -98,6 +102,8 @@ new class extends Component
         $this->sleep_mode_from = optional($device->sleep_mode_from)->format('H:i');
         $this->sleep_mode_to = optional($device->sleep_mode_to)->format('H:i');
         $this->special_function = $device->special_function;
+        $this->is_mirror = $device->mirror_device_id !== null;
+        $this->mirror_device_id = $device->mirror_device_id;
 
         return view('livewire.devices.configure', [
             'image' => ($current_image_uuid) ? url($current_image_path) : null,
@@ -145,12 +151,20 @@ new class extends Component
             'rotate' => 'required|integer|min:0|max:359',
             'image_format' => 'required|string',
             'device_model_id' => 'nullable|exists:device_models,id',
+            'mirror_device_id' => 'required_if:is_mirror,true',
             'maximum_compatibility' => 'boolean',
             'sleep_mode_enabled' => 'boolean',
             'sleep_mode_from' => 'nullable|date_format:H:i',
             'sleep_mode_to' => 'nullable|date_format:H:i',
             'special_function' => 'nullable|string',
         ]);
+
+        if ($this->is_mirror) {
+            $mirrorDevice = auth()->user()->devices()->find($this->mirror_device_id);
+            abort_unless($mirrorDevice, 403, 'Invalid mirror device selected');
+            abort_if($mirrorDevice->mirror_device_id !== null, 403, 'Cannot mirror a device that is already a mirror device');
+            abort_if((int) $this->mirror_device_id === (int) $this->device->id, 403, 'Device cannot mirror itself');
+        }
 
         // Convert empty string to null for custom selection
         $deviceModelId = empty($this->device_model_id) ? null : $this->device_model_id;
@@ -165,6 +179,7 @@ new class extends Component
             'rotate' => $this->rotate,
             'image_format' => $this->image_format,
             'device_model_id' => $deviceModelId,
+            'mirror_device_id' => $this->is_mirror ? $this->mirror_device_id : null,
             'maximum_compatibility' => $this->maximum_compatibility,
             'sleep_mode_enabled' => $this->sleep_mode_enabled,
             'sleep_mode_from' => $this->sleep_mode_from,
@@ -432,6 +447,18 @@ new class extends Component
                                 </flux:select.option>
                             @endforeach
                         </flux:select>
+
+                        <flux:checkbox wire:model.live="is_mirror" label="Mirrors Device"/>
+                        @if($is_mirror)
+                            <flux:select wire:model="mirror_device_id" label="Select Device to Mirror">
+                                <flux:select.option value="">Select a device</flux:select.option>
+                                @foreach(auth()->user()->devices->where('mirror_device_id', null)->where('id', '!=', $device->id) as $mirrorOption)
+                                    <flux:select.option value="{{ $mirrorOption->id }}">
+                                        {{ $mirrorOption->name }} ({{ $mirrorOption->friendly_id }})
+                                    </flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        @endif
 
                         <flux:checkbox wire:model="maximum_compatibility" label="Maximum Compatibility" description="Resolves display issues caused by certain e-ink driver chips. Disables fast refresh. TRMNL Firmware 1.6.0+ required." />
 
