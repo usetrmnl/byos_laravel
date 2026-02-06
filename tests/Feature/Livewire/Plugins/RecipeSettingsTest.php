@@ -109,3 +109,43 @@ test('recipe settings can clear trmnlp_id', function (): void {
 
     expect($plugin->fresh()->trmnlp_id)->toBeNull();
 });
+
+test('recipe settings saves preferred_renderer when liquid enabled and recipe is liquid', function (): void {
+    config(['services.trmnl.liquid_enabled' => true]);
+
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'markup_language' => 'liquid',
+        'preferred_renderer' => null,
+    ]);
+
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
+        ->set('use_trmnl_liquid_renderer', true)
+        ->call('saveTrmnlpId')
+        ->assertHasNoErrors();
+
+    expect($plugin->fresh()->preferred_renderer)->toBe('trmnl-liquid');
+});
+
+test('recipe settings clears preferred_renderer when checkbox unchecked', function (): void {
+    config(['services.trmnl.liquid_enabled' => true]);
+
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'markup_language' => 'liquid',
+        'preferred_renderer' => 'trmnl-liquid',
+    ]);
+
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
+        ->set('use_trmnl_liquid_renderer', false)
+        ->call('saveTrmnlpId')
+        ->assertHasNoErrors();
+
+    expect($plugin->fresh()->preferred_renderer)->toBeNull();
+});

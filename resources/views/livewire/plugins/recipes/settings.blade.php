@@ -17,6 +17,8 @@ new class extends Component
 
     public bool $alias = false;
 
+    public bool $use_trmnl_liquid_renderer = false;
+
     public int $resetIndex = 0;
 
     public function mount(): void
@@ -27,6 +29,7 @@ new class extends Component
         $this->trmnlp_id = $this->plugin->trmnlp_id;
         $this->uuid = $this->plugin->uuid;
         $this->alias = $this->plugin->alias ?? false;
+        $this->use_trmnl_liquid_renderer = $this->plugin->preferred_renderer === 'trmnl-liquid';
     }
 
     public function saveTrmnlpId(): void
@@ -43,11 +46,13 @@ new class extends Component
                     ->ignore($this->plugin->id),
             ],
             'alias' => 'boolean',
+            'use_trmnl_liquid_renderer' => 'boolean',
         ]);
 
         $this->plugin->update([
             'trmnlp_id' => empty($this->trmnlp_id) ? null : $this->trmnlp_id,
             'alias' => $this->alias,
+            'preferred_renderer' => $this->use_trmnl_liquid_renderer ? 'trmnl-liquid' : null,
         ]);
 
         Flux::modal('trmnlp-settings')->close();
@@ -82,6 +87,16 @@ new class extends Component
                     <flux:checkbox wire:model.live="alias" label="Enable Alias" />
                     <flux:description>Enable an Alias URL for this recipe. Your server does not need to be exposed to the internet, but your device must be able to reach the URL. <a href="https://help.usetrmnl.com/en/articles/10701448-alias-plugin">Docs</a></flux:description>
                 </flux:field>
+
+                @if(config('services.trmnl.liquid_enabled') && $plugin->markup_language === 'liquid')
+                    <flux:field>
+                        <flux:checkbox
+                            wire:model.live="use_trmnl_liquid_renderer"
+                            label="Use trmnl-liquid renderer"
+                        />
+                        <flux:description>trmnl-liquid is a Ruby-based renderer that matches the Core service’s Liquid behavior for better compatibility.</flux:description>
+                    </flux:field>
+                @endif
 
                 @if($alias)
                     <flux:field>
