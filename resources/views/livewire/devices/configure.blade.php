@@ -559,7 +559,7 @@ new class extends Component
 
                 <flux:modal name="mirror-url" class="md:w-96">
                     @php
-                        $mirrorUrl = url('/mirror/index.html') . '?mac_address=' . urlencode($device->mac_address) . '&api_key=' . urlencode($device->api_key);
+                        $mirrorUrl = url('/mirror/index.html') . '?api_key=' . urlencode($device->api_key);
                     @endphp
 
                     <div class="space-y-6">
