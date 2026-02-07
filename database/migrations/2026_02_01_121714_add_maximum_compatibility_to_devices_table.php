@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table("devices", function (Blueprint $table): void {
-            $table->boolean("maximum_compatibility")->default(false);
+        Schema::table('devices', function (Blueprint $table): void {
+            $table->boolean('maximum_compatibility')->default(false);
         });
     }
 
     public function down(): void
     {
-        Schema::table("devices", function (Blueprint $table): void {
-            $table->dropColumn("maximum_compatibility");
+        Schema::table('devices', function (Blueprint $table): void {
+            $table->dropColumn('maximum_compatibility');
         });
     }
 };

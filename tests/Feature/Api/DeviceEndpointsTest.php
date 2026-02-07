@@ -100,7 +100,7 @@ test('display endpoint includes maximum_compatibility value when true for device
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',
         'api_key' => 'test-api-key',
-        'maximum_compatibility' => true
+        'maximum_compatibility' => true,
     ]);
 
     $response = $this->withHeaders([
