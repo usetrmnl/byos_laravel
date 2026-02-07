@@ -10,6 +10,7 @@ use App\Liquid\Filters\Numbers;
 use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
+use App\Liquid\Tags\PluginRenderTag;
 use App\Liquid\Tags\TemplateTag;
 use App\Services\Plugin\Parsers\ResponseParserRegistry;
 use App\Services\PluginImportService;
@@ -499,6 +500,8 @@ class Plugin extends Model
 
                     // Register the template tag for inline templates
                     $environment->tagRegistry->register(TemplateTag::class);
+                    // Use plugin render tag so partials receive trmnl, size, data, config
+                    $environment->tagRegistry->register(PluginRenderTag::class);
 
                     // Apply Liquid replacements (including 'with' syntax conversion)
                     $processedMarkup = $this->applyLiquidReplacements($markup);
