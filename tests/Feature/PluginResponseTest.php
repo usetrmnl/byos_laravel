@@ -36,7 +36,7 @@ test('plugin parses JSON responses correctly', function (): void {
     ]);
 });
 
-test('plugin parses XML responses and wraps under rss key', function (): void {
+test('plugin parses RSS XML responses and wraps under rss key', function (): void {
     $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
     <rss version="2.0">
         <channel>
@@ -71,6 +71,33 @@ test('plugin parses XML responses and wraps under rss key', function (): void {
     expect($plugin->data_payload['rss'])->toHaveKey('channel');
     expect($plugin->data_payload['rss']['channel']['title'])->toBe('Test RSS Feed');
     expect($plugin->data_payload['rss']['channel']['item'])->toHaveCount(2);
+});
+
+test('plugin parses namespaces XML responses and wraps under root key', function (): void {
+    $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
+    <foo:cake version="2.0" xmlns:foo="http://example.com/foo">
+        <bar:icing xmlns:bar="http://example.com/bar">
+            <ontop>Cherry</ontop>
+        </bar:icing>
+    </foo:cake>';
+
+    Http::fake([
+        'example.com/namespace.xml' => Http::response($xmlContent, 200, ['Content-Type' => 'application/xml']),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://example.com/namespace.xml',
+        'polling_verb' => 'get',
+    ]);
+
+    $plugin->updateDataPayload();
+
+    $plugin->refresh();
+
+    expect($plugin->data_payload)->toHaveKey('rss');
+    expect($plugin->data_payload['rss'])->toHaveKey('icing');
+    expect($plugin->data_payload['rss']['icing']['ontop'])->toBe('Cherry');
 });
 
 test('plugin parses JSON-parsable response body as JSON', function (): void {
