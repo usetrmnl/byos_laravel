@@ -192,8 +192,12 @@ class Plugin extends Model
             $httpRequest = Http::withHeaders($headers);
 
             if ($this->polling_verb === 'post' && $this->polling_body) {
+                $contentType = (array_key_exists('Content-Type', $headers))
+                    ? $headers['Content-Type']
+                    : 'application/json';
+
                 $resolvedBody = $this->resolveLiquidVariables($this->polling_body);
-                $httpRequest = $httpRequest->withBody($resolvedBody);
+                $httpRequest = $httpRequest->withBody($resolvedBody, $contentType);
             }
 
             try {
