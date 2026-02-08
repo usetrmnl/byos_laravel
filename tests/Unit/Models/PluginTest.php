@@ -72,6 +72,27 @@ test('updateDataPayload sends POST request with body when polling_verb is post',
            $request->body() === '{"query": "query { user { id name } }"}');
 });
 
+test('updateDataPayload sends POST request with body with correct content type when not JSON content', function (): void {
+    Http::fake([
+        'https://example.com/api' => Http::response(['success' => true], 200),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://example.com/api',
+        'polling_verb' => 'post',
+        'polling_body' => '<query><user id="123" name="John Doe"/></query>',
+        'polling_header' => 'Content-Type: text/xml'
+    ]);
+
+    $plugin->updateDataPayload();
+
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://example.com/api' &&
+           $request->method() === 'POST' &&
+           $request->hasHeader('Content-Type', 'text/xml') &&
+           $request->body() === '<query><user id="123" name="John Doe"/></query>');
+});
+
 test('updateDataPayload handles multiple URLs with IDX_ prefixes', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',
