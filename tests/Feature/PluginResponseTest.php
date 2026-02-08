@@ -95,9 +95,9 @@ test('plugin parses namespaces XML responses and wraps under root key', function
 
     $plugin->refresh();
 
-    expect($plugin->data_payload)->toHaveKey('rss');
-    expect($plugin->data_payload['rss'])->toHaveKey('icing');
-    expect($plugin->data_payload['rss']['icing']['ontop'])->toBe('Cherry');
+    expect($plugin->data_payload)->toHaveKey('cake');
+    expect($plugin->data_payload['cake'])->toHaveKey('icing');
+    expect($plugin->data_payload['cake']['icing']['ontop'])->toBe('Cherry');
 });
 
 test('plugin parses JSON-parsable response body as JSON', function (): void {
@@ -191,8 +191,8 @@ test('plugin handles multiple URLs with mixed content types', function (): void 
     expect($plugin->data_payload['IDX_0'])->toBe($jsonResponse);
 
     // Second URL should be XML wrapped under rss
-    expect($plugin->data_payload['IDX_1'])->toHaveKey('rss');
-    expect($plugin->data_payload['IDX_1']['rss']['item'])->toBe('XML Data');
+    expect($plugin->data_payload['IDX_1'])->toHaveKey('root');
+    expect($plugin->data_payload['IDX_1']['root']['item'])->toBe('XML Data');
 });
 
 test('plugin handles POST requests with XML responses', function (): void {
@@ -213,11 +213,11 @@ test('plugin handles POST requests with XML responses', function (): void {
 
     $plugin->refresh();
 
-    expect($plugin->data_payload)->toHaveKey('rss');
-    expect($plugin->data_payload['rss'])->toHaveKey('status');
-    expect($plugin->data_payload['rss'])->toHaveKey('data');
-    expect($plugin->data_payload['rss']['status'])->toBe('success');
-    expect($plugin->data_payload['rss']['data'])->toBe('test');
+    expect($plugin->data_payload)->toHaveKey('response');
+    expect($plugin->data_payload['response'])->toHaveKey('status');
+    expect($plugin->data_payload['response'])->toHaveKey('data');
+    expect($plugin->data_payload['response']['status'])->toBe('success');
+    expect($plugin->data_payload['response']['data'])->toBe('test');
 });
 
 test('plugin parses iCal responses and filters to recent window', function (): void {
