@@ -23,7 +23,7 @@ class XmlResponseParser implements ResponseParser
                 throw new Exception('Invalid XML content');
             }
 
-            return ['rss' => $this->xmlToArray($xml)];
+            return [$xml->getName() => $this->xmlToArray($xml)];
         } catch (Exception $exception) {
             Log::warning('Failed to parse XML response: '.$exception->getMessage());
 
