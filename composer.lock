@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "60a7e51edd8408cffdb901e4a1c1684a",
+    "content-hash": "a4438c591a5d746f546eab261e9e1efc",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -214,16 +214,16 @@
         },
         {
             "name": "bnussbau/laravel-trmnl-blade",
-            "version": "2.1.1",
+            "version": "2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bnussbau/laravel-trmnl-blade.git",
-                "reference": "6ad96eba917ebc30ebe550e6fce4a995e94f6b35"
+                "reference": "e19efc6c873816395e0989d078998f02ef4f0adf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bnussbau/laravel-trmnl-blade/zipball/6ad96eba917ebc30ebe550e6fce4a995e94f6b35",
-                "reference": "6ad96eba917ebc30ebe550e6fce4a995e94f6b35",
+                "url": "https://api.github.com/repos/bnussbau/laravel-trmnl-blade/zipball/e19efc6c873816395e0989d078998f02ef4f0adf",
+                "reference": "e19efc6c873816395e0989d078998f02ef4f0adf",
                 "shasum": ""
             },
             "require": {
@@ -278,7 +278,7 @@
             ],
             "support": {
                 "issues": "https://github.com/bnussbau/laravel-trmnl-blade/issues",
-                "source": "https://github.com/bnussbau/laravel-trmnl-blade/tree/2.1.1"
+                "source": "https://github.com/bnussbau/laravel-trmnl-blade/tree/2.3.0"
             },
             "funding": [
                 {
@@ -294,7 +294,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-01-29T20:40:42+00:00"
+            "time": "2026-02-09T12:00:32+00:00"
         },
         {
             "name": "bnussbau/trmnl-pipeline-php",
