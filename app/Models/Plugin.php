@@ -29,6 +29,7 @@ use InvalidArgumentException;
 use Keepsuit\LaravelLiquid\LaravelLiquidExtension;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Keepsuit\Liquid\Extensions\StandardExtension;
+use Symfony\Component\Yaml\Yaml;
 
 class Plugin extends Model
 {
@@ -79,9 +80,66 @@ class Plugin extends Model
         });
     }
 
+    public const CUSTOM_FIELDS_KEY = 'custom_fields';
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * YAML for the custom_fields editor
+     */
+    public function getCustomFieldsEditorYaml(): string
+    {
+        $template = $this->configuration_template;
+        $list = $template[self::CUSTOM_FIELDS_KEY] ?? null;
+        if ($list === null || $list === []) {
+            return '';
+        }
+
+        return Yaml::dump($list, 4, 2);
+    }
+
+    /**
+     * Parse editor YAML and return configuration_template for DB (custom_fields key). Returns null when empty.
+     */
+    public static function configurationTemplateFromCustomFieldsYaml(string $yaml, ?array $existingTemplate): ?array
+    {
+        $list = $yaml !== '' ? Yaml::parse($yaml) : [];
+        if ($list === null || (is_array($list) && $list === [])) {
+            return null;
+        }
+
+        $template = $existingTemplate ?? [];
+        $template[self::CUSTOM_FIELDS_KEY] = is_array($list) ? $list : [];
+
+        return $template;
+    }
+
+    /**
+     * Validate that each custom field entry has field_type and name. For use with parsed editor YAML.
+     *
+     * @param  array<int, array<string, mixed>>  $list
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public static function validateCustomFieldsList(array $list): void
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make(
+            ['custom_fields' => $list],
+            [
+                'custom_fields' => ['required', 'array'],
+                'custom_fields.*.field_type' => ['required', 'string'],
+                'custom_fields.*.name' => ['required', 'string'],
+            ],
+            [
+                'custom_fields.*.field_type.required' => 'Each custom field must have a field_type.',
+                'custom_fields.*.name.required' => 'Each custom field must have a name.',
+            ]
+        );
+
+        $validator->validate();
     }
 
     // sanitize configuration template descriptions and help texts (since they allow HTML rendering)

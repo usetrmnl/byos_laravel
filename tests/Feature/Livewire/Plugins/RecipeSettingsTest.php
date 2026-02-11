@@ -149,3 +149,84 @@ test('recipe settings clears preferred_renderer when checkbox unchecked', functi
 
     expect($plugin->fresh()->preferred_renderer)->toBeNull();
 });
+
+test('recipe settings saves configuration_template from valid YAML', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => [],
+    ]);
+
+    $yaml = "- keyname: reading_days\n  field_type: text\n  name: Reading Days\n";
+
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
+        ->set('configurationTemplateYaml', $yaml)
+        ->call('saveTrmnlpId')
+        ->assertHasNoErrors();
+
+    $expected = [
+        'custom_fields' => [
+            [
+                'keyname' => 'reading_days',
+                'field_type' => 'text',
+                'name' => 'Reading Days',
+            ],
+        ],
+    ];
+    expect($plugin->fresh()->configuration_template)->toBe($expected);
+});
+
+test('recipe settings validates invalid YAML', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => [],
+    ]);
+
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
+        ->set('configurationTemplateYaml', "foo: bar: baz\n")
+        ->call('saveTrmnlpId')
+        ->assertHasErrors(['configurationTemplateYaml']);
+
+    expect($plugin->fresh()->configuration_template)->toBe([]);
+});
+
+test('recipe settings validates YAML must evaluate to object or array', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => ['custom_fields' => []],
+    ]);
+
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
+        ->set('configurationTemplateYaml', '123')
+        ->call('saveTrmnlpId')
+        ->assertHasErrors(['configurationTemplateYaml']);
+
+    expect($plugin->fresh()->configuration_template)->toBe(['custom_fields' => []]);
+});
+
+test('recipe settings validates each custom field has field_type and name', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'configuration_template' => [],
+    ]);
+
+    $yaml = "- keyname: only_key\n  field_type: text\n  name: Has Name\n- keyname: missing_type\n  name: No type\n";
+
+    Livewire::test('plugins.recipes.settings', ['plugin' => $plugin])
+        ->set('configurationTemplateYaml', $yaml)
+        ->call('saveTrmnlpId')
+        ->assertHasErrors(['configurationTemplateYaml']);
+
+    expect($plugin->fresh()->configuration_template)->toBeEmpty();
+});

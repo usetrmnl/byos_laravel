@@ -2,6 +2,7 @@
 
 use App\Models\Plugin;
 use Illuminate\Support\Facades\Http;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 /*
@@ -54,12 +55,22 @@ new class extends Component
     /**
      * Triggered by @close on the modal to discard any typed but unsaved changes
      */
-    public int $resetIndex = 0; // Add this property
+    public int $resetIndex = 0;
+
+    /**
+     * When recipe settings (or this modal) save, reload so Configuration Fields form stays in sync.
+     */
+    #[On('config-updated')]
+    public function refreshFromParent(): void
+    {
+        $this->loadData();
+        $this->resetIndex++;
+    }
 
     public function resetForm(): void
     {
         $this->loadData();
-        ++$this->resetIndex;  // Increment to force DOM refresh
+        ++$this->resetIndex;
     }
 
     public function saveConfiguration()

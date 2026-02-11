@@ -3,9 +3,11 @@
 use App\Models\Plugin;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Yaml;
 
 /*
- * This component contains the TRMNL Plugin Settings modal
+ * This component contains the TRMNL Plugin Settings modal.
  */
 new class extends Component
 {
@@ -19,17 +21,19 @@ new class extends Component
 
     public bool $use_trmnl_liquid_renderer = false;
 
+    public string $configurationTemplateYaml = '';
+
     public int $resetIndex = 0;
 
     public function mount(): void
     {
         $this->resetErrorBag();
-        // Reload data
         $this->plugin = $this->plugin->fresh();
         $this->trmnlp_id = $this->plugin->trmnlp_id;
         $this->uuid = $this->plugin->uuid;
         $this->alias = $this->plugin->alias ?? false;
         $this->use_trmnl_liquid_renderer = $this->plugin->preferred_renderer === 'trmnl-liquid';
+        $this->configurationTemplateYaml = $this->plugin->getCustomFieldsEditorYaml();
     }
 
     public function saveTrmnlpId(): void
@@ -47,14 +51,46 @@ new class extends Component
             ],
             'alias' => 'boolean',
             'use_trmnl_liquid_renderer' => 'boolean',
+            'configurationTemplateYaml' => [
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value === '') {
+                        return;
+                    }
+                    try {
+                        $parsed = Yaml::parse($value);
+                        if (! is_array($parsed)) {
+                            $fail('The configuration must be valid YAML and evaluate to an object/array.');
+                            return;
+                        }
+                        Plugin::validateCustomFieldsList($parsed);
+                    } catch (ParseException) {
+                        $fail('The configuration must be valid YAML.');
+                    } catch (\Illuminate\Validation\ValidationException $e) {
+                        foreach ($e->errors() as $messages) {
+                            foreach ($messages as $message) {
+                                $fail($message);
+                            }
+                        }
+                    }
+                },
+            ],
         ]);
+
+        $configurationTemplate = Plugin::configurationTemplateFromCustomFieldsYaml(
+            $this->configurationTemplateYaml,
+            $this->plugin->configuration_template
+        );
 
         $this->plugin->update([
             'trmnlp_id' => empty($this->trmnlp_id) ? null : $this->trmnlp_id,
             'alias' => $this->alias,
             'preferred_renderer' => $this->use_trmnl_liquid_renderer ? 'trmnl-liquid' : null,
+            'configuration_template' => $configurationTemplate,
         ]);
 
+        $this->dispatch('config-updated');
         Flux::modal('trmnlp-settings')->close();
     }
 
@@ -64,7 +100,7 @@ new class extends Component
     }
 }; ?>
 
-<flux:modal name="trmnlp-settings" class="min-w-[400px] space-y-6">
+<flux:modal name="trmnlp-settings" class="min-w-[600px] max-w-2xl space-y-6">
     <div wire:key="trmnlp-settings-form-{{ $resetIndex }}" class="space-y-6">
         <div>
             <flux:heading size="lg">Recipe Settings</flux:heading>
@@ -97,6 +133,43 @@ new class extends Component
                         <flux:description>trmnl-liquid is a Ruby-based renderer that matches the Core service’s Liquid behavior for better compatibility.</flux:description>
                     </flux:field>
                 @endif
+
+                <flux:field>
+                    <flux:label>Configuration template</flux:label>
+                    <flux:description>
+                        Build forms visually in the <a href="https://usetrmnl.github.io/trmnl-form-builder/" target="_blank" rel="noopener noreferrer">TRMNL YML Form Builder</a>.
+                        Check the <a href="https://help.trmnl.com/en/articles/10513740-custom-plugin-form-builder" target="_blank" rel="noopener noreferrer">docs</a> for more information.
+                    </flux:description>
+                    @php
+                        $configTemplateTextareaId = 'config-template-' . uniqid();
+                    @endphp
+                    <flux:textarea
+                        wire:model="configurationTemplateYaml"
+                        id="{{ $configTemplateTextareaId }}"
+                        placeholder="[]"
+                        rows="12"
+                        hidden
+                    />
+                    <div
+                        x-data="codeEditorFormComponent({
+                            isDisabled: false,
+                            language: 'yaml',
+                            state: $wire.entangle('configurationTemplateYaml'),
+                            textareaId: @js($configTemplateTextareaId)
+                        })"
+                        wire:ignore
+                        wire:key="cm-{{ $configTemplateTextareaId }}"
+                        class="min-h-[200px] h-[300px] overflow-hidden resize-y"
+                    >
+                        <div x-show="isLoading" class="flex items-center justify-center h-full">
+                            <div class="flex items-center space-x-2">
+                                <flux:icon.loading />
+                            </div>
+                        </div>
+                        <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                    </div>
+                    <flux:error name="configurationTemplateYaml" />
+                </flux:field>
 
                 @if($alias)
                     <flux:field>

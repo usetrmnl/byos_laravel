@@ -569,11 +569,10 @@ HTML;
     }
 
     #[On('config-updated')]
-    public function refreshPlugin()
+    public function refreshPlugin(): void
     {
-        // This pulls the fresh 'configuration' from the DB
-        // and re-triggers the @if check in the Blade template
         $this->plugin = $this->plugin->fresh();
+        $this->configuration_template = $this->plugin->configuration_template ?? [];
     }
 
     // Laravel Livewire computed property: access with $this->parsed_urls
