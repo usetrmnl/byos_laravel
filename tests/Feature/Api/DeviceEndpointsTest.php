@@ -725,6 +725,40 @@ test('display endpoint updates last_refreshed_at timestamp', function (): void {
         ->and($device->last_refreshed_at->diffInSeconds(now()))->toBeLessThan(2);
 });
 
+test('display endpoint accepts battery-percent header and updates device', function (): void {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:56',
+        'api_key' => 'test-api-key-battery',
+        'last_battery_voltage' => null,
+    ]);
+
+    $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'battery-percent' => '67',
+    ])->get('/api/display')->assertOk();
+
+    $device->refresh();
+    expect($device->battery_percent)->toEqual(67);
+});
+
+test('display endpoint accepts Percent-Charged header and updates device', function (): void {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:57',
+        'api_key' => 'test-api-key-percent-charged',
+        'last_battery_voltage' => null,
+    ]);
+
+    $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'Percent-Charged' => '51',
+    ])->get('/api/display')->assertOk();
+
+    $device->refresh();
+    expect($device->battery_percent)->toEqual(51);
+});
+
 test('display endpoint updates last_refreshed_at timestamp for mirrored devices', function (): void {
     // Create source device
     $sourceDevice = Device::factory()->create([

@@ -49,8 +49,9 @@ Route::get('/display', function (Request $request) {
         'last_refreshed_at' => now(),
     ]);
 
-    if ($request->hasHeader('battery-percent')) {
-        $batteryPercent = (int) $request->header('battery-percent');
+    $batteryPercent = $request->header('battery-percent') ?? $request->header('percent-charged');
+    if ($batteryPercent !== null) {
+        $batteryPercent = (int) $batteryPercent;
         $batteryVoltage = $device->calculateVoltageFromPercent($batteryPercent);
         $device->update([
             'last_battery_voltage' => $batteryVoltage,
