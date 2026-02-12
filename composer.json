@@ -16,7 +16,7 @@
         "ext-simplexml": "*",
         "ext-zip": "*",
         "bnussbau/laravel-trmnl-blade": "2.3.*",
-        "bnussbau/trmnl-pipeline-php": "^0.6.0",
+        "bnussbau/trmnl-pipeline-php": "0.7.*",
         "keepsuit/laravel-liquid": "^0.5.2",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.1",

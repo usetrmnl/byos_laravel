@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a4438c591a5d746f546eab261e9e1efc",
+    "content-hash": "909d7acdf3f0ace9fb6d20b4de1eeaca",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -298,16 +298,16 @@
         },
         {
             "name": "bnussbau/trmnl-pipeline-php",
-            "version": "0.6.0",
+            "version": "0.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bnussbau/trmnl-pipeline-php.git",
-                "reference": "228505afa8a39a5033916e9ae5ccbf1733092c1f"
+                "reference": "da80de2b6456776eeabc1fb95fd42e5f3357d865"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bnussbau/trmnl-pipeline-php/zipball/228505afa8a39a5033916e9ae5ccbf1733092c1f",
-                "reference": "228505afa8a39a5033916e9ae5ccbf1733092c1f",
+                "url": "https://api.github.com/repos/bnussbau/trmnl-pipeline-php/zipball/da80de2b6456776eeabc1fb95fd42e5f3357d865",
+                "reference": "da80de2b6456776eeabc1fb95fd42e5f3357d865",
                 "shasum": ""
             },
             "require": {
@@ -349,7 +349,7 @@
             ],
             "support": {
                 "issues": "https://github.com/bnussbau/trmnl-pipeline-php/issues",
-                "source": "https://github.com/bnussbau/trmnl-pipeline-php/tree/0.6.0"
+                "source": "https://github.com/bnussbau/trmnl-pipeline-php/tree/0.7.0"
             },
             "funding": [
                 {
@@ -357,7 +357,7 @@
                     "type": "buy_me_a_coffee"
                 },
                 {
-                    "url": "https://usetrmnl.com/?ref=laravel-trmnl",
+                    "url": "https://trmnl.com/?ref=laravel-trmnl",
                     "type": "custom"
                 },
                 {
@@ -365,7 +365,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-02T15:18:51+00:00"
+            "time": "2026-02-07T22:22:18+00:00"
         },
         {
             "name": "brick/math",
