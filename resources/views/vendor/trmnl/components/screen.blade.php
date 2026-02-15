@@ -7,6 +7,13 @@
     'scaleLevel' => null,
 ])
 
+@php
+// HOTFIX Github Issue https://github.com/usetrmnl/byos_laravel/issues/190
+if ($colorDepth == '2bit'){
+    $deviceVariant = 'ogv2';
+}
+@endphp
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
