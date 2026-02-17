@@ -30,6 +30,17 @@ COPY --chown=www-data:www-data .env.example .env
 # Install the composer dependencies
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
+# add extra fonts
+RUN apk add --no-cache \
+      fontconfig \
+      font-noto \
+      font-noto-cjk-extra \
+      font-noto-emoji \
+      font-twemoji \
+ && find /usr/share/fonts -name '*CJK*' ! -name '*Regular*' -delete \
+ && fc-cache -f \
+ && rm -rf /var/cache/fontconfig /var/cache/apk
+
 ########################
 # Assets Image
 ########################
