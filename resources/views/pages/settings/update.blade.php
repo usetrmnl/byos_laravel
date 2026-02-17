@@ -248,7 +248,7 @@ new class extends Component
                     <flux:callout icon="check-circle" variant="success">
                         <flux:callout.heading>Up to Date</flux:callout.heading>
                         <flux:callout.text>
-                            You are running the latest version {{ $latestVersion }}.
+                            You are running the latest version.
                         </flux:callout.text>
                     </flux:callout>
                 @endif
