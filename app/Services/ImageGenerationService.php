@@ -514,7 +514,7 @@ class ImageGenerationService
         };
 
         // Determine device properties from DeviceModel or device settings
-        $deviceVariant = $device->deviceVariant();
+        $deviceVariant = $device->deviceModel?->css_name ?? $device->deviceVariant();
         $deviceOrientation = $device->rotate > 0 ? 'portrait' : 'landscape';
         $colorDepth = $device->colorDepth() ?? '1bit';
         $scaleLevel = $device->scaleLevel();
@@ -528,6 +528,7 @@ class ImageGenerationService
             'deviceOrientation' => $deviceOrientation,
             'colorDepth' => $colorDepth,
             'scaleLevel' => $scaleLevel,
+            'cssVariables' => $device->deviceModel?->css_variables,
         ];
 
         // Add plugin name for error screens

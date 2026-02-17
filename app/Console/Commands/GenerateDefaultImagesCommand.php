@@ -184,7 +184,7 @@ class GenerateDefaultImagesCommand extends Command
         };
 
         // Determine device properties from DeviceModel
-        $deviceVariant = $deviceModel->name ?? 'og';
+        $deviceVariant = $deviceModel->css_name ?? $deviceModel->name ?? 'og';
         $colorDepth = $deviceModel->color_depth ?? '1bit'; // Use the accessor method
         $scaleLevel = $deviceModel->scale_level; // Use the accessor method
         $darkMode = $imageType === 'sleep'; // Sleep mode uses dark mode, setup uses light mode
@@ -196,6 +196,7 @@ class GenerateDefaultImagesCommand extends Command
             'deviceVariant' => $deviceVariant,
             'colorDepth' => $colorDepth,
             'scaleLevel' => $scaleLevel,
+            'cssVariables' => $deviceModel->css_variables,
         ])->render();
     }
 }

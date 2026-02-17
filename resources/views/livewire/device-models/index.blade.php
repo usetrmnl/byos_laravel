@@ -39,6 +39,8 @@ new class extends Component
 
     public $palette_id;
 
+    public $css_name;
+
     protected $rules = [
         'name' => 'required|string|max:255|unique:device_models,name',
         'label' => 'required|string|max:255',
@@ -102,10 +104,11 @@ new class extends Component
             $this->offset_y = $deviceModel->offset_y;
             $this->published_at = $deviceModel->published_at?->format('Y-m-d\TH:i');
             $this->palette_id = $deviceModel->palette_id;
+            $this->css_name = $deviceModel->css_name;
         } else {
             $this->editingDeviceModelId = null;
             $this->viewingDeviceModelId = null;
-            $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id']);
+            $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'css_name']);
             $this->mime_type = 'image/png';
             $this->scale_factor = 1.0;
             $this->rotation = 0;
@@ -131,6 +134,7 @@ new class extends Component
             'offset_y' => 'required|integer',
             'published_at' => 'nullable|date',
             'palette_id' => 'nullable|exists:device_palettes,id',
+            'css_name' => 'nullable|string|max:255',
         ];
 
         if ($this->editingDeviceModelId) {
@@ -158,6 +162,7 @@ new class extends Component
                 'offset_y' => $this->offset_y,
                 'published_at' => $this->published_at,
                 'palette_id' => $this->palette_id ?: null,
+                'css_name' => $this->css_name ?: null,
             ]);
             $message = 'Device model updated successfully.';
         } else {
@@ -176,12 +181,13 @@ new class extends Component
                 'offset_y' => $this->offset_y,
                 'published_at' => $this->published_at,
                 'palette_id' => $this->palette_id ?: null,
+                'css_name' => $this->css_name ?: null,
                 'source' => 'manual',
             ]);
             $message = 'Device model created successfully.';
         }
 
-        $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'editingDeviceModelId', 'viewingDeviceModelId']);
+        $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'css_name', 'editingDeviceModelId', 'viewingDeviceModelId']);
         Flux::modal('device-model-modal')->close();
 
         $this->deviceModels = DeviceModel::all();
@@ -217,6 +223,7 @@ new class extends Component
         $this->offset_y = $deviceModel->offset_y;
         $this->published_at = $deviceModel->published_at?->format('Y-m-d\TH:i');
         $this->palette_id = $deviceModel->palette_id;
+        $this->css_name = $deviceModel->css_name;
 
         $this->js('Flux.modal("device-model-modal").show()');
     }
@@ -342,6 +349,11 @@ new class extends Component
                                     <flux:select.option value="{{ $palette->id }}">{{ $palette->description ?? $palette->name }} ({{ $palette->name }})</flux:select.option>
                                 @endforeach
                             </flux:select>
+                        </div>
+
+                        <div class="mb-4">
+                            <flux:input label="CSS Model Identifier" wire:model="css_name" id="css_name" class="block mt-1 w-full" type="text"
+                                        name="css_name" :disabled="(bool) $viewingDeviceModelId"/>
                         </div>
 
                         @if (!$viewingDeviceModelId)

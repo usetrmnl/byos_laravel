@@ -5,11 +5,13 @@
     'deviceOrientation' => null,
     'colorDepth' => '1bit',
     'scaleLevel' => null,
+    'cssVariables' => null,
 ])
 
 <x-trmnl::screen colorDepth="{{$colorDepth}}" no-bleed="{{$noBleed}}" dark-mode="{{$darkMode}}"
                  device-variant="{{$deviceVariant}}" device-orientation="{{$deviceOrientation}}"
-                 scale-level="{{$scaleLevel}}">
+                 scale-level="{{$scaleLevel}}"
+                 :css-variables="$cssVariables">
     <x-trmnl::view>
         <x-trmnl::layout>
             <x-trmnl::richtext gapSize="large" align="center">

@@ -27,6 +27,7 @@ final class DeviceModel extends Model
         'offset_x' => 'integer',
         'offset_y' => 'integer',
         'published_at' => 'datetime',
+        'css_variables' => 'array',
     ];
 
     public function getColorDepthAttribute(): ?string
