@@ -174,3 +174,100 @@ LIQUID
     // Should not contain users < 30
     $this->assertStringNotContainsString('Alice (25)', $result);
 });
+
+test('qr_code filter generates SVG QR code with qr-code class', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ "https://example.com" | qr_code }}',
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should contain SVG elements
+    $this->assertStringContainsString('<svg', $result);
+    $this->assertStringContainsString('</svg>', $result);
+    // Should contain qr-code class
+    $this->assertStringContainsString('class="qr-code"', $result);
+    // Should contain QR code path elements
+    $this->assertStringContainsString('<path', $result);
+});
+
+test('qr_code filter works with custom text', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ "Hello World" | qr_code }}',
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should generate valid SVG
+    $this->assertStringContainsString('<svg', $result);
+    $this->assertStringContainsString('</svg>', $result);
+    // Should contain qr-code class
+    $this->assertStringContainsString('class="qr-code"', $result);
+});
+
+test('qr_code filter calculates correct size for module_size 11', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ "test" | qr_code: 11 }}',
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should have width="319" and height="319" (29 * 11 = 319)
+    $this->assertStringContainsString('width="319"', $result);
+    $this->assertStringContainsString('height="319"', $result);
+});
+
+test('qr_code filter calculates correct size for module_size 16', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ "test" | qr_code: 16 }}',
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should have width="464" and height="464" (29 * 16 = 464)
+    $this->assertStringContainsString('width="464"', $result);
+    $this->assertStringContainsString('height="464"', $result);
+});
+
+test('qr_code filter calculates correct size for module_size 10', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ "test" | qr_code: 10 }}',
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should have width="290" and height="290" (29 * 10 = 290)
+    $this->assertStringContainsString('width="290"', $result);
+    $this->assertStringContainsString('height="290"', $result);
+});
+
+test('qr_code filter calculates correct size for module_size 5', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ "test" | qr_code: 5 }}',
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should have width="145" and height="145" (29 * 5 = 145)
+    $this->assertStringContainsString('width="145"', $result);
+    $this->assertStringContainsString('height="145"', $result);
+});
+
+test('qr_code filter supports error correction level parameter', function (): void {
+    $plugin = Plugin::factory()->create([
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ "test" | qr_code: 11, "l" }}',
+    ]);
+
+    $result = $plugin->render('full');
+
+    // Should generate valid SVG with qr-code class
+    $this->assertStringContainsString('<svg', $result);
+    $this->assertStringContainsString('class="qr-code"', $result);
+});

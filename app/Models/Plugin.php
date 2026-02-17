@@ -10,6 +10,7 @@ use App\Liquid\Filters\Numbers;
 use App\Liquid\Filters\StandardFilters;
 use App\Liquid\Filters\StringMarkup;
 use App\Liquid\Filters\Uniqueness;
+use App\Liquid\Tags\PluginRenderTag;
 use App\Liquid\Tags\TemplateTag;
 use App\Services\Plugin\Parsers\ResponseParserRegistry;
 use App\Services\PluginImportService;
@@ -24,9 +25,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Keepsuit\LaravelLiquid\LaravelLiquidExtension;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Keepsuit\Liquid\Extensions\StandardExtension;
+use Symfony\Component\Yaml\Yaml;
 
 class Plugin extends Model
 {
@@ -44,6 +47,8 @@ class Plugin extends Model
         'no_bleed' => 'boolean',
         'dark_mode' => 'boolean',
         'preferred_renderer' => 'string',
+        'plugin_type' => 'string',
+        'alias' => 'boolean',
     ];
 
     protected static function boot()
@@ -55,11 +60,105 @@ class Plugin extends Model
                 $model->uuid = Str::uuid();
             }
         });
+
+        static::updating(function ($model): void {
+            // Reset image cache when any markup changes
+            if ($model->isDirty([
+                'render_markup',
+                'render_markup_half_horizontal',
+                'render_markup_half_vertical',
+                'render_markup_quadrant',
+                'render_markup_shared',
+            ])) {
+                $model->current_image = null;
+            }
+        });
+
+        // Sanitize configuration template on save
+        static::saving(function ($model): void {
+            $model->sanitizeTemplate();
+        });
     }
+
+    public const CUSTOM_FIELDS_KEY = 'custom_fields';
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * YAML for the custom_fields editor
+     */
+    public function getCustomFieldsEditorYaml(): string
+    {
+        $template = $this->configuration_template;
+        $list = $template[self::CUSTOM_FIELDS_KEY] ?? null;
+        if ($list === null || $list === []) {
+            return '';
+        }
+
+        return Yaml::dump($list, 4, 2);
+    }
+
+    /**
+     * Parse editor YAML and return configuration_template for DB (custom_fields key). Returns null when empty.
+     */
+    public static function configurationTemplateFromCustomFieldsYaml(string $yaml, ?array $existingTemplate): ?array
+    {
+        $list = $yaml !== '' ? Yaml::parse($yaml) : [];
+        if ($list === null || (is_array($list) && $list === [])) {
+            return null;
+        }
+
+        $template = $existingTemplate ?? [];
+        $template[self::CUSTOM_FIELDS_KEY] = is_array($list) ? $list : [];
+
+        return $template;
+    }
+
+    /**
+     * Validate that each custom field entry has field_type and name. For use with parsed editor YAML.
+     *
+     * @param  array<int, array<string, mixed>>  $list
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public static function validateCustomFieldsList(array $list): void
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make(
+            ['custom_fields' => $list],
+            [
+                'custom_fields' => ['required', 'array'],
+                'custom_fields.*.field_type' => ['required', 'string'],
+                'custom_fields.*.name' => ['required', 'string'],
+            ],
+            [
+                'custom_fields.*.field_type.required' => 'Each custom field must have a field_type.',
+                'custom_fields.*.name.required' => 'Each custom field must have a name.',
+            ]
+        );
+
+        $validator->validate();
+    }
+
+    // sanitize configuration template descriptions and help texts (since they allow HTML rendering)
+    protected function sanitizeTemplate(): void
+    {
+        $template = $this->configuration_template;
+
+        if (isset($template['custom_fields']) && is_array($template['custom_fields'])) {
+            foreach ($template['custom_fields'] as &$field) {
+                if (isset($field['description'])) {
+                    $field['description'] = \Stevebauman\Purify\Facades\Purify::clean($field['description']);
+                }
+                if (isset($field['help_text'])) {
+                    $field['help_text'] = \Stevebauman\Purify\Facades\Purify::clean($field['help_text']);
+                }
+            }
+
+            $this->configuration_template = $template;
+        }
     }
 
     public function hasMissingRequiredConfigurationFields(): bool
@@ -102,6 +201,11 @@ class Plugin extends Model
 
     public function isDataStale(): bool
     {
+        // Image webhook plugins don't use data staleness - images are pushed directly
+        if ($this->plugin_type === 'image_webhook') {
+            return false;
+        }
+
         if ($this->data_strategy === 'webhook') {
             // Treat as stale if any webhook event has occurred in the past hour
             return $this->data_payload_updated_at && $this->data_payload_updated_at->gt(now()->subHour());
@@ -115,105 +219,71 @@ class Plugin extends Model
 
     public function updateDataPayload(): void
     {
-        if ($this->data_strategy === 'polling' && $this->polling_url) {
-
-            $headers = ['User-Agent' => 'usetrmnl/byos_laravel', 'Accept' => 'application/json'];
-
-            if ($this->polling_header) {
-                // Resolve Liquid variables in the polling header
-                $resolvedHeader = $this->resolveLiquidVariables($this->polling_header);
-                $headerLines = explode("\n", mb_trim($resolvedHeader));
-                foreach ($headerLines as $line) {
-                    $parts = explode(':', $line, 2);
-                    if (count($parts) === 2) {
-                        $headers[mb_trim($parts[0])] = mb_trim($parts[1]);
-                    }
-                }
-            }
-
-            // Resolve Liquid variables in the entire polling_url field first, then split by newline
-            $resolvedPollingUrls = $this->resolveLiquidVariables($this->polling_url);
-            $urls = array_filter(
-                array_map('trim', explode("\n", $resolvedPollingUrls)),
-                fn ($url): bool => ! empty($url)
-            );
-
-            // If only one URL, use the original logic without nesting
-            if (count($urls) === 1) {
-                $url = reset($urls);
-                $httpRequest = Http::withHeaders($headers);
-
-                if ($this->polling_verb === 'post' && $this->polling_body) {
-                    // Resolve Liquid variables in the polling body
-                    $resolvedBody = $this->resolveLiquidVariables($this->polling_body);
-                    $httpRequest = $httpRequest->withBody($resolvedBody);
-                }
-
-                // URL is already resolved, use it directly
-                $resolvedUrl = $url;
-
-                try {
-                    // Make the request based on the verb
-                    $httpResponse = $this->polling_verb === 'post' ? $httpRequest->post($resolvedUrl) : $httpRequest->get($resolvedUrl);
-
-                    $response = $this->parseResponse($httpResponse);
-
-                    $this->update([
-                        'data_payload' => $response,
-                        'data_payload_updated_at' => now(),
-                    ]);
-                } catch (Exception $e) {
-                    Log::warning("Failed to fetch data from URL {$resolvedUrl}: ".$e->getMessage());
-                    $this->update([
-                        'data_payload' => ['error' => 'Failed to fetch data'],
-                        'data_payload_updated_at' => now(),
-                    ]);
-                }
-
-                return;
-            }
-
-            // Multiple URLs - use nested response logic
-            $combinedResponse = [];
-
-            foreach ($urls as $index => $url) {
-                $httpRequest = Http::withHeaders($headers);
-
-                if ($this->polling_verb === 'post' && $this->polling_body) {
-                    // Resolve Liquid variables in the polling body
-                    $resolvedBody = $this->resolveLiquidVariables($this->polling_body);
-                    $httpRequest = $httpRequest->withBody($resolvedBody);
-                }
-
-                // URL is already resolved, use it directly
-                $resolvedUrl = $url;
-
-                try {
-                    // Make the request based on the verb
-                    $httpResponse = $this->polling_verb === 'post' ? $httpRequest->post($resolvedUrl) : $httpRequest->get($resolvedUrl);
-
-                    $response = $this->parseResponse($httpResponse);
-
-                    // Check if response is an array at root level
-                    if (array_keys($response) === range(0, count($response) - 1)) {
-                        // Response is a sequential array, nest under .data
-                        $combinedResponse["IDX_{$index}"] = ['data' => $response];
-                    } else {
-                        // Response is an object or associative array, keep as is
-                        $combinedResponse["IDX_{$index}"] = $response;
-                    }
-                } catch (Exception $e) {
-                    // Log error and continue with other URLs
-                    Log::warning("Failed to fetch data from URL {$resolvedUrl}: ".$e->getMessage());
-                    $combinedResponse["IDX_{$index}"] = ['error' => 'Failed to fetch data'];
-                }
-            }
-
-            $this->update([
-                'data_payload' => $combinedResponse,
-                'data_payload_updated_at' => now(),
-            ]);
+        if ($this->data_strategy !== 'polling' || ! $this->polling_url) {
+            return;
         }
+        $headers = ['User-Agent' => 'usetrmnl/byos_laravel', 'Accept' => 'application/json'];
+
+        // resolve headers
+        if ($this->polling_header) {
+            $resolvedHeader = $this->resolveLiquidVariables($this->polling_header);
+            $headerLines = explode("\n", mb_trim($resolvedHeader));
+            foreach ($headerLines as $line) {
+                $parts = explode(':', $line, 2);
+                if (count($parts) === 2) {
+                    $headers[mb_trim($parts[0])] = mb_trim($parts[1]);
+                }
+            }
+        }
+
+        // resolve and clean URLs
+        $resolvedPollingUrls = $this->resolveLiquidVariables($this->polling_url);
+        $urls = array_values(array_filter( // array_values ensures 0, 1, 2...
+            array_map(trim(...), explode("\n", $resolvedPollingUrls)),
+            filled(...)
+        ));
+
+        $combinedResponse = [];
+
+        // Loop through all URLs (Handles 1 or many)
+        foreach ($urls as $index => $url) {
+            $httpRequest = Http::withHeaders($headers);
+
+            if ($this->polling_verb === 'post' && $this->polling_body) {
+                $contentType = (array_key_exists('Content-Type', $headers))
+                    ? $headers['Content-Type']
+                    : 'application/json';
+
+                $resolvedBody = $this->resolveLiquidVariables($this->polling_body);
+                $httpRequest = $httpRequest->withBody($resolvedBody, $contentType);
+            }
+
+            try {
+                $httpResponse = ($this->polling_verb === 'post')
+                    ? $httpRequest->post($url)
+                    : $httpRequest->get($url);
+
+                $response = $this->parseResponse($httpResponse);
+
+                // Nest if it's a sequential array
+                if (array_keys($response) === range(0, count($response) - 1)) {
+                    $combinedResponse["IDX_{$index}"] = ['data' => $response];
+                } else {
+                    $combinedResponse["IDX_{$index}"] = $response;
+                }
+            } catch (Exception $e) {
+                Log::warning("Failed to fetch data from URL {$url}: ".$e->getMessage());
+                $combinedResponse["IDX_{$index}"] = ['error' => 'Failed to fetch data'];
+            }
+        }
+
+        // unwrap IDX_0 if only one URL
+        $finalPayload = (count($urls) === 1) ? reset($combinedResponse) : $combinedResponse;
+
+        $this->update([
+            'data_payload' => $finalPayload,
+            'data_payload_updated_at' => now(),
+        ]);
     }
 
     private function parseResponse(Response $httpResponse): array
@@ -416,7 +486,13 @@ class Plugin extends Model
      */
     public function render(string $size = 'full', bool $standalone = true, ?Device $device = null): string
     {
-        if ($this->render_markup) {
+        if ($this->plugin_type !== 'recipe') {
+            throw new InvalidArgumentException('Render method is only applicable for recipe plugins.');
+        }
+
+        $markup = $this->getMarkupForSize($size);
+
+        if ($markup) {
             $renderedContent = '';
 
             if ($this->markup_language === 'liquid') {
@@ -442,6 +518,13 @@ class Plugin extends Model
                             'locale' => 'en',
                             'time_zone_iana' => $timezone,
                         ],
+                        'device' => [
+                            'friendly_id' => $device?->friendly_id,
+                            'percent_charged' => $device?->battery_percent,
+                            'wifi_strength' => $device?->wifi_strength,
+                            'height' => $device?->height,
+                            'width' => $device?->width,
+                        ],
                         'plugin_settings' => [
                             'instance_name' => $this->name,
                             'strategy' => $this->data_strategy,
@@ -459,7 +542,7 @@ class Plugin extends Model
                 // Check if external renderer should be used
                 if ($this->preferred_renderer === 'trmnl-liquid' && config('services.trmnl.liquid_enabled')) {
                     // Use external Ruby renderer - pass raw template without preprocessing
-                    $renderedContent = $this->renderWithExternalLiquidRenderer($this->render_markup, $context);
+                    $renderedContent = $this->renderWithExternalLiquidRenderer($markup, $context);
                 } else {
                     // Use PHP keepsuit/liquid renderer
                     // Create a custom environment with inline templates support
@@ -479,16 +562,18 @@ class Plugin extends Model
 
                     // Register the template tag for inline templates
                     $environment->tagRegistry->register(TemplateTag::class);
+                    // Use plugin render tag so partials receive trmnl, size, data, config
+                    $environment->tagRegistry->register(PluginRenderTag::class);
 
                     // Apply Liquid replacements (including 'with' syntax conversion)
-                    $processedMarkup = $this->applyLiquidReplacements($this->render_markup);
+                    $processedMarkup = $this->applyLiquidReplacements($markup);
 
                     $template = $environment->parseString($processedMarkup);
                     $liquidContext = $environment->newRenderContext(data: $context);
                     $renderedContent = $template->render($liquidContext);
                 }
             } else {
-                $renderedContent = Blade::render($this->render_markup, [
+                $renderedContent = Blade::render($markup, [
                     'size' => $size,
                     'data' => $this->data_payload,
                     'config' => $this->configuration ?? [],
@@ -523,17 +608,30 @@ class Plugin extends Model
 
         if ($this->render_markup_view) {
             if ($standalone) {
-                return view('trmnl-layouts.single', [
+                $renderedView = view($this->render_markup_view, [
+                    'size' => $size,
+                    'data' => $this->data_payload,
+                    'config' => $this->configuration ?? [],
+                ])->render();
+
+                if ($size === 'full') {
+                    return view('trmnl-layouts.single', [
+                        'colorDepth' => $device?->colorDepth(),
+                        'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                        'noBleed' => $this->no_bleed,
+                        'darkMode' => $this->dark_mode,
+                        'scaleLevel' => $device?->scaleLevel(),
+                        'slot' => $renderedView,
+                    ])->render();
+                }
+
+                return view('trmnl-layouts.mashup', [
+                    'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
                     'colorDepth' => $device?->colorDepth(),
                     'deviceVariant' => $device?->deviceVariant() ?? 'og',
-                    'noBleed' => $this->no_bleed,
                     'darkMode' => $this->dark_mode,
                     'scaleLevel' => $device?->scaleLevel(),
-                    'slot' => view($this->render_markup_view, [
-                        'size' => $size,
-                        'data' => $this->data_payload,
-                        'config' => $this->configuration ?? [],
-                    ])->render(),
+                    'slot' => $renderedView,
                 ])->render();
             }
 
@@ -556,6 +654,30 @@ class Plugin extends Model
         return $this->configuration[$key] ?? $default;
     }
 
+    /**
+     * Get the appropriate markup for a given size, including shared prepending logic
+     *
+     * @param  string  $size  The layout size (full, half_horizontal, half_vertical, quadrant)
+     * @return string|null The markup code for the given size, with shared prepended if available
+     */
+    public function getMarkupForSize(string $size): ?string
+    {
+        $markup = match ($size) {
+            'full' => $this->render_markup,
+            'half_horizontal' => $this->render_markup_half_horizontal ?? $this->render_markup,
+            'half_vertical' => $this->render_markup_half_vertical ?? $this->render_markup,
+            'quadrant' => $this->render_markup_quadrant ?? $this->render_markup,
+            default => $this->render_markup,
+        };
+
+        // Prepend shared markup if it exists
+        if ($markup && $this->render_markup_shared) {
+            $markup = $this->render_markup_shared."\n".$markup;
+        }
+
+        return $markup;
+    }
+
     public function getPreviewMashupLayoutForSize(string $size): string
     {
         return match ($size) {
@@ -563,5 +685,62 @@ class Plugin extends Model
             'quadrant' => '2x2',
             default => '1Tx1B',
         };
+    }
+
+    /**
+     * Duplicate the plugin, copying all attributes and handling render_markup_view
+     *
+     * @param  int|null  $userId  Optional user ID for the duplicate. If not provided, uses the original plugin's user_id.
+     * @return Plugin The newly created duplicate plugin
+     */
+    public function duplicate(?int $userId = null): self
+    {
+        // Get all attributes except id and uuid
+        // Use toArray() to get cast values (respects JSON casts)
+        $attributes = $this->toArray();
+        unset($attributes['id'], $attributes['uuid'], $attributes['trmnlp_id']);
+
+        // Handle render_markup_view - copy file content to render_markup
+        if ($this->render_markup_view) {
+            try {
+                $basePath = resource_path('views/'.str_replace('.', '/', $this->render_markup_view));
+                $paths = [
+                    $basePath.'.blade.php',
+                    $basePath.'.liquid',
+                ];
+
+                $fileContent = null;
+                $markupLanguage = null;
+                foreach ($paths as $path) {
+                    if (file_exists($path)) {
+                        $fileContent = file_get_contents($path);
+                        // Determine markup language based on file extension
+                        $markupLanguage = str_ends_with($path, '.liquid') ? 'liquid' : 'blade';
+                        break;
+                    }
+                }
+
+                if ($fileContent !== null) {
+                    $attributes['render_markup'] = $fileContent;
+                    $attributes['markup_language'] = $markupLanguage;
+                    $attributes['render_markup_view'] = null;
+                } else {
+                    // File doesn't exist, remove the view reference
+                    $attributes['render_markup_view'] = null;
+                }
+            } catch (Exception) {
+                // If file reading fails, remove the view reference
+                $attributes['render_markup_view'] = null;
+            }
+        }
+
+        // Append " (Copy)" to the name
+        $attributes['name'] = $this->name.' (Copy)';
+
+        // Set user_id - use provided userId or fall back to original plugin's user_id
+        $attributes['user_id'] = $userId ?? $this->user_id;
+
+        // Create and return the new plugin
+        return self::create($attributes);
     }
 }

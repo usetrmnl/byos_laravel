@@ -227,7 +227,7 @@ test('hasMissingRequiredConfigurationFields returns true when required xhrSelect
                 'field_type' => 'xhrSelect',
                 'name' => 'Baseball Team',
                 'description' => 'Select your team',
-                'endpoint' => 'https://usetrmnl.com/custom_plugin_example_xhr_select.json',
+                'endpoint' => config('services.trmnl.base_url').'/custom_plugin_example_xhr_select.json',
                 // Not marked as optional, so it's required
             ],
         ],
@@ -252,7 +252,7 @@ test('hasMissingRequiredConfigurationFields returns false when required xhrSelec
                 'field_type' => 'xhrSelect',
                 'name' => 'Baseball Team',
                 'description' => 'Select your team',
-                'endpoint' => 'https://usetrmnl.com/custom_plugin_example_xhr_select.json',
+                'endpoint' => config('services.trmnl.base_url').'/custom_plugin_example_xhr_select.json',
                 // Not marked as optional, so it's required
             ],
         ],

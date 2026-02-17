@@ -1,17 +1,23 @@
 <?php
 
-use Livewire\Volt\Component;
 use Livewire\Attributes\Modelable;
+use Livewire\Component;
 
 new class extends Component
 {
     #[Modelable]
     public $model = '';
+
     public $language = 'html';
+
     public $theme = 'auto';
+
     public $readonly = false;
+
     public $placeholder = '';
+
     public $height = '200px';
+
     public $id = '';
 
     public function mount($language = 'html', $theme = 'auto', $readonly = false, $placeholder = '', $height = '200px', $id = '')
@@ -23,7 +29,6 @@ new class extends Component
         $this->height = $height;
         $this->id = $id;
     }
-
 
     public function toJSON()
     {
@@ -40,7 +45,7 @@ new class extends Component
 } ?>
 
 
-<div 
+<div
     x-data="codeMirrorComponent(@js($language), @js($theme), @js($readonly), @js($placeholder), @js($height), @js($id ?: uniqid()))"
     x-init="init()"
     wire:ignore
@@ -58,7 +63,7 @@ new class extends Component
             <span>Loading editor...</span>
         </div>
     </div>
-    
+
     <!-- Editor container -->
     <div x-show="!isLoading" x-ref="editor" style="height: {{ $height }};"></div>
 </div>

@@ -1,56 +1,89 @@
 <?php
 
+use App\Models\Device;
+use App\Models\DeviceModel;
 use App\Models\Plugin;
-use Illuminate\Support\Carbon;
-use Keepsuit\Liquid\Exceptions\LiquidException;
-use Livewire\Volt\Component;
-use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Blade;
+use Keepsuit\Liquid\Exceptions\LiquidException;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Plugin $plugin;
-    public string|null $markup_code;
-    public string|null $view_content;
-    public string|null $markup_language;
+
+    public ?string $markup_code;
+
+    public ?string $view_content;
+
+    public ?string $markup_language;
 
     public string $name;
+
     public bool $no_bleed = false;
+
     public bool $dark_mode = false;
+
     public int $data_stale_minutes;
+
     public string $data_strategy;
-    public string|null $polling_url;
+
+    public ?string $polling_url;
+
     public string $polling_verb;
-    public string|null $polling_header;
-    public string|null $polling_body;
+
+    public ?string $polling_header;
+
+    public ?string $polling_body;
+
     public $data_payload;
+
     public ?Carbon $data_payload_updated_at;
+
     public array $checked_devices = [];
+
     public array $device_playlists = [];
+
     public array $device_playlist_names = [];
+
     public array $device_weekdays = [];
+
     public array $device_active_from = [];
+
     public array $device_active_until = [];
+
     public string $mashup_layout = 'full';
+
     public array $mashup_plugins = [];
+
     public array $configuration_template = [];
-    public array $configuration = [];
-    public array $xhrSelectOptions = [];
-    public array $searchQueries = [];
+
+    public ?int $preview_device_model_id = null;
+
+    public string $preview_size = 'full';
+
+    public array $markup_layouts = [];
+
+    public array $active_tabs = [];
+
+    public string $active_tab = 'full';
 
     public function mount(): void
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
         $this->blade_code = $this->plugin->render_markup;
+        // required to render some stuff
         $this->configuration_template = $this->plugin->configuration_template ?? [];
-        $this->configuration = is_array($this->plugin->configuration) ? $this->plugin->configuration : [];
 
         if ($this->plugin->render_markup_view) {
             try {
-                $basePath = resource_path('views/' . str_replace('.', '/', $this->plugin->render_markup_view));
+                $basePath = resource_path('views/'.str_replace('.', '/', $this->plugin->render_markup_view));
                 $paths = [
-                    $basePath . '.blade.php',
-                    $basePath . '.liquid',
+                    $basePath.'.blade.php',
+                    $basePath.'.liquid',
                 ];
 
                 $this->view_content = null;
@@ -60,11 +93,28 @@ new class extends Component {
                         break;
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->view_content = null;
             }
         } else {
-            $this->markup_code = $this->plugin->render_markup;
+            // Initialize layout markups from plugin columns
+            $this->markup_layouts = [
+                'full' => $this->plugin->render_markup ?? '',
+                'half_horizontal' => $this->plugin->render_markup_half_horizontal ?? '',
+                'half_vertical' => $this->plugin->render_markup_half_vertical ?? '',
+                'quadrant' => $this->plugin->render_markup_quadrant ?? '',
+                'shared' => $this->plugin->render_markup_shared ?? '',
+            ];
+
+            // Set active tabs based on which layouts have content
+            $this->active_tabs = ['full']; // Full is always active
+            foreach (['half_horizontal', 'half_vertical', 'quadrant', 'shared'] as $layout) {
+                if (! empty($this->markup_layouts[$layout])) {
+                    $this->active_tabs[] = $layout;
+                }
+            }
+
+            $this->markup_code = $this->markup_layouts['full'];
             $this->markup_language = $this->plugin->markup_language ?? 'blade';
         }
 
@@ -74,6 +124,12 @@ new class extends Component {
 
         $this->fillformFields();
         $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
+
+        // Set default preview device model
+        if ($this->preview_device_model_id === null) {
+            $defaultModel = DeviceModel::where('name', 'og_plus')->first() ?? DeviceModel::first();
+            $this->preview_device_model_id = $defaultModel?->id;
+        }
     }
 
     public function fillFormFields(): void
@@ -92,10 +148,106 @@ new class extends Component {
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
         $this->validate();
+
+        // Update markup_code for the active tab
+        if (isset($this->markup_layouts[$this->active_tab])) {
+            $this->markup_layouts[$this->active_tab] = $this->markup_code ?? '';
+        }
+
+        // Save all layout markups to respective columns
         $this->plugin->update([
-            'render_markup' => $this->markup_code ?? null,
-            'markup_language' => $this->markup_language ?? null
+            'render_markup' => $this->markup_layouts['full'] ?? null,
+            'render_markup_half_horizontal' => ! empty($this->markup_layouts['half_horizontal']) ? $this->markup_layouts['half_horizontal'] : null,
+            'render_markup_half_vertical' => ! empty($this->markup_layouts['half_vertical']) ? $this->markup_layouts['half_vertical'] : null,
+            'render_markup_quadrant' => ! empty($this->markup_layouts['quadrant']) ? $this->markup_layouts['quadrant'] : null,
+            'render_markup_shared' => ! empty($this->markup_layouts['shared']) ? $this->markup_layouts['shared'] : null,
+            'markup_language' => $this->markup_language ?? null,
         ]);
+    }
+
+    public function addLayoutTab(string $layout): void
+    {
+        if (! in_array($layout, $this->active_tabs, true)) {
+            $this->active_tabs[] = $layout;
+            if (! isset($this->markup_layouts[$layout])) {
+                $this->markup_layouts[$layout] = '';
+            }
+            $this->switchTab($layout);
+        }
+    }
+
+    public function removeLayoutTab(string $layout): void
+    {
+        if ($layout !== 'full') {
+            $this->active_tabs = array_values(array_filter($this->active_tabs, fn ($tab) => $tab !== $layout));
+            if (isset($this->markup_layouts[$layout])) {
+                $this->markup_layouts[$layout] = '';
+            }
+            if ($this->active_tab === $layout) {
+                $this->active_tab = 'full';
+                $this->markup_code = $this->markup_layouts['full'] ?? '';
+            }
+        }
+    }
+
+    public function switchTab(string $layout): void
+    {
+        if (in_array($layout, $this->active_tabs, true)) {
+            // Save current tab's content before switching
+            if (isset($this->markup_layouts[$this->active_tab])) {
+                $this->markup_layouts[$this->active_tab] = $this->markup_code ?? '';
+            }
+
+            $this->active_tab = $layout;
+            $this->markup_code = $this->markup_layouts[$layout] ?? '';
+        }
+    }
+
+    public function toggleLayoutTab(string $layout): void
+    {
+        if ($layout === 'full') {
+            return;
+        }
+
+        if (in_array($layout, $this->active_tabs, true)) {
+            $this->removeLayoutTab($layout);
+        } else {
+            $this->addLayoutTab($layout);
+        }
+    }
+
+    public function getAvailableLayouts(): array
+    {
+        return [
+            'half_horizontal' => 'Half Horizontal',
+            'half_vertical' => 'Half Vertical',
+            'quadrant' => 'Quadrant',
+            'shared' => 'Shared',
+        ];
+    }
+
+    public function getLayoutLabel(string $layout): string
+    {
+        return match ($layout) {
+            'full' => $this->getFullTabLabel(),
+            'half_horizontal' => 'Half Horizontal',
+            'half_vertical' => 'Half Vertical',
+            'quadrant' => 'Quadrant',
+            'shared' => 'Shared',
+            default => ucfirst($layout),
+        };
+    }
+
+    public function getFullTabLabel(): string
+    {
+        // Return "Full" if any layout-specific markup exists, otherwise "Responsive"
+        if (! empty($this->markup_layouts['half_horizontal'])
+            || ! empty($this->markup_layouts['half_vertical'])
+            || ! empty($this->markup_layouts['quadrant'])) {
+            return 'Full';
+        }
+
+        return 'Responsive';
     }
 
     protected array $rules = [
@@ -127,21 +279,34 @@ new class extends Component {
         $this->validatePollingUrl();
 
         $validated = $this->validate();
-        $validated['data_payload'] = json_decode(Arr::get($validated,'data_payload'), true);
+        $validated['data_payload'] = json_decode(Arr::get($validated, 'data_payload'), true);
         $this->plugin->update($validated);
+
+        foreach ($this->configuration_template as $fieldKey => $field) {
+            if (($field['field_type'] ?? null) !== 'multi_string') {
+                continue;
+            }
+
+            if (! isset($this->multiValues[$fieldKey])) {
+                continue;
+            }
+
+            $validated[$fieldKey] = implode(',', array_filter(array_map('trim', $this->multiValues[$fieldKey])));
+        }
+
     }
 
     protected function validatePollingUrl(): void
     {
-        if ($this->data_strategy === 'polling' && !empty($this->polling_url)) {
+        if ($this->data_strategy === 'polling' && ! empty($this->polling_url)) {
             try {
                 $resolvedUrl = $this->plugin->resolveLiquidVariables($this->polling_url);
 
-                if (!filter_var($resolvedUrl, FILTER_VALIDATE_URL)) {
+                if (! filter_var($resolvedUrl, FILTER_VALIDATE_URL)) {
                     $this->addError('polling_url', 'The polling URL must be a valid URL after resolving configuration variables.');
                 }
-            } catch (\Exception $e) {
-                $this->addError('polling_url', 'Error resolving Liquid variables: ' . $e->getMessage() . $e->getPrevious()?->getMessage());
+            } catch (Exception $e) {
+                $this->addError('polling_url', 'Error resolving Liquid variables: '.$e->getMessage().$e->getPrevious()?->getMessage());
             }
         }
     }
@@ -155,8 +320,8 @@ new class extends Component {
                 $this->data_payload = json_encode($this->plugin->data_payload, JSON_PRETTY_PRINT);
                 $this->data_payload_updated_at = $this->plugin->data_payload_updated_at;
 
-            } catch (\Exception $e) {
-                $this->dispatch('data-update-error', message: $e->getMessage() . $e->getPrevious()?->getMessage());
+            } catch (Exception $e) {
+                $this->dispatch('data-update-error', message: $e->getMessage().$e->getPrevious()?->getMessage());
             }
         }
     }
@@ -190,15 +355,17 @@ new class extends Component {
 
         // Validate that each checked device has a playlist selected
         foreach ($this->checked_devices as $deviceId) {
-            if (!isset($this->device_playlists[$deviceId]) || empty($this->device_playlists[$deviceId])) {
-                $this->addError('device_playlists.' . $deviceId, 'Please select a playlist for each device.');
+            if (! isset($this->device_playlists[$deviceId]) || empty($this->device_playlists[$deviceId])) {
+                $this->addError('device_playlists.'.$deviceId, 'Please select a playlist for each device.');
+
                 return;
             }
 
             // If creating new playlist, validate required fields
             if ($this->device_playlists[$deviceId] === 'new') {
-                if (!isset($this->device_playlist_names[$deviceId]) || empty($this->device_playlist_names[$deviceId])) {
-                    $this->addError('device_playlist_names.' . $deviceId, 'Playlist name is required when creating a new playlist.');
+                if (! isset($this->device_playlist_names[$deviceId]) || empty($this->device_playlist_names[$deviceId])) {
+                    $this->addError('device_playlist_names.'.$deviceId, 'Playlist name is required when creating a new playlist.');
+
                     return;
                 }
             }
@@ -209,15 +376,15 @@ new class extends Component {
 
             if ($this->device_playlists[$deviceId] === 'new') {
                 // Create new playlist
-                $playlist = \App\Models\Playlist::create([
+                $playlist = App\Models\Playlist::create([
                     'device_id' => $deviceId,
                     'name' => $this->device_playlist_names[$deviceId],
-                    'weekdays' => !empty($this->device_weekdays[$deviceId] ?? null) ? $this->device_weekdays[$deviceId] : null,
+                    'weekdays' => ! empty($this->device_weekdays[$deviceId] ?? null) ? $this->device_weekdays[$deviceId] : null,
                     'active_from' => $this->device_active_from[$deviceId] ?? null,
                     'active_until' => $this->device_active_until[$deviceId] ?? null,
                 ]);
             } else {
-                $playlist = \App\Models\Playlist::findOrFail($this->device_playlists[$deviceId]);
+                $playlist = App\Models\Playlist::findOrFail($this->device_playlists[$deviceId]);
             }
 
             // Add plugin to playlist
@@ -231,11 +398,11 @@ new class extends Component {
             } else {
                 // Create mashup
                 $pluginIds = array_merge([$this->plugin->id], array_map('intval', $this->mashup_plugins));
-                \App\Models\PlaylistItem::createMashup(
+                App\Models\PlaylistItem::createMashup(
                     $playlist,
                     $this->mashup_layout,
                     $pluginIds,
-                    $this->plugin->name . ' Mashup',
+                    $this->plugin->name.' Mashup',
                     $maxOrder + 1
                 );
             }
@@ -249,56 +416,24 @@ new class extends Component {
             'device_active_from',
             'device_active_until',
             'mashup_layout',
-            'mashup_plugins'
+            'mashup_plugins',
         ]);
         Flux::modal('add-to-playlist')->close();
     }
 
-    public function saveConfiguration()
-    {
-        abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
-
-        $configurationValues = [];
-        if (isset($this->configuration_template['custom_fields'])) {
-            foreach ($this->configuration_template['custom_fields'] as $field) {
-                $fieldKey = $field['keyname'];
-                if (isset($this->configuration[$fieldKey])) {
-                    $value = $this->configuration[$fieldKey];
-                    
-                    // For code fields, if the value is a JSON string and the original was an array, decode it
-                    if ($field['field_type'] === 'code' && is_string($value)) {
-                        $decoded = json_decode($value, true);
-                        // If it's valid JSON and decodes to an array/object, use the decoded value
-                        // Otherwise, keep the string as-is
-                        if (json_last_error() === JSON_ERROR_NONE && (is_array($decoded) || is_object($decoded))) {
-                            $value = $decoded;
-                        }
-                    }
-                    
-                    $configurationValues[$fieldKey] = $value;
-                }
-            }
-        }
-
-        $this->plugin->update([
-            'configuration' => $configurationValues
-        ]);
-
-        Flux::modal('configuration-modal')->close();
-    }
-
     public function getDevicePlaylists($deviceId)
     {
-        return \App\Models\Playlist::where('device_id', $deviceId)->get();
+        return App\Models\Playlist::where('device_id', $deviceId)->get();
     }
 
     public function hasAnyPlaylistSelected(): bool
     {
         foreach ($this->checked_devices as $deviceId) {
-            if (isset($this->device_playlists[$deviceId]) && !empty($this->device_playlists[$deviceId])) {
+            if (isset($this->device_playlists[$deviceId]) && ! empty($this->device_playlists[$deviceId])) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -306,8 +441,6 @@ new class extends Component {
     {
         return $this->configuration[$key] ?? $default;
     }
-
-
 
     public function renderExample(string $example)
     {
@@ -328,7 +461,7 @@ new class extends Component {
     public function renderLayoutWithTitleBar(): string
     {
         if ($this->markup_language === 'liquid') {
-            return <<<HTML
+            return <<<'HTML'
 <div class="view view--{{ size }}">
     <div class="layout">
         <!-- ADD YOUR CONTENT HERE-->
@@ -340,9 +473,9 @@ new class extends Component {
 HTML;
         }
 
-        return <<<HTML
+        return <<<'HTML'
 @props(['size' => 'full'])
-<x-trmnl::view size="{{\$size}}">
+<x-trmnl::view size="{{$size}}">
     <x-trmnl::layout>
         <!-- ADD YOUR CONTENT HERE-->
     </x-trmnl::layout>
@@ -354,7 +487,7 @@ HTML;
     public function renderLayoutBlank(): string
     {
         if ($this->markup_language === 'liquid') {
-            return <<<HTML
+            return <<<'HTML'
 <div class="view view--{{ size }}">
     <div class="layout">
         <!-- ADD YOUR CONTENT HERE-->
@@ -363,9 +496,9 @@ HTML;
 HTML;
         }
 
-        return <<<HTML
+        return <<<'HTML'
 @props(['size' => 'full'])
-<x-trmnl::view size="{{\$size}}">
+<x-trmnl::view size="{{$size}}">
     <x-trmnl::layout>
         <!-- ADD YOUR CONTENT HERE-->
     </x-trmnl::layout>
@@ -377,19 +510,55 @@ HTML;
     {
         abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
 
+        $this->preview_size = $size;
+
         // If data strategy is polling and data_payload is null, fetch the data first
         if ($this->plugin->data_strategy === 'polling' && $this->plugin->data_payload === null) {
             $this->updateData();
         }
 
         try {
-            $previewMarkup = $this->plugin->render($size);
+            // Create a device object with og_plus model and the selected bitdepth
+            $device = $this->createPreviewDevice();
+            $previewMarkup = $this->plugin->render($size, true, $device);
             $this->dispatch('preview-updated', preview: $previewMarkup);
         } catch (LiquidException $e) {
             $this->dispatch('preview-error', message: $e->toLiquidErrorMessage());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->dispatch('preview-error', message: $e->getMessage());
         }
+    }
+
+    private function createPreviewDevice(): Device
+    {
+        $deviceModel = DeviceModel::with(['palette'])->find($this->preview_device_model_id)
+            ?? DeviceModel::with(['palette'])->first();
+
+        $device = new Device();
+        $device->setRelation('deviceModel', $deviceModel);
+
+        return $device;
+    }
+
+    public function getDeviceModels()
+    {
+        return DeviceModel::whereKind('trmnl')->orderBy('label')->get();
+    }
+
+    public function updatedPreviewDeviceModelId(): void
+    {
+        $this->renderPreview($this->preview_size);
+    }
+
+    public function duplicatePlugin(): void
+    {
+        abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
+
+        // Use the model's duplicate method
+        $newPlugin = $this->plugin->duplicate(auth()->id());
+
+        // Redirect to the new plugin's detail page
+        $this->redirect(route('plugins.recipe', ['plugin' => $newPlugin]));
     }
 
     public function deletePlugin(): void
@@ -399,42 +568,29 @@ HTML;
         $this->redirect(route('plugins.index'));
     }
 
-        public function loadXhrSelectOptions(string $fieldKey, string $endpoint, ?string $query = null): void
-        {
-            abort_unless(auth()->user()->plugins->contains($this->plugin), 403);
+    #[On('config-updated')]
+    public function refreshPlugin(): void
+    {
+        $this->plugin = $this->plugin->fresh();
+        $this->configuration_template = $this->plugin->configuration_template ?? [];
+    }
 
-            try {
-                $requestData = [];
-                if ($query !== null) {
-                    $requestData = [
-                        'function' => $fieldKey,
-                        'query' => $query
-                    ];
-                }
-
-                $response = $query !== null
-                    ? Http::post($endpoint, $requestData)
-                    : Http::post($endpoint);
-
-                if ($response->successful()) {
-                    $this->xhrSelectOptions[$fieldKey] = $response->json();
-                } else {
-                    $this->xhrSelectOptions[$fieldKey] = [];
-                }
-            } catch (\Exception $e) {
-                $this->xhrSelectOptions[$fieldKey] = [];
-            }
+    // Laravel Livewire computed property: access with $this->parsed_urls
+    #[Computed]
+    private function parsedUrls()
+    {
+        if (! isset($this->polling_url)) {
+            return null;
         }
 
-        public function searchXhrSelect(string $fieldKey, string $endpoint): void
-        {
-            $query = $this->searchQueries[$fieldKey] ?? '';
-            if (!empty($query)) {
-                $this->loadXhrSelectOptions($fieldKey, $endpoint, $query);
-            }
+        try {
+            return $this->plugin->resolveLiquidVariables($this->polling_url);
+
+        } catch (Exception $e) {
+            return 'PARSE_ERROR: '.$e->getMessage();
         }
+    }
 }
-
 ?>
 
 <div class="py-12">
@@ -466,7 +622,6 @@ HTML;
                         </flux:modal.trigger>
                     </flux:menu>
                 </flux:dropdown>
-
             </flux:button.group>
             <flux:button.group>
                 <flux:modal.trigger name="add-to-playlist">
@@ -476,6 +631,11 @@ HTML;
                 <flux:dropdown>
                     <flux:button icon="chevron-down" variant="primary"></flux:button>
                     <flux:menu>
+                        <flux:modal.trigger name="trmnlp-settings">
+                            <flux:menu.item icon="cog">Recipe Settings</flux:menu.item>
+                        </flux:modal.trigger>
+                        <flux:menu.separator />
+                        <flux:menu.item icon="document-duplicate" wire:click="duplicatePlugin">Duplicate Plugin</flux:menu.item>
                         <flux:modal.trigger name="delete-plugin">
                             <flux:menu.item icon="trash" variant="danger">Delete Plugin</flux:menu.item>
                         </flux:modal.trigger>
@@ -617,8 +777,15 @@ HTML;
         </flux:modal>
 
         <flux:modal name="preview-plugin" class="min-w-[850px] min-h-[480px] space-y-6">
-            <div>
+            <div class="flex items-center gap-4">
                 <flux:heading size="lg">Preview {{ $plugin->name }}</flux:heading>
+                <flux:field class="w-48">
+                    <flux:select wire:model.live="preview_device_model_id">
+                        @foreach($this->getDeviceModels() as $model)
+                            <option value="{{ $model->id }}">{{ $model->label ?? $model->name }}</option>
+                        @endforeach
+                    </flux:select>
+                </flux:field>
             </div>
 
             <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden">
@@ -626,269 +793,9 @@ HTML;
             </div>
         </flux:modal>
 
-        <flux:modal name="configuration-modal" class="md:w-96">
-            <div class="space-y-6">
-                <div>
-                    <flux:heading size="lg">Configuration</flux:heading>
-                    <flux:subheading>Configure your plugin settings</flux:subheading>
-                </div>
+        <livewire:plugins.recipes.settings :plugin="$plugin" />
 
-                        <form wire:submit="saveConfiguration">
-                            @if(isset($configuration_template['custom_fields']) && is_array($configuration_template['custom_fields']))
-                                @foreach($configuration_template['custom_fields'] as $field)
-                                    @php
-                                        $fieldKey = $field['keyname'] ?? $field['key'] ?? $field['name'];
-                                        $rawValue = $configuration[$fieldKey] ?? ($field['default'] ?? '');
-                                        
-                                        // For code fields, if the value is an array, JSON encode it
-                                        if ($field['field_type'] === 'code' && is_array($rawValue)) {
-                                            $currentValue = json_encode($rawValue, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-                                        } else {
-                                            $currentValue = is_array($rawValue) ? '' : (string) $rawValue;
-                                        }
-                                    @endphp
-                                    <div class="mb-4">
-                                        @if($field['field_type'] === 'author_bio')
-                                            @continue
-                                        @endif
-
-                                        @if($field['field_type'] === 'copyable_webhook_url')
-                                            @continue
-                                        @endif
-
-                                        @if($field['field_type'] === 'string' || $field['field_type'] === 'url')
-                                            <flux:input
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                            />
-                                        @elseif($field['field_type'] === 'text')
-                                            <flux:textarea
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                            />
-                                        @elseif($field['field_type'] === 'code')
-                                            <flux:textarea
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                rows="{{ $field['rows'] ?? 3 }}"
-                                                placeholder="{{ $field['placeholder'] ?? null }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                                class="font-mono"
-                                            />
-                                        @elseif($field['field_type'] === 'password')
-                                            <flux:input
-                                                type="password"
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                                viewable
-                                            />
-                                        @elseif($field['field_type'] === 'copyable')
-                                            <flux:input
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                value="{{ $field['value'] }}"
-                                                copyable
-                                            />
-                                        @elseif($field['field_type'] === 'time_zone')
-                                            <flux:select
-                                                label="{{ $field['name'] }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                            >
-                                                <option value="">Select timezone...</option>
-                                                @foreach(timezone_identifiers_list() as $timezone)
-                                                    <option value="{{ $timezone }}" {{ $currentValue === $timezone ? 'selected' : '' }}>{{ $timezone }}</option>
-                                                @endforeach
-                                            </flux:select>
-                                        @elseif($field['field_type'] === 'number')
-                                            <flux:input
-                                                type="number"
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? $field['name'] }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                            />
-                                        @elseif($field['field_type'] === 'boolean')
-                                            <flux:checkbox
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? $field['name'] }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                :checked="$currentValue"
-                                            />
-                                        @elseif($field['field_type'] === 'date')
-                                            <flux:input
-                                                type="date"
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? $field['name'] }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                            />
-                                        @elseif($field['field_type'] === 'time')
-                                            <flux:input
-                                                type="time"
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? $field['name'] }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                            />
-                                        @elseif($field['field_type'] === 'select')
-                                            @if(isset($field['multiple']) && $field['multiple'] === true)
-                                                <flux:checkbox.group
-                                                    label="{{ $field['name'] }}"
-                                                    wire:model="configuration.{{ $fieldKey }}"
-                                                    description="{{ $field['description'] ?? '' }}"
-                                                    descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                >
-                                                    @if(isset($field['options']) && is_array($field['options']))
-                                                        @foreach($field['options'] as $option)
-                                                            @if(is_array($option))
-                                                                @foreach($option as $label => $value)
-                                                                    <flux:checkbox label="{{ $label }}" value="{{ $value }}"/>
-                                                                @endforeach
-                                                            @else
-                                                                @php
-                                                                    $key = mb_strtolower(str_replace(' ', '_', $option));
-                                                                @endphp
-                                                                <flux:checkbox label="{{ $option }}" value="{{ $key }}"/>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
-                                                </flux:checkbox.group>
-                                            @else
-                                                <flux:select
-                                                    label="{{ $field['name'] }}"
-                                                    wire:model="configuration.{{ $fieldKey }}"
-                                                    description="{{ $field['description'] ?? '' }}"
-                                                    descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                >
-                                                    <option value="">Select {{ $field['name'] }}...</option>
-                                                    @if(isset($field['options']) && is_array($field['options']))
-                                                        @foreach($field['options'] as $option)
-                                                            @if(is_array($option))
-                                                                @foreach($option as $label => $value)
-                                                                    <option value="{{ $value }}" {{ $currentValue === $value ? 'selected' : '' }}>{{ $label }}</option>
-                                                                @endforeach
-                                                            @else
-                                                                @php
-                                                                    $key = mb_strtolower(str_replace(' ', '_', $option));
-                                                                @endphp
-                                                                <option value="{{ $key }}" {{ $currentValue === $key ? 'selected' : '' }}>{{ $option }}</option>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
-                                                </flux:select>
-                                            @endif
-                                        @elseif($field['field_type'] === 'xhrSelect')
-                                            <flux:select
-                                                label="{{ $field['name'] }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? '' }}"
-                                                wire:init="loadXhrSelectOptions('{{ $fieldKey }}', '{{ $field['endpoint'] }}')"
-                                            >
-                                                <option value="">Select {{ $field['name'] }}...</option>
-                                                @if(isset($xhrSelectOptions[$fieldKey]) && is_array($xhrSelectOptions[$fieldKey]))
-                                                    @foreach($xhrSelectOptions[$fieldKey] as $option)
-                                                        @if(is_array($option))
-                                                            @if(isset($option['id']) && isset($option['name']))
-                                                                {{-- xhrSelectSearch format: { 'id' => 'db-456', 'name' => 'Team Goals' } --}}
-                                                                <option value="{{ $option['id'] }}" {{ $currentValue === (string)$option['id'] ? 'selected' : '' }}>{{ $option['name'] }}</option>
-                                                            @else
-                                                                {{-- xhrSelect format: { 'Braves' => 123 } --}}
-                                                                @foreach($option as $label => $value)
-                                                                    <option value="{{ $value }}" {{ $currentValue === (string)$value ? 'selected' : '' }}>{{ $label }}</option>
-                                                                @endforeach
-                                                            @endif
-                                                        @else
-                                                            <option value="{{ $option }}" {{ $currentValue === (string)$option ? 'selected' : '' }}>{{ $option }}</option>
-                                                        @endif
-                                                    @endforeach
-                                                @endif
-                                            </flux:select>
-                                        @elseif($field['field_type'] === 'xhrSelectSearch')
-                                            <div class="space-y-2">
-
-                                                <flux:label>{{ $field['name'] }}</flux:label>
-                                                <flux:description>{{ $field['description'] ?? '' }}</flux:description>
-                                                <flux:input.group>
-                                                    <flux:input
-                                                        wire:model="searchQueries.{{ $fieldKey }}"
-                                                        placeholder="Enter search query..."
-                                                    />
-                                                    <flux:button
-                                                        wire:click="searchXhrSelect('{{ $fieldKey }}', '{{ $field['endpoint'] }}')"
-                                                        icon="magnifying-glass"/>
-                                                </flux:input.group>
-                                                <flux:description>{{ $field['help_text'] ?? '' }}</flux:description>
-                                                @if((isset($xhrSelectOptions[$fieldKey]) && is_array($xhrSelectOptions[$fieldKey]) && count($xhrSelectOptions[$fieldKey]) > 0) || !empty($currentValue))
-                                                    <flux:select
-                                                        wire:model="configuration.{{ $fieldKey }}"
-                                                    >
-                                                        <option value="">Select {{ $field['name'] }}...</option>
-                                                        @if(isset($xhrSelectOptions[$fieldKey]) && is_array($xhrSelectOptions[$fieldKey]))
-                                                            @foreach($xhrSelectOptions[$fieldKey] as $option)
-                                                                @if(is_array($option))
-                                                                    @if(isset($option['id']) && isset($option['name']))
-                                                                        {{-- xhrSelectSearch format: { 'id' => 'db-456', 'name' => 'Team Goals' } --}}
-                                                                        <option value="{{ $option['id'] }}" {{ $currentValue === (string)$option['id'] ? 'selected' : '' }}>{{ $option['name'] }}</option>
-                                                                    @else
-                                                                        {{-- xhrSelect format: { 'Braves' => 123 } --}}
-                                                                        @foreach($option as $label => $value)
-                                                                            <option value="{{ $value }}" {{ $currentValue === (string)$value ? 'selected' : '' }}>{{ $label }}</option>
-                                                                        @endforeach
-                                                                    @endif
-                                                                @else
-                                                                    <option value="{{ $option }}" {{ $currentValue === (string)$option ? 'selected' : '' }}>{{ $option }}</option>
-                                                                @endif
-                                                            @endforeach
-                                                        @endif
-                                                        @if(!empty($currentValue) && (!isset($xhrSelectOptions[$fieldKey]) || empty($xhrSelectOptions[$fieldKey])))
-                                                            {{-- Show current value even if no options are loaded --}}
-                                                            <option value="{{ $currentValue }}" selected>{{ $currentValue }}</option>
-                                                        @endif
-                                                    </flux:select>
-                                                @endif
-                                            </div>
-                                        @elseif($field['field_type'] === 'multi_string')
-                                            <flux:input
-                                                label="{{ $field['name'] }}"
-                                                description="{{ $field['description'] ?? '' }}"
-                                                descriptionTrailing="{{ $field['help_text'] ?? 'Enter multiple values separated by commas' }}"
-                                                wire:model="configuration.{{ $fieldKey }}"
-                                                value="{{ $currentValue }}"
-                                                placeholder="{{ $field['placeholder'] ?? 'value1,value2' }}"
-                                            />
-                                        @else
-                                            <flux:callout variant="warning">Field type "{{ $field['field_type'] }}" not yet supported</flux:callout>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            @endif
-
-                            <div class="flex">
-                                <flux:spacer/>
-                                <flux:button type="submit" variant="primary">Save Configuration</flux:button>
-                            </div>
-                        </form>
-            </div>
-        </flux:modal>
+        <livewire:plugins.config-modal :plugin="$plugin" />
 
         <div class="mt-5 mb-5">
             <h3 class="text-xl font-semibold dark:text-gray-100">Settings</h3>
@@ -976,7 +883,7 @@ HTML;
                         @endif
                         <div class="mb-4">
                             <flux:modal.trigger name="configuration-modal">
-                                <flux:button icon="cog" class="block mt-1 w-full">Configuration</flux:button>
+                                <flux:button icon="variable" class="block mt-1 w-full">Configuration Fields</flux:button>
                             </flux:modal.trigger>
                         </div>
                     @endif
@@ -989,15 +896,62 @@ HTML;
                     </div>
 
                     @if($data_strategy === 'polling')
-                        <div class="mb-4">
-                            <flux:textarea label="Polling URL" description="You can use configuration variables with Liquid syntax. Supports multiple requests via line break separation" wire:model="polling_url" id="polling_url"
+                    <flux:label>Polling URL</flux:label>
+
+                    <div x-data="{ subTab: 'settings' }" class="mt-2 mb-4">
+                        <div class="flex">
+                            <button
+                                @click="subTab = 'settings'"
+                                class="tab-button"
+                                :class="subTab === 'settings' ? 'is-active' : ''"
+                            >
+                                <flux:icon.cog-6-tooth class="size-4"/>
+                                Settings
+                            </button>
+
+                            <button
+                                @click="subTab = 'preview'"
+                                class="tab-button"
+                                :class="subTab === 'preview' ? 'is-active' : ''"
+                            >
+                                <flux:icon.eye class="size-4" />
+                                Preview URL
+                            </button>
+                        </div>
+
+                        <div class="flex-col p-4 bg-transparent rounded-tl-none styled-container">
+                            <div x-show="subTab === 'settings'">
+                                <flux:field>
+                                    <flux:description>Enter the URL(s) to poll for data:</flux:description>
+                                    <flux:textarea
+                                        wire:model.live="polling_url"
                                         placeholder="https://example.com/api"
-                                        class="block w-full" type="text" name="polling_url" autofocus>
-                            </flux:input>
-                            <flux:button icon="cloud-arrow-down" wire:click="updateData" class="block mt-2 w-full">
+                                        rows="5"
+                                    />
+                                    <flux:description>
+                                        {!! 'Hint: Supports multiple requests via line break separation. You can also use configuration variables with <a href="https://help.usetrmnl.com/en/articles/12689499-dynamic-polling-urls">Liquid syntax</a>. ' !!}
+                                    </flux:description>
+                                </flux:field>
+                            </div>
+
+                            <div x-show="subTab === 'preview'" x-cloak>
+                                <flux:field>
+                                    <flux:description>Preview computed URLs here (readonly):</flux:description>
+                                    <flux:textarea
+                                        readonly
+                                        placeholder="Nothing to show..."
+                                        rows="5"
+                                    >
+                                        {{ $this->parsed_urls }}
+                                    </flux:textarea>
+                                </flux:field>
+                            </div>
+
+                            <flux:button icon="cloud-arrow-down" wire:click="updateData" class="w-full mt-4">
                                 Fetch data now
                             </flux:button>
                         </div>
+                    </div>
 
                         <div class="mb-4">
                             <flux:radio.group wire:model.live="polling_verb" label="Polling Verb" variant="segmented">
@@ -1140,7 +1094,7 @@ HTML;
                         />
                         <div
                             x-data="codeEditorFormComponent({
-                                isDisabled: false,
+                                isDisabled: @js((bool)$plugin->render_markup_view),
                                 language: 'liquid',
                                 state: $wire.entangle('markup_code'),
                                 textareaId: @js($textareaId)
@@ -1160,9 +1114,6 @@ HTML;
                             <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
                         </div>
                     </flux:field>
-
-
-
 
                 </div>
             @else
@@ -1185,41 +1136,75 @@ HTML;
         @if(!$plugin->render_markup_view)
             <form wire:submit="saveMarkup">
                 <div class="mb-4">
-                    <flux:field>
-                        @php
-                            $textareaId = 'code-' . uniqid();
-                        @endphp
-                        <flux:label>{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}</flux:label>
-                        <flux:textarea
-                            wire:model="markup_code"
-                            id="{{ $textareaId }}"
-                            placeholder="Enter your HTML code here..."
-                            rows="25"
-                            hidden
-                        />
-                        <div
-                            x-data="codeEditorFormComponent({
-                                isDisabled: false,
-                                language: 'liquid',
-                                state: $wire.entangle('markup_code'),
-                                textareaId: @js($textareaId)
-                            })"
-                            wire:ignore
-                            wire:key="cm-{{ $textareaId }}"
-                            class="min-h-[300px] h-[300px] overflow-hidden resize-y"
-                        >
-                            <!-- Loading state -->
-                            <div x-show="isLoading" class="flex items-center justify-center h-full">
-                                <div class="flex items-center space-x-2">
-                                    <flux:icon.loading />
-                                </div>
-                            </div>
+                    <div>
+                        <div class="flex items-end">
+                            @foreach($active_tabs as $tab)
+                                <button
+                                    type="button"
+                                    wire:click="switchTab('{{ $tab }}')"
+                                    class="tab-button {{ $active_tab === $tab ? 'is-active' : '' }}"
+                                    wire:key="tab-{{ $tab }}"
+                                >
+                                    {{ $this->getLayoutLabel($tab) }}
+                                </button>
+                            @endforeach
 
-                            <!-- Editor container -->
-                            <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                            <flux:dropdown>
+                                <flux:button icon="plus" variant="ghost" size="sm" class="m-0.5"></flux:button>
+                                <flux:menu>
+                                    @foreach($this->getAvailableLayouts() as $layout => $label)
+                                        <flux:menu.item wire:click="toggleLayoutTab('{{ $layout }}')">
+                                            <div class="flex items-center gap-2">
+                                                @if(in_array($layout, $active_tabs, true))
+                                                    <flux:icon.check class="size-4" />
+                                                @else
+                                                    <span class="inline-block w-4 h-4"></span>
+                                                @endif
+                                                <span>{{ $label }}</span>
+                                            </div>
+                                        </flux:menu.item>
+                                    @endforeach
+                                </flux:menu>
+                            </flux:dropdown>
                         </div>
-                    </flux:field>
 
+                        <div class="flex-col p-4 bg-transparent rounded-tl-none styled-container">
+                            <flux:field>
+                                @php
+                                    $textareaId = 'code-' . $plugin->id;
+                                @endphp
+                                <flux:label>{{ $markup_language === 'liquid' ? 'Liquid Code' : 'Blade Code' }}</flux:label>
+                                <flux:textarea
+                                    wire:model="markup_code"
+                                    id="{{ $textareaId }}"
+                                    placeholder="Enter your HTML code here..."
+                                    rows="25"
+                                    hidden
+                                />
+                                <div
+                                    x-data="codeEditorFormComponent({
+                                        isDisabled: false,
+                                        language: @js($markup_language === 'liquid' ? 'liquid' : 'html'),
+                                        state: $wire.entangle('markup_code'),
+                                        textareaId: @js($textareaId)
+                                    })"
+                                    wire:ignore
+                                    wire:key="cm-{{ $textareaId }}"
+                                    class="min-h-[300px] h-[300px] overflow-hidden resize-y"
+                                >
+                                    <!-- Loading state -->
+                                    <div x-show="isLoading" class="flex items-center justify-center h-full">
+                                        <div class="flex items-center space-x-2">
+                                            <flux:icon.loading />
+                                        </div>
+                                    </div>
+
+                                    <!-- Editor container -->
+                                    <div x-show="!isLoading" x-ref="editor" class="h-full"></div>
+                                </div>
+                            </flux:field>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex">

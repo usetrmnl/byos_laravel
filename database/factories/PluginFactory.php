@@ -29,8 +29,24 @@ class PluginFactory extends Factory
             'icon_url' => null,
             'flux_icon_name' => null,
             'author_name' => $this->faker->name(),
+            'plugin_type' => 'recipe',
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ];
+    }
+
+    /**
+     * Indicate that the plugin is an image webhook plugin.
+     */
+    public function imageWebhook(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'plugin_type' => 'image_webhook',
+            'data_strategy' => 'static',
+            'data_stale_minutes' => 60,
+            'polling_url' => null,
+            'polling_verb' => 'get',
+            'name' => $this->faker->randomElement(['Camera Feed', 'Security Camera', 'Webcam', 'Image Stream']),
+        ]);
     }
 }

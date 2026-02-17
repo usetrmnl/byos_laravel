@@ -51,17 +51,35 @@ class PluginExportService
         $settings = $this->generateSettingsYaml($plugin);
         $settingsYaml = Yaml::dump($settings, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
         File::put($tempDir.'/settings.yml', $settingsYaml);
-        // Generate full template content
-        $fullTemplate = $this->generateFullTemplate($plugin);
+
         $extension = $plugin->markup_language === 'liquid' ? 'liquid' : 'blade.php';
-        File::put($tempDir.'/full.'.$extension, $fullTemplate);
-        // Generate shared.liquid if needed (for liquid templates)
-        if ($plugin->markup_language === 'liquid') {
-            $sharedTemplate = $this->generateSharedTemplate();
-            /** @phpstan-ignore-next-line */
-            if ($sharedTemplate) {
-                File::put($tempDir.'/shared.liquid', $sharedTemplate);
-            }
+
+        // Export full template if it exists
+        if ($plugin->render_markup) {
+            $fullTemplate = $this->generateLayoutTemplate($plugin->render_markup);
+            File::put($tempDir.'/full.'.$extension, $fullTemplate);
+        }
+
+        // Export layout-specific templates if they exist
+        if ($plugin->render_markup_half_horizontal) {
+            $halfHorizontalTemplate = $this->generateLayoutTemplate($plugin->render_markup_half_horizontal);
+            File::put($tempDir.'/half_horizontal.'.$extension, $halfHorizontalTemplate);
+        }
+
+        if ($plugin->render_markup_half_vertical) {
+            $halfVerticalTemplate = $this->generateLayoutTemplate($plugin->render_markup_half_vertical);
+            File::put($tempDir.'/half_vertical.'.$extension, $halfVerticalTemplate);
+        }
+
+        if ($plugin->render_markup_quadrant) {
+            $quadrantTemplate = $this->generateLayoutTemplate($plugin->render_markup_quadrant);
+            File::put($tempDir.'/quadrant.'.$extension, $quadrantTemplate);
+        }
+
+        // Export shared template if it exists
+        if ($plugin->render_markup_shared) {
+            $sharedTemplate = $this->generateLayoutTemplate($plugin->render_markup_shared);
+            File::put($tempDir.'/shared.'.$extension, $sharedTemplate);
         }
         // Create ZIP file
         $zipPath = $tempDir.'/plugin_'.$plugin->trmnlp_id.'.zip';
@@ -124,27 +142,19 @@ class PluginExportService
     }
 
     /**
-     * Generate the full template content
+     * Generate template content from markup, removing wrapper divs if present
      */
-    private function generateFullTemplate(Plugin $plugin): string
+    private function generateLayoutTemplate(?string $markup): string
     {
-        $markup = $plugin->render_markup;
+        if (! $markup) {
+            return '';
+        }
 
-        // Remove the wrapper div if it exists (it will be added during import)
+        // Remove the wrapper div if it exists (it will be added during import for liquid)
         $markup = preg_replace('/^<div class="view view--\{\{ size \}\}">\s*/', '', $markup);
         $markup = preg_replace('/\s*<\/div>\s*$/', '', $markup);
 
         return mb_trim($markup);
-    }
-
-    /**
-     * Generate the shared template content (for liquid templates)
-     */
-    private function generateSharedTemplate(): null
-    {
-        // For now, we don't have a way to store shared templates separately
-        // TODO - add support for shared templates
-        return null;
     }
 
     /**

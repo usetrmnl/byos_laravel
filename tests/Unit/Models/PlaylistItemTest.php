@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\Device;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Plugin;
+use App\Models\User;
 
 test('playlist item belongs to playlist', function (): void {
     $playlist = Playlist::factory()->create();
@@ -207,4 +209,40 @@ test('playlist item can create mashup', function (): void {
         ->mashup->plugin_ids->toBe($pluginIds)
         ->is_active->toBeTrue()
         ->order->toBe($order);
+});
+
+test('playlist item mashup render includes device context in liquid (trmnl.device.friendly_id)', function (): void {
+    $user = User::factory()->create();
+    $device = Device::factory()->create([
+        'user_id' => $user->id,
+        'friendly_id' => 'my-kitchen-display',
+    ]);
+    $playlist = Playlist::factory()->create(['device_id' => $device->id]);
+
+    $plugin1 = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'plugin_type' => 'recipe',
+        'markup_language' => 'liquid',
+        'render_markup' => '{{ trmnl.device.friendly_id }}',
+    ]);
+    $plugin2 = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'plugin_type' => 'recipe',
+        'markup_language' => 'liquid',
+        'render_markup' => 'slot2:{{ trmnl.device.friendly_id }}',
+    ]);
+
+    $playlistItem = PlaylistItem::createMashup(
+        $playlist,
+        '1Lx1R',
+        [$plugin1->id, $plugin2->id],
+        'Device context mashup',
+        1
+    );
+
+    $markup = $playlistItem->render($device);
+
+    expect($markup)
+        ->toContain('my-kitchen-display')
+        ->toContain('slot2:my-kitchen-display');
 });

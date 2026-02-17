@@ -5,35 +5,59 @@ use App\Models\DeviceModel;
 use App\Models\Firmware;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
-new class extends Component {
-
+new class extends Component
+{
     public $device;
 
     public $name;
+
     public $api_key;
+
     public $friendly_id;
+
     public $mac_address;
+
     public $default_refresh_interval;
+
     public $width;
+
     public $height;
+
     public $rotate;
+
     public $image_format;
+
     public $device_model_id;
+
+    public $is_mirror = false;
+
+    public $mirror_device_id = null;
+
+    // Signal to device to use high compatibility approaches when redrawing content
+    public $maximum_compatibility = false;
 
     // Sleep mode and special function
     public $sleep_mode_enabled = false;
+
     public $sleep_mode_from;
+
     public $sleep_mode_to;
+
     public $special_function;
 
     // Playlist properties
     public $playlists;
+
     public $playlist_name;
+
     public $selected_weekdays = null;
+
     public $active_from;
+
     public $active_until;
+
     public $refresh_time = null;
 
     // Device model properties
@@ -41,15 +65,17 @@ new class extends Component {
 
     // Firmware properties
     public $firmwares;
+
     public $selected_firmware_id;
+
     public $download_firmware;
 
-    public function mount(\App\Models\Device $device)
+    public function mount(App\Models\Device $device)
     {
         abort_unless(auth()->user()->devices->contains($device), 403);
 
         $current_image_uuid = $device->current_screen_image;
-        $current_image_path = 'images/generated/' . $current_image_uuid . '.png';
+        $current_image_path = 'images/generated/'.$current_image_uuid.'.png';
 
         $this->device = $device;
         $this->name = $device->name;
@@ -62,25 +88,29 @@ new class extends Component {
         $this->rotate = $device->rotate;
         $this->image_format = $device->image_format;
         $this->device_model_id = $device->device_model_id;
+        $this->maximum_compatibility = $device->maximum_compatibility;
         $this->deviceModels = DeviceModel::orderBy('label')->get()->sortBy(function ($deviceModel) {
             // Put TRMNL models at the top, then sort alphabetically within each group
             $isTrmnl = str_starts_with($deviceModel->label, 'TRMNL');
-            return $isTrmnl ? '0' . $deviceModel->label : '1' . $deviceModel->label;
+
+            return $isTrmnl ? '0'.$deviceModel->label : '1'.$deviceModel->label;
         });
         $this->playlists = $device->playlists()->with('items.plugin')->orderBy('created_at')->get();
-        $this->firmwares = \App\Models\Firmware::orderBy('latest', 'desc')->orderBy('created_at', 'desc')->get();
+        $this->firmwares = Firmware::orderBy('latest', 'desc')->orderBy('created_at', 'desc')->get();
         $this->selected_firmware_id = $this->firmwares->where('latest', true)->first()?->id;
         $this->sleep_mode_enabled = $device->sleep_mode_enabled ?? false;
         $this->sleep_mode_from = optional($device->sleep_mode_from)->format('H:i');
         $this->sleep_mode_to = optional($device->sleep_mode_to)->format('H:i');
         $this->special_function = $device->special_function;
+        $this->is_mirror = $device->mirror_device_id !== null;
+        $this->mirror_device_id = $device->mirror_device_id;
 
         return view('livewire.devices.configure', [
             'image' => ($current_image_uuid) ? url($current_image_path) : null,
         ]);
     }
 
-    public function deleteDevice(\App\Models\Device $device)
+    public function deleteDevice(App\Models\Device $device)
     {
         abort_unless(auth()->user()->devices->contains($device), 403);
         $device->delete();
@@ -93,6 +123,7 @@ new class extends Component {
         // Convert empty string to null for custom selection
         if (empty($this->device_model_id)) {
             $this->device_model_id = null;
+
             return;
         }
 
@@ -120,11 +151,20 @@ new class extends Component {
             'rotate' => 'required|integer|min:0|max:359',
             'image_format' => 'required|string',
             'device_model_id' => 'nullable|exists:device_models,id',
+            'mirror_device_id' => 'required_if:is_mirror,true',
+            'maximum_compatibility' => 'boolean',
             'sleep_mode_enabled' => 'boolean',
             'sleep_mode_from' => 'nullable|date_format:H:i',
             'sleep_mode_to' => 'nullable|date_format:H:i',
             'special_function' => 'nullable|string',
         ]);
+
+        if ($this->is_mirror) {
+            $mirrorDevice = auth()->user()->devices()->find($this->mirror_device_id);
+            abort_unless($mirrorDevice, 403, 'Invalid mirror device selected');
+            abort_if($mirrorDevice->mirror_device_id !== null, 403, 'Cannot mirror a device that is already a mirror device');
+            abort_if((int) $this->mirror_device_id === (int) $this->device->id, 403, 'Device cannot mirror itself');
+        }
 
         // Convert empty string to null for custom selection
         $deviceModelId = empty($this->device_model_id) ? null : $this->device_model_id;
@@ -139,6 +179,8 @@ new class extends Component {
             'rotate' => $this->rotate,
             'image_format' => $this->image_format,
             'device_model_id' => $deviceModelId,
+            'mirror_device_id' => $this->is_mirror ? $this->mirror_device_id : null,
+            'maximum_compatibility' => $this->maximum_compatibility,
             'sleep_mode_enabled' => $this->sleep_mode_enabled,
             'sleep_mode_from' => $this->sleep_mode_from,
             'sleep_mode_to' => $this->sleep_mode_to,
@@ -162,7 +204,7 @@ new class extends Component {
             $this->refresh_time = null;
         }
 
-        if (empty($this->selected_weekdays)){
+        if (empty($this->selected_weekdays)) {
             $this->selected_weekdays = null;
         }
 
@@ -182,7 +224,7 @@ new class extends Component {
 
     public function togglePlaylistActive(Playlist $playlist)
     {
-        $playlist->update(['is_active' => !$playlist->is_active]);
+        $playlist->update(['is_active' => ! $playlist->is_active]);
         $this->playlists = $this->device->playlists()->with('items.plugin')->orderBy('created_at')->get();
     }
 
@@ -218,7 +260,7 @@ new class extends Component {
 
     public function togglePlaylistItemActive(PlaylistItem $item)
     {
-        $item->update(['is_active' => !$item->is_active]);
+        $item->update(['is_active' => ! $item->is_active]);
         $this->playlists = $this->device->playlists()->with('items.plugin')->orderBy('created_at')->get();
     }
 
@@ -227,7 +269,7 @@ new class extends Component {
         abort_unless(auth()->user()->devices->contains($playlist->device), 403);
         $playlist->delete();
         $this->playlists = $this->device->playlists()->with('items.plugin')->orderBy('created_at')->get();
-        Flux::modal('delete-playlist-' . $playlist->id)->close();
+        Flux::modal('delete-playlist-'.$playlist->id)->close();
     }
 
     public function deletePlaylistItem(PlaylistItem $item)
@@ -235,7 +277,7 @@ new class extends Component {
         abort_unless(auth()->user()->devices->contains($item->playlist->device), 403);
         $item->delete();
         $this->playlists = $this->device->playlists()->with('items.plugin')->orderBy('created_at')->get();
-        Flux::modal('delete-playlist-item-' . $item->id)->close();
+        Flux::modal('delete-playlist-item-'.$item->id)->close();
     }
 
     public function editPlaylist(Playlist $playlist)
@@ -258,7 +300,7 @@ new class extends Component {
             $this->refresh_time = null;
         }
 
-        if (empty($this->selected_weekdays)){
+        if (empty($this->selected_weekdays)) {
             $this->selected_weekdays = null;
         }
 
@@ -272,7 +314,7 @@ new class extends Component {
 
         $this->playlists = $this->device->playlists()->with('items.plugin')->orderBy('created_at')->get();
         $this->reset(['playlist_name', 'selected_weekdays', 'active_from', 'active_until', 'refresh_time']);
-        Flux::modal('edit-playlist-' . $playlist->id)->close();
+        Flux::modal('edit-playlist-'.$playlist->id)->close();
     }
 
     public function preparePlaylistEdit(Playlist $playlist)
@@ -292,7 +334,6 @@ new class extends Component {
             'selected_firmware_id' => 'required|exists:firmware,id',
         ]);
 
-
         if ($this->download_firmware) {
             FirmwareDownloadJob::dispatchSync(Firmware::find($this->selected_firmware_id));
         }
@@ -309,7 +350,7 @@ new class extends Component {
 <div class="bg-muted flex flex-col items-center justify-center gap-6 p-6 md:p-10">
     <div class="flex flex-col gap-6">
         <div
-            class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+            class="styled-container">
             <div class="px-10 py-8">
                 @php
                     $current_image_uuid =$device->current_screen_image;
@@ -368,6 +409,10 @@ new class extends Component {
                                     <flux:menu.item icon="arrow-up-circle">Update Firmware</flux:menu.item>
                                 </flux:modal.trigger>
                                 <flux:menu.item icon="bars-3" href="{{ route('devices.logs', $device) }}" wire:navigate>Show Logs</flux:menu.item>
+                                <flux:modal.trigger name="mirror-url">
+                                    <flux:menu.item icon="link">Mirror URL</flux:menu.item>
+                                </flux:modal.trigger>
+                                <flux:menu.separator/>
                                 <flux:modal.trigger name="delete-device">
                                     <flux:menu.item icon="trash" variant="danger">Delete Device</flux:menu.item>
                                 </flux:modal.trigger>
@@ -402,6 +447,20 @@ new class extends Component {
                                 </flux:select.option>
                             @endforeach
                         </flux:select>
+
+                        <flux:checkbox wire:model.live="is_mirror" label="Mirrors Device"/>
+                        @if($is_mirror)
+                            <flux:select wire:model="mirror_device_id" label="Select Device to Mirror">
+                                <flux:select.option value="">Select a device</flux:select.option>
+                                @foreach(auth()->user()->devices->where('mirror_device_id', null)->where('id', '!=', $device->id) as $mirrorOption)
+                                    <flux:select.option value="{{ $mirrorOption->id }}">
+                                        {{ $mirrorOption->name }} ({{ $mirrorOption->friendly_id }})
+                                    </flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        @endif
+
+                        <flux:checkbox wire:model="maximum_compatibility" label="Maximum Compatibility" description="Resolves display issues caused by certain e-ink driver chips. Disables fast refresh. TRMNL Firmware 1.6.0+ required." />
 
                         @if(empty($device_model_id))
                             <flux:separator class="my-4" text="Advanced Device Settings" />
@@ -497,6 +556,26 @@ new class extends Component {
                     </div>
                 </flux:modal>
 
+
+                <flux:modal name="mirror-url" class="md:w-96">
+                    @php
+                        $mirrorUrl = url('/mirror/index.html') . '?api_key=' . urlencode($device->api_key);
+                    @endphp
+
+                    <div class="space-y-6">
+                        <div>
+                            <flux:heading size="lg">Mirror WebUI</flux:heading>
+                            <flux:subheading>Mirror this device onto older devices with a web browser — Safari is supported back to iOS 9.</flux:subheading>
+                        </div>
+
+                        <flux:input
+                            label="Mirror URL"
+                            value="{{$mirrorUrl}}"
+                            readonly
+                            copyable
+                        />
+                    </div>
+                </flux:modal>
 
                 @if(!$device->mirror_device_id)
                     @if($current_image_path)
@@ -743,4 +822,3 @@ new class extends Component {
         </div>
     </div>
 </div>
-

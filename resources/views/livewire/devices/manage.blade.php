@@ -2,10 +2,10 @@
 
 use App\Models\Device;
 use App\Models\DeviceModel;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
-new class extends Component {
-
+new class extends Component
+{
     public $devices;
 
     public $showDeviceForm = false;
@@ -23,7 +23,9 @@ new class extends Component {
     public $is_mirror = false;
 
     public $mirror_device_id = null;
+
     public $device_model_id = null;
+
     public $deviceModels;
 
     public ?int $pause_duration;
@@ -42,8 +44,10 @@ new class extends Component {
         $this->deviceModels = DeviceModel::orderBy('label')->get()->sortBy(function ($deviceModel) {
             // Put TRMNL models at the top, then sort alphabetically within each group
             $isTrmnl = str_starts_with($deviceModel->label, 'TRMNL');
-            return $isTrmnl ? '0' . $deviceModel->label : '1' . $deviceModel->label;
+
+            return $isTrmnl ? '0'.$deviceModel->label : '1'.$deviceModel->label;
         });
+
         return view('livewire.devices.manage');
     }
 
@@ -81,7 +85,7 @@ new class extends Component {
         ]);
 
         $this->reset();
-        \Flux::modal('create-device')->close();
+        Flux::modal('create-device')->close();
 
         $this->devices = auth()->user()->devices;
         session()->flash('message', 'Device created successfully.');
@@ -91,7 +95,7 @@ new class extends Component {
     {
         abort_unless(auth()->user()->devices->contains($device), 403);
         $device->update([
-            'proxy_cloud' => !$device->proxy_cloud,
+            'proxy_cloud' => ! $device->proxy_cloud,
         ]);
 
         // if ($device->proxy_cloud) {
@@ -108,9 +112,9 @@ new class extends Component {
         $pauseUntil = now()->addMinutes($this->pause_duration);
         $device->update(['pause_until' => $pauseUntil]);
         $this->reset('pause_duration');
-        \Flux::modal('pause-device-' . $deviceId)->close();
+        Flux::modal('pause-device-'.$deviceId)->close();
         $this->devices = auth()->user()->devices;
-        session()->flash('message', 'Device paused until ' . $pauseUntil->format('H:i'));
+        session()->flash('message', 'Device paused until '.$pauseUntil->format('H:i'));
     }
 }
 

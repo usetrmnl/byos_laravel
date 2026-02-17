@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>TRMNL BYOS Laravel Mirror</title>
+  <link rel="manifest" href="/mirror/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-76x76.png" sizes="76x76" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-120x120.png" sizes="120x120" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-152x152.png" sizes="152x152" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-167x167.png" sizes="167x167" />
+  <link rel="apple-touch-icon" type="image/png" href="/mirror/assets/apple-touch-icon-180x180.png" sizes="180x180" />
+
+  <link rel="icon" type="image/png" href="/mirror/assets/favicon-16x16.png" sizes="16x16" />
+  <link rel="icon" type="image/png" href="/mirror/assets/favicon-32x32.png" sizes="32x32" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script>
+    var trmnl = {
+      STORAGE_KEY: "byos_laravel_mirror_settings",
+      refreshTimer: null,
+      renderedAt: 0,
+      ui: {},
+      wakeLock: null,
+
+      showStatus: function (message) {
+        trmnl.ui.img.style.display = "none";
+        trmnl.ui.errorContainer.style.display = "flex";
+        trmnl.ui.errorMessage.textContent = message;
+      },
+
+      showScreen: function (src) {
+        trmnl.ui.img.src = src;
+        trmnl.ui.img.style.display = "block";
+        trmnl.ui.errorContainer.style.display = "none";
+      },
+
+      showSetupForm: function () {
+        var data = trmnl.getSettings();
+        trmnl.ui.apiKeyInput.value = data.api_key || "";
+        trmnl.ui.baseURLInput.value = data.base_url || "";
+        trmnl.ui.displayModeSelect.value = data.display_mode || "";
+        trmnl.ui.fullscreenToggle.checked = !!data.fullscreen;
+        trmnl.ui.wakeLockToggle.checked = !!trmnl.wakeLock || !!data.wake_lock;
+
+        trmnl.ui.setup.style.display = "flex";
+      },
+
+      saveSetup: function (event) {
+        event.preventDefault();
+
+        var apiKey = trmnl.ui.apiKeyInput.value;
+        var baseURL = trmnl.ui.baseURLInput.value;
+        var displayMode = trmnl.ui.displayModeSelect.value;
+        var fullscreenEnabled = trmnl.ui.fullscreenToggle.checked;
+        var wakeLockEnabled = trmnl.ui.wakeLockToggle.checked;
+
+        if (!apiKey) {
+          return;
+        }
+
+        trmnl.saveSettings({
+          api_key: apiKey,
+          base_url: baseURL,
+          display_mode: displayMode,
+          fullscreen: fullscreenEnabled,
+          wake_lock: wakeLockEnabled
+        });
+
+        if (wakeLockEnabled) {
+          trmnl.acquireWakeLock().then(function () {
+            trmnl.ui.wakeLockToggle.checked = !!trmnl.wakeLock;
+          }).catch(function (err) {
+            console.warn("Wake Lock request failed:", err);
+            trmnl.ui.wakeLockToggle.checked = false;
+          });
+        } else {
+          trmnl.releaseWakeLock().then(function () {
+            trmnl.ui.wakeLockToggle.checked = false;
+          }).catch(function (err) {
+            console.warn("Wake Lock release failed:", err);
+          });
+        }
+
+        trmnl.fetchDisplay();
+      },
+
+      hideSetupForm: function () {
+        trmnl.ui.setup.style.display = "none";
+      },
+
+      isFullscreenSupported: function () {
+        return !!(
+          document.fullscreenEnabled ||
+          document.webkitFullscreenEnabled ||
+          document.msFullscreenEnabled
+        );
+      },
+
+      isFullscreenActive: function () {
+        return !!(
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.msFullscreenElement
+        );
+      },
+
+      enterFullscreen: function () {
+        if (!trmnl.isFullscreenSupported()) return;
+
+        var el = document.documentElement;
+        var promise;
+
+        if (el.requestFullscreen) {
+          promise = el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          promise = el.webkitRequestFullscreen();
+        } else if (el.msRequestFullscreen) {
+          promise = el.msRequestFullscreen();
+        }
+
+        if (promise && promise.catch) {
+          promise.catch(function (err) {
+            console.warn("Enter fullscreen failed:", err);
+          });
+        }
+      },
+
+      exitFullscreen: function () {
+        if (!trmnl.isFullscreenSupported()) return;
+        if (!trmnl.isFullscreenActive()) return;
+
+        var promise;
+
+        if (document.exitFullscreen) {
+          promise = document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          promise = document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          promise = document.msExitFullscreen();
+        }
+
+        if (promise && promise.catch) {
+          promise.catch(function (err) {
+            console.warn("Exit fullscreen failed:", err);
+          });
+        }
+      },
+
+      syncFullscreenToggle: function () {
+        var active = trmnl.isFullscreenActive();
+        trmnl.ui.fullscreenToggle.checked = active;
+      },
+
+      isWakeLockSupported: function () {
+        return (
+          window.isSecureContext &&
+          navigator.wakeLock &&
+          typeof navigator.wakeLock.request === "function"
+        );
+      },
+
+      acquireWakeLock: function () {
+
+        if (!trmnl.isWakeLockSupported()) {
+          return {
+            then: function () { return this; },
+            catch: function () { return this; }
+          };
+        }
+
+        if (trmnl.wakeLock) {
+          return Promise.resolve();
+        }
+
+        return navigator.wakeLock.request("screen")
+          .then(function (sentinel) {
+
+            trmnl.wakeLock = sentinel;
+
+            sentinel.addEventListener("release", function () {
+              trmnl.wakeLock = null;
+              trmnl.ui.wakeLockToggle.checked = false;
+            });
+
+            console.log("Wake Lock attivo");
+
+          })
+          .catch(function (err) {
+            console.warn("Wake Lock failed:", err);
+            trmnl.wakeLock = null;
+            trmnl.ui.wakeLockToggle.checked = false;
+          });
+      },
+
+
+      releaseWakeLock: function () {
+
+        if (!trmnl.wakeLock) {
+          return Promise.resolve();
+        }
+
+        return trmnl.wakeLock.release()
+          .then(function () {
+            trmnl.wakeLock = null;
+            console.log("Wake Lock rilasciato");
+          })
+          .catch(function (err) {
+            console.warn("Release failed:", err);
+            trmnl.wakeLock = null;
+          });
+      },
+
+
+      toggleWakeLock: function () {
+        if (!trmnl.isWakeLockSupported()) return;
+        if (trmnl.wakeLock) {
+          trmnl.releaseWakeLock().then(function () {
+            trmnl.ui.wakeLockToggle.checked = false;
+          });
+        } else {
+          trmnl.acquireWakeLock().then(function () {
+            trmnl.ui.wakeLockToggle.checked = !!trmnl.wakeLock;
+          });
+        }
+      },
+
+
+
+      fetchDisplay: function (opts) {
+        opts = opts || {};
+        clearTimeout(trmnl.refreshTimer);
+
+        if (!opts.quiet) {
+          trmnl.hideSetupForm();
+          trmnl.showStatus("Loading...");
+        }
+
+        var setup = trmnl.getSettings();
+        var apiKey = setup.api_key;
+        var displayMode = setup.display_mode;
+        var baseURL = setup.base_url || "https://your-byos-trmnl.com";
+
+        document.body.classList.remove("dark", "night")
+        if (displayMode) {
+          document.body.classList.add(displayMode)
+        }
+
+        var headers = {
+          "Access-Token": apiKey
+        };
+
+        var url = baseURL + "/api/display";
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url, true);
+
+        for (var headerName in headers) {
+          if (headers.hasOwnProperty(headerName)) {
+            xhr.setRequestHeader(headerName, headers[headerName]);
+          }
+        }
+
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              console.log("Display response:", data);
+
+              if (data.status !== 0) {
+                trmnl.showStatus(
+                  "Error: " + (data.error || data.message || data.status)
+                );
+                return;
+              }
+
+              trmnl.showScreen(data.image_url);
+              trmnl.renderedAt = new Date();
+
+              if (data.refresh_rate) {
+                var refreshRate = 30;
+                refreshRate = data.refresh_rate;
+
+                console.log("Refreshing in " + refreshRate + " seconds...");
+                trmnl.refreshTimer = setTimeout(
+                  function () { trmnl.fetchDisplay({ quiet: true }); },
+                  1000 * refreshRate
+                );
+              }
+            } catch (e) {
+              trmnl.showStatus("Error processing response: " + e.message);
+            }
+          } else {
+            var msg = xhr.statusText
+            if (xhr.status == 404) {
+              msg = "Maybe wrong API key";
+            }
+            trmnl.showStatus(
+              "Failed to fetch screen: " + xhr.status + " " + msg
+            );
+          }
+        };
+
+        xhr.onerror = function () {
+          trmnl.showStatus("Network error: Failed to connect or request was blocked.");
+        };
+
+        xhr.send();
+      },
+
+      getSettings: function () {
+        try {
+          return JSON.parse(localStorage.getItem(trmnl.STORAGE_KEY)) || {};
+        } catch (e) {
+          return {};
+        }
+      },
+
+      saveSettings: function (data) {
+        var settings = trmnl.getSettings();
+
+        for (var key in data) {
+          if (data.hasOwnProperty(key)) {
+            settings[key] = data[key];
+          }
+        }
+
+        localStorage.setItem(trmnl.STORAGE_KEY, JSON.stringify(settings));
+        console.log("Settings saved:", settings);
+      },
+
+      cleanUrl: function () {
+        if (window.history && window.history.replaceState) {
+          try {
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname
+            );
+          } catch (e) {
+            // iOS 9 / UIWebView: silent ignore
+          }
+        }
+      },
+
+      applySettingsFromUrl: function () {
+        var query = window.location.search.substring(1);
+        if (!query) return;
+
+        var pairs = query.split("&");
+        var newSettings = {};
+        var hasOverrides = false;
+
+        for (var i = 0; i < pairs.length; i++) {
+          var parts = pairs[i].split("=");
+          if (parts.length !== 2) continue;
+
+          var key = decodeURIComponent(parts[0]);
+          var value = decodeURIComponent(parts[1]);
+
+          if (key === "api_key" && value) {
+            newSettings.api_key = value;
+            hasOverrides = true;
+          }
+
+          if (key === "base_url" && value) {
+            newSettings.base_url = value;
+            hasOverrides = true;
+          }
+
+        }
+
+        if (hasOverrides) {
+          trmnl.saveSettings(newSettings);
+          console.log("Settings overridden from URL:", newSettings);
+        }
+      },
+
+      setDefaultBaseUrlIfMissing: function () {
+        var settings = trmnl.getSettings();
+
+        if (settings && settings.base_url) {
+          return;
+        }
+
+        var protocol = window.location.protocol;
+        var host = window.location.hostname;
+        var port = window.location.port;
+
+        var origin = protocol + "//" + host;
+        if (port) {
+          origin += ":" + port;
+        }
+
+        trmnl.saveSettings({
+          base_url: origin
+        });
+
+        console.log("Default base_url set to:", origin);
+      },
+
+      clearSettings: function () {
+        try {
+          localStorage.removeItem(trmnl.STORAGE_KEY);
+        } catch (e) {
+          // fallback ultra-safe
+          localStorage.setItem(trmnl.STORAGE_KEY, "{}");
+        }
+        console.log("Settings cleared");
+        window.location.reload();
+      },
+
+      init: function () {
+
+        // override settings from GET params
+        trmnl.applySettingsFromUrl();
+
+        trmnl.cleanUrl();
+
+        // default base_url
+        trmnl.setDefaultBaseUrlIfMissing();
+
+        // screen
+        trmnl.ui.img = document.getElementById("screen");
+        trmnl.ui.errorContainer = document.getElementById("error-container");
+        trmnl.ui.errorMessage = document.getElementById("error-message");
+
+        // settings
+        trmnl.ui.apiKeyInput = document.getElementById("api_key");
+        trmnl.ui.baseURLInput = document.getElementById("base_url");
+        trmnl.ui.displayModeSelect = document.getElementById("display_mode");
+        trmnl.ui.fullscreenToggle = document.getElementById("fullscreenToggle");
+        trmnl.ui.wakeLockToggle = document.getElementById("wakeLockToggle");
+        trmnl.ui.setup = document.getElementById("setup");
+
+        // Sync fullscreen state
+        document.addEventListener("fullscreenchange", trmnl.syncFullscreenToggle);
+        document.addEventListener("webkitfullscreenchange", trmnl.syncFullscreenToggle);
+        document.addEventListener("msfullscreenchange", trmnl.syncFullscreenToggle);
+
+        // Fullscreen toggle
+        if (!trmnl.isFullscreenSupported()) {
+          trmnl.ui.fullscreenToggle.disabled = true;
+          trmnl.ui.fullscreenToggle.parentElement.style.opacity = "0.5";
+          trmnl.ui.fullscreenToggle.parentElement.style.cursor = "not-allowed";
+        } else {
+          trmnl.ui.fullscreenToggle.addEventListener("change", function (e) {
+            e.stopPropagation();
+
+            if (e.target.checked) {
+              trmnl.enterFullscreen();
+            } else {
+              trmnl.exitFullscreen();
+            }
+          });
+        }
+
+        var wakeLockHint = document.getElementById("wakeLockHint");
+
+        // Wake Lock toggle
+        if (trmnl.isWakeLockSupported()) {
+
+          trmnl.ui.wakeLockToggle.disabled = false;
+          trmnl.ui.wakeLockToggle.parentElement.style.opacity = "1";
+          trmnl.ui.wakeLockToggle.parentElement.style.cursor = "pointer";
+
+          if (wakeLockHint) wakeLockHint.style.display = "none";
+
+          trmnl.ui.wakeLockToggle.addEventListener("change", function () {
+            trmnl.toggleWakeLock();
+          });
+
+          document.addEventListener("visibilitychange", function () {
+            if (
+              document.visibilityState === "visible" &&
+              trmnl.ui.wakeLockToggle.checked
+            ) {
+              trmnl.acquireWakeLock();
+            }
+          });
+
+        } else {
+
+          // unsupported (HTTP or old browser)
+          trmnl.ui.wakeLockToggle.disabled = true;
+          trmnl.ui.wakeLockToggle.checked = false;
+          trmnl.ui.wakeLockToggle.parentElement.style.opacity = "0.5";
+          trmnl.ui.wakeLockToggle.parentElement.style.cursor = "not-allowed";
+
+          if (!window.isSecureContext && wakeLockHint) {
+            wakeLockHint.style.display = "block";
+          }
+
+        }
+
+        // get settings from localstorage
+        var settings = trmnl.getSettings();
+
+        // show setup form if missing apikey
+        if (!settings || !settings.api_key) {
+          trmnl.showSetupForm();
+        } else {
+          trmnl.fetchDisplay();
+        }
+
+        // Auto fullscreen at first click/touch if option enabled
+        if (settings.fullscreen && trmnl.isFullscreenSupported()) {
+          var activateFullscreenOnce = function () {
+            trmnl.enterFullscreen();
+            document.removeEventListener("click", activateFullscreenOnce);
+            document.removeEventListener("touchstart", activateFullscreenOnce);
+          };
+          document.addEventListener("click", activateFullscreenOnce, { once: true });
+          document.addEventListener("touchstart", activateFullscreenOnce, { once: true });
+        }
+
+        // Auto Wake Lock at first click/touch if option enabled
+        if (settings.wake_lock && trmnl.isWakeLockSupported()) {
+          var acquireWakeLockOnce = function () {
+            trmnl.acquireWakeLock().then(function () {
+              trmnl.ui.wakeLockToggle.checked = !!trmnl.wakeLock;
+            }).catch(function (err) {
+              console.warn("Wake Lock request failed:", err);
+              trmnl.ui.wakeLockToggle.checked = false;
+            });
+            document.removeEventListener("click", acquireWakeLockOnce);
+            document.removeEventListener("touchstart", acquireWakeLockOnce);
+          };
+          document.addEventListener("click", acquireWakeLockOnce, { once: true });
+          document.addEventListener("touchstart", acquireWakeLockOnce, { once: true });
+        }
+
+        trmnl.syncFullscreenToggle();
+      } //init end
+
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+      trmnl.init();
+    });
+  </script>
+  <style>
+    body {
+      overflow: hidden;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    a {
+      color: #f54900;
+    }
+
+    #screen-container,
+    #setup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-y: scroll;
+    }
+
+    #setup {
+      background-color: #3d3d3e;
+    }
+
+    #setup-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      padding: 2em;
+      margin: 1em;
+      border-radius: 1em;
+      box-shadow: 0 0.5em 2em rgba(0, 0, 0, 1);
+    }
+
+    #setup-panel img {
+      margin-bottom: 2em;
+    }
+
+    #screen {
+      cursor: pointer;
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      background-color: #000000;
+      z-index: 1;
+    }
+
+    body.dark #screen,
+    body.night #screen {
+      filter: invert(1) hue-rotate(180deg);
+      background-color: #ffffff;
+    }
+
+    #red-overlay {
+      background-color: #ff0000;
+      mix-blend-mode: darken;
+      display: none;
+    }
+
+    body.night #red-overlay {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    #error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .dark #error-container,
+    .dark #screen-container,
+    .night #error-container,
+    .night #screen-container {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    #error-message {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    #setup {
+      z-index: 2;
+    }
+
+    .form-control {
+      font-size: 1.25em;
+      width: 14em;
+      padding: 0.5em;
+      border: 1px solid #ccc;
+      border-radius: 0.5em;
+      display: block;
+    }
+
+    label {
+      font-size: 1.25em;
+      margin-bottom: 0.5em;
+      cursor: pointer;
+    }
+
+    label {
+      display: block;
+    }
+
+    fieldset {
+      border: none;
+      margin: 0;
+      padding: 0;
+      margin-bottom: 2em;
+    }
+
+    .btn {
+      font-size: 1.25em;
+      padding: 0.5em 1em;
+      background-color: #f54900;
+      color: white;
+      border: none;
+      border-radius: 0.5em;
+      cursor: pointer;
+      display: block;
+      width: 100%;
+    }
+
+    .btn-secondary {
+      background-color: #777;
+    }
+
+    .btn-clear {
+      margin-top: 1em;
+      background-color: #777;
+    }
+
+    #error-container .btn {
+      margin-left: 0.5em;
+      margin-right: 0.5em;
+    }
+
+    .night #error-container .btn {
+      color: #000000;
+    }
+
+    select {
+      display: block;
+      width: 100%;
+      font-size: 1.25em;
+      padding: 0.5em;
+      border: 1px solid #ccc;
+      border-radius: 0.5em;
+      background-color: #ffffff;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1em;
+      flex-wrap: nowrap;
+    }
+
+    .setting-row label,
+    .setting-row .toggle-label {
+      font-size: 1.25em;
+      margin: 0;
+      cursor: default;
+    }
+
+    .setting-row select,
+    .setting-row .switch {
+      width: auto;
+      min-width: 52px;
+      height: 28px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #ccc;
+      border-radius: 28px;
+      transition: background-color 0.2s ease;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      top: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+    }
+
+    .switch input:checked+.slider {
+      background-color: #f54900;
+    }
+
+    .switch input:checked+.slider::before {
+      transform: translateX(24px);
+    }
+
+    .switch input:disabled+.slider {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .switch input:disabled+.slider::before {
+      background-color: #eee;
+    }
+
+    .form-select-small {
+      width: 6em;
+      font-size: 1em;
+      padding: 0.4em 0.5em;
+      border: 1px solid #ccc;
+      border-radius: 0.5em;
+      background-color: #ffffff;
+    }
+
+    .toggle-label {
+      font-size: 1.25em;
+      margin: 0;
+      cursor: default;
+      pointer-events: auto;
+    }
+
+    .setting-hint {
+      font-size: 0.75em;
+      color: #f41414;
+      margin-top: 0.2em;
+      margin-left: 0.5em;
+    }
+
+    /* Fallback for iOS 9 */
+    @media screen and (max-width: 1024px) and (-webkit-min-device-pixel-ratio: 1) {
+      .setting-row {
+        display: block;
+        overflow: hidden;
+      }
+
+      .setting-row label,
+      .setting-row .toggle-label {
+        float: left;
+        line-height: 28px;
+        margin-right: 0.5em;
+      }
+
+      .setting-row select,
+      .setting-row .switch {
+        float: right;
+        width: auto;
+        min-width: 52px;
+        height: 28px;
+      }
+
+      .setting-hint {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="setup" style="display: none;">
+    <div id="setup-panel">
+      <img src="/mirror/assets/logo--brand.svg" alt="TRMNL Logo" />
+
+      <form onsubmit="return trmnl.saveSetup(event)">
+
+        <fieldset>
+          <label for="base_url">Custom Server URL</label>
+          <input name="base_url" id="base_url" type="text" placeholder="https://your-byos-trmnl.com"
+            class="form-control" value="" />
+        </fieldset>
+
+        <fieldset>
+          <label for="api_key">Device API Key</label>
+          <input name="api_key" id="api_key" type="text" placeholder="API Key" class="form-control" required />
+        </fieldset>
+
+        <fieldset class="setting-row">
+          <label for="display_mode">Display Mode</label>
+          <select id="display_mode" name="display_mode" class="form-select-small">
+            <option value="" selected>Light</option>
+            <option value="dark">Dark</option>
+            <option value="night">Night</option>
+          </select>
+        </fieldset>
+
+        <fieldset class="setting-row">
+          <span class="toggle-label">Fullscreen</span>
+          <label class="switch">
+            <input type="checkbox" id="fullscreenToggle">
+            <span class="slider"></span>
+          </label>
+        </fieldset>
+
+        <fieldset class="setting-row">
+          <div>
+            <span class="toggle-label">Screen Wake Lock</span>
+            <div id="wakeLockHint" class="setting-hint" style="display:none;">
+              Require HTTPS
+            </div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="wakeLockToggle">
+            <span class="slider"></span>
+          </label>
+        </fieldset>
+
+        <button class="btn">Save</button>
+        <button class="btn btn-clear" type="button" onclick="trmnl.clearSettings()">Clear settings</button>
+
+      </form>
+    </div>
+  </div>
+
+  <div id="screen-container">
+    <div id="red-overlay"></div>
+    <img id="screen" onclick="trmnl.showSetupForm()" style="display: none;">
+
+    <div id="error-container" style="display: none">
+      <div id="error-message"></div>
+      <div style="display: flex; margin-top: 1em">
+        <button class="btn" onclick="trmnl.showSetupForm()">Setup</button>
+        <button class="btn btn-secondary" onclick="trmnl.fetchDisplay()">Retry</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

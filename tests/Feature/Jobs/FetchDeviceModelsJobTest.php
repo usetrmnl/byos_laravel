@@ -29,7 +29,7 @@ test('fetch device models job can be dispatched', function (): void {
 test('fetch device models job handles successful api response', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => [
                 [
                     'name' => 'test-model',
@@ -44,6 +44,7 @@ test('fetch device models job handles successful api response', function (): voi
                     'mime_type' => 'image/png',
                     'offset_x' => 0,
                     'offset_y' => 0,
+                    'kind' => 'trmnl',
                     'published_at' => '2023-01-01T00:00:00Z',
                 ],
             ],
@@ -74,13 +75,14 @@ test('fetch device models job handles successful api response', function (): voi
     expect($deviceModel->mime_type)->toBe('image/png');
     expect($deviceModel->offset_x)->toBe(0);
     expect($deviceModel->offset_y)->toBe(0);
+    // expect($deviceModel->kind)->toBe('trmnl');
     expect($deviceModel->source)->toBe('api');
 });
 
 test('fetch device models job handles multiple device models', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => [
                 [
                     'name' => 'model-1',
@@ -134,7 +136,7 @@ test('fetch device models job handles multiple device models', function (): void
 test('fetch device models job handles empty data array', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => [],
         ], 200),
     ]);
@@ -156,7 +158,7 @@ test('fetch device models job handles empty data array', function (): void {
 test('fetch device models job handles missing data field', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'message' => 'No data available',
         ], 200),
     ]);
@@ -178,7 +180,7 @@ test('fetch device models job handles missing data field', function (): void {
 test('fetch device models job handles non-array data', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => 'invalid-data',
         ], 200),
     ]);
@@ -200,7 +202,7 @@ test('fetch device models job handles non-array data', function (): void {
 test('fetch device models job handles api failure', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'error' => 'Internal Server Error',
         ], 500),
     ]);
@@ -225,7 +227,7 @@ test('fetch device models job handles api failure', function (): void {
 test('fetch device models job handles network exception', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => function (): void {
+        config('services.trmnl.base_url').'/api/models' => function (): void {
             throw new Exception('Network connection failed');
         },
     ]);
@@ -247,7 +249,7 @@ test('fetch device models job handles network exception', function (): void {
 test('fetch device models job handles device model with missing name', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => [
                 [
                     'label' => 'Model without name',
@@ -278,7 +280,7 @@ test('fetch device models job handles device model with missing name', function 
 test('fetch device models job handles device model with partial data', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => [
                 [
                     'name' => 'minimal-model',
@@ -312,6 +314,7 @@ test('fetch device models job handles device model with partial data', function 
     expect($deviceModel->mime_type)->toBe('');
     expect($deviceModel->offset_x)->toBe(0);
     expect($deviceModel->offset_y)->toBe(0);
+    expect($deviceModel->kind)->toBeNull();
     expect($deviceModel->source)->toBe('api');
 });
 
@@ -326,7 +329,7 @@ test('fetch device models job updates existing device model', function (): void 
 
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => [
                 [
                     'name' => 'existing-model',
@@ -369,7 +372,7 @@ test('fetch device models job updates existing device model', function (): void 
 test('fetch device models job handles processing exception for individual model', function (): void {
     Http::fake([
         'usetrmnl.com/api/palettes' => Http::response(['data' => []], 200),
-        'usetrmnl.com/api/models' => Http::response([
+        config('services.trmnl.base_url').'/api/models' => Http::response([
             'data' => [
                 [
                     'name' => 'valid-model',

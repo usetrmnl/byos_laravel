@@ -153,4 +153,6 @@ return [
     'version' => env('APP_VERSION', null),
 
     'catalog_url' => env('CATALOG_URL', 'https://raw.githubusercontent.com/bnussbau/trmnl-recipe-catalog/refs/heads/main/catalog.yaml'),
+
+    'github_repo' => env('GITHUB_REPO', 'usetrmnl/byos_laravel'),
 ];

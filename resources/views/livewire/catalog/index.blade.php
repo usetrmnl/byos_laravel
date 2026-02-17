@@ -1,20 +1,24 @@
 <?php
 
 use App\Services\PluginImportService;
-use Livewire\Attributes\Lazy;
-use Livewire\Volt\Component;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Lazy;
+use Livewire\Component;
 use Symfony\Component\Yaml\Yaml;
 
 new
 #[Lazy]
-class extends Component {
+class extends Component
+{
     public array $catalogPlugins = [];
+
     public string $installingPlugin = '';
+
     public string $previewingPlugin = '';
+
     public array $previewData = [];
 
     public function mount(): void
@@ -51,7 +55,7 @@ class extends Component {
                 return collect($catalog)
                     ->filter(function ($plugin) use ($currentVersion) {
                         // Check if Laravel compatibility is true
-                        if (!Arr::get($plugin, 'byos.byos_laravel.compatibility', false)) {
+                        if (! Arr::get($plugin, 'byos.byos_laravel.compatibility', false)) {
                             return false;
                         }
 
@@ -77,12 +81,14 @@ class extends Component {
                             'logo_url' => Arr::get($plugin, 'logo_url'),
                             'screenshot_url' => Arr::get($plugin, 'screenshot_url'),
                             'learn_more_url' => Arr::get($plugin, 'author_bio.learn_more_url'),
+                            'preferred_renderer' => Arr::get($plugin, 'byos.byos_laravel.renderer'),
                         ];
                     })
                     ->sortBy('name')
                     ->toArray();
-            } catch (\Exception $e) {
-                Log::error('Failed to load catalog from URL: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::error('Failed to load catalog from URL: '.$e->getMessage());
+
                 return [];
             }
         });
@@ -94,8 +100,9 @@ class extends Component {
 
         $plugin = collect($this->catalogPlugins)->firstWhere('id', $pluginId);
 
-        if (!$plugin || !$plugin['zip_url']) {
+        if (! $plugin || ! $plugin['zip_url']) {
             $this->addError('installation', 'Plugin not found or no download URL available.');
+
             return;
         }
 
@@ -106,15 +113,16 @@ class extends Component {
                 $plugin['zip_url'],
                 auth()->user(),
                 $plugin['zip_entry_path'] ?? null,
-                null,
-                $plugin['logo_url'] ?? null
+                config('services.trmnl.liquid_enabled') ? $plugin['preferred_renderer'] : null,
+                $plugin['logo_url'] ?? null,
+                allowDuplicate: true
             );
 
             $this->dispatch('plugin-installed');
             Flux::modal('import-from-catalog')->close();
 
-        } catch (\Exception $e) {
-            $this->addError('installation', 'Error installing plugin: ' . $e->getMessage());
+        } catch (Exception $e) {
+            $this->addError('installation', 'Error installing plugin: '.$e->getMessage());
         } finally {
             $this->installingPlugin = '';
         }
@@ -124,32 +132,27 @@ class extends Component {
     {
         $plugin = collect($this->catalogPlugins)->firstWhere('id', $pluginId);
 
-        if (!$plugin) {
+        if (! $plugin) {
             $this->addError('preview', 'Plugin not found.');
+
             return;
         }
 
         $this->previewingPlugin = $pluginId;
         $this->previewData = $plugin;
-
-        // Store scroll position for restoration later
-        $this->dispatch('store-scroll-position');
     }
 
     public function closePreview(): void
     {
         $this->previewingPlugin = '';
         $this->previewData = [];
-
-        // Restore scroll position when returning to catalog
-        $this->dispatch('restore-scroll-position');
     }
 }; ?>
 
 <div class="space-y-4">
     @if(empty($catalogPlugins))
         <div class="text-center py-8">
-            <flux:icon name="exclamation-triangle" class="mx-auto h-12 w-12 text-gray-400" />
+            <flux:icon name="exclamation-triangle" class="mx-auto h-12 w-12 text-zinc-400" />
             <flux:heading class="mt-2">No plugins available</flux:heading>
             <flux:subheading>Catalog is empty</flux:subheading>
         </div>
@@ -160,30 +163,30 @@ class extends Component {
             @enderror
 
             @foreach($catalogPlugins as $plugin)
-                <div class="bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 [:where(&)]:p-6 [:where(&)]:rounded-xl space-y-6">
+                <div wire:key="plugin-{{ $plugin['id'] }}" class="bg-white dark:bg-white/10 border border-zinc-200 dark:border-white/10 [:where(&)]:p-6 [:where(&)]:rounded-xl space-y-6">
                     <div class="flex items-start space-x-4">
                         @if($plugin['logo_url'])
                             <img src="{{ $plugin['logo_url'] }}" loading="lazy" alt="{{ $plugin['name'] }}" class="w-12 h-12 rounded-lg object-cover">
                         @else
-                            <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                                <flux:icon name="puzzle-piece" class="w-6 h-6 text-gray-400" />
+                            <div class="w-12 h-12 bg-zinc-200 dark:bg-zinc-700 rounded-lg flex items-center justify-center">
+                                <flux:icon name="puzzle-piece" class="w-6 h-6 text-zinc-400" />
                             </div>
                         @endif
 
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $plugin['name'] }}</h3>
+                                    <flux:heading size="lg">{{ $plugin['name'] }}</flux:heading>
                                     @if ($plugin['github'])
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">by {{ $plugin['github'] }}</p>
+                                        <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">by {{ $plugin['github'] }}</flux:text>
                                     @endif
                                 </div>
                                 <div class="flex items-center space-x-2">
                                     @if($plugin['license'])
-                                        <flux:badge color="gray" size="sm">{{ $plugin['license'] }}</flux:badge>
+                                        <flux:badge color="zinc" size="sm">{{ $plugin['license'] }}</flux:badge>
                                     @endif
                                     @if($plugin['repo_url'])
-                                        <a href="{{ $plugin['repo_url'] }}" target="_blank" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                        <a href="{{ $plugin['repo_url'] }}" target="_blank" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
                                             <flux:icon name="github" class="w-5 h-5" />
                                         </a>
                                     @endif
@@ -191,7 +194,7 @@ class extends Component {
                             </div>
 
                             @if($plugin['description'])
-                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ $plugin['description'] }}</p>
+                                <flux:text class="mt-2" size="sm">{{ $plugin['description'] }}</flux:text>
                             @endif
 
                             <div class="mt-4 flex items-center space-x-3">
@@ -201,14 +204,16 @@ class extends Component {
                                     Install
                                 </flux:button>
 
-                                <flux:modal.trigger name="catalog-preview">
-                                    <flux:button
-                                        wire:click="previewPlugin('{{ $plugin['id'] }}')"
-                                        variant="subtle"
-                                        icon="eye">
-                                        Preview
-                                    </flux:button>
-                                </flux:modal.trigger>
+                                @if($plugin['screenshot_url'])
+                                    <flux:modal.trigger name="catalog-preview">
+                                        <flux:button
+                                            wire:click="previewPlugin('{{ $plugin['id'] }}')"
+                                            variant="subtle"
+                                            icon="eye">
+                                            Preview
+                                        </flux:button>
+                                    </flux:modal.trigger>
+                                @endif
 
 
 
@@ -236,34 +241,20 @@ class extends Component {
             </div>
 
             <div class="space-y-4">
-                @if($previewData['screenshot_url'])
-                    <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden">
-                        <img src="{{ $previewData['screenshot_url'] }}"
-                             alt="Preview of {{ $previewData['name'] }}"
-                             class="w-full h-auto max-h-[480px] object-contain">
-                    </div>
-                @elseif($previewData['logo_url'])
-                    <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden p-8 text-center">
-                        <img src="{{ $previewData['logo_url'] }}"
-                             alt="{{ $previewData['name'] }} logo"
-                             class="mx-auto h-32 w-auto object-contain mb-4">
-                        <p class="text-gray-600 dark:text-gray-400">No preview image available</p>
-                    </div>
-                @else
-                    <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden p-8 text-center">
-                        <flux:icon name="puzzle-piece" class="mx-auto h-32 w-32 text-gray-400 mb-4" />
-                        <p class="text-gray-600 dark:text-gray-400">No preview available</p>
-                    </div>
-                @endif
+                <div class="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden">
+                    <img src="{{ $previewData['screenshot_url'] }}"
+                         alt="Preview of {{ $previewData['name'] }}"
+                         class="w-full h-auto max-h-[480px] object-contain">
+                </div>
 
                 @if($previewData['description'])
-                    <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Description</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-300">{{ $previewData['description'] }}</p>
+                    <div class="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                        <flux:heading size="sm" class="mb-2">Description</flux:heading>
+                        <flux:text size="sm">{{ $previewData['description'] }}</flux:text>
                     </div>
                 @endif
 
-                <div class="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700 space-x-3">
+                <div class="flex items-center justify-end pt-4 border-t border-zinc-200 dark:border-zinc-700 space-x-3">
                     <flux:modal.close>
                         <flux:button
                             wire:click="installPlugin('{{ $previewingPlugin }}')"
@@ -276,54 +267,3 @@ class extends Component {
         @endif
     </flux:modal>
 </div>
-
-@script
-<script>
-    let catalogScrollPosition = 0;
-
-    $wire.on('store-scroll-position', () => {
-        const catalogModal = document.querySelector('[data-flux-modal="import-from-catalog"]');
-        if (catalogModal) {
-            const scrollContainer = catalogModal.querySelector('.space-y-4') || catalogModal;
-            catalogScrollPosition = scrollContainer.scrollTop || 0;
-        }
-    });
-
-    $wire.on('restore-scroll-position', () => {
-        // Small delay to ensure modal is fully rendered
-        setTimeout(() => {
-            const catalogModal = document.querySelector('[data-flux-modal="import-from-catalog"]');
-            if (catalogModal) {
-                const scrollContainer = catalogModal.querySelector('.space-y-4') || catalogModal;
-                scrollContainer.scrollTop = catalogScrollPosition;
-            }
-        }, 100);
-    });
-
-    // Listen for when the catalog modal is opened and restore scroll position
-    document.addEventListener('DOMContentLoaded', function() {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'data-flux-modal-open') {
-                    const target = mutation.target;
-                    if (target.getAttribute('data-flux-modal') === 'import-from-catalog' &&
-                        target.getAttribute('data-flux-modal-open') === 'true') {
-                        // Modal was opened, restore scroll position
-                        setTimeout(() => {
-                            const scrollContainer = target.querySelector('.space-y-4') || target;
-                            if (catalogScrollPosition > 0) {
-                                scrollContainer.scrollTop = catalogScrollPosition;
-                            }
-                        }, 100);
-                    }
-                }
-            });
-        });
-
-        const catalogModal = document.querySelector('[data-flux-modal="import-from-catalog"]');
-        if (catalogModal) {
-            observer.observe(catalogModal, { attributes: true });
-        }
-    });
-</script>
-@endscript

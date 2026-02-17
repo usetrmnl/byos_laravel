@@ -2,30 +2,38 @@
 
 use App\Console\Commands\ExampleRecipesSeederCommand;
 use App\Services\PluginImportService;
-use Livewire\Volt\Component;
-use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
+use Livewire\Component;
+use Livewire\WithFileUploads;
 
-new class extends Component {
+new class extends Component
+{
     use WithFileUploads;
 
     public string $name;
+
     public int $data_stale_minutes = 60;
-    public string $data_strategy = "polling";
+
+    public string $data_strategy = 'polling';
+
     public string $polling_url;
-    public string $polling_verb = "get";
+
+    public string $polling_verb = 'get';
+
     public $polling_header;
+
     public $polling_body;
+
     public array $plugins;
+
     public $zipFile;
 
     public string $sortBy = 'date_asc';
 
     public array $native_plugins = [
-        'markup' =>
-            ['name' => 'Markup', 'flux_icon_name' => 'code-bracket', 'detail_view_route' => 'plugins.markup'],
-        'api' =>
-            ['name' => 'API', 'flux_icon_name' => 'braces', 'detail_view_route' => 'plugins.api'],
+        'markup' => ['name' => 'Markup', 'flux_icon_name' => 'code-bracket', 'detail_view_route' => 'plugins.markup'],
+        'api' => ['name' => 'API', 'flux_icon_name' => 'braces', 'detail_view_route' => 'plugins.api'],
+        'image-webhook' => ['name' => 'Image Webhook', 'flux_icon_name' => 'photo', 'detail_view_route' => 'plugins.image-webhook'],
     ];
 
     protected $rules = [
@@ -40,7 +48,12 @@ new class extends Component {
 
     public function refreshPlugins(): void
     {
-        $userPlugins = auth()->user()?->plugins?->makeHidden(['render_markup', 'data_payload'])->toArray();
+        // Only show recipe plugins in the main list (image_webhook has its own management page)
+        $userPlugins = auth()->user()?->plugins()
+            ->where('plugin_type', 'recipe')
+            ->get()
+            ->makeHidden(['render_markup', 'data_payload'])
+            ->toArray();
         $allPlugins = array_merge($this->native_plugins, $userPlugins ?? []);
         $allPlugins = array_values($allPlugins);
         $allPlugins = $this->sortPlugins($allPlugins);
@@ -53,29 +66,31 @@ new class extends Component {
 
         switch ($this->sortBy) {
             case 'name_asc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     return strcasecmp($a['name'] ?? '', $b['name'] ?? '');
                 });
                 break;
 
             case 'name_desc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     return strcasecmp($b['name'] ?? '', $a['name'] ?? '');
                 });
                 break;
 
             case 'date_desc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     $aDate = $a['created_at'] ?? '1970-01-01';
                     $bDate = $b['created_at'] ?? '1970-01-01';
+
                     return strcmp($bDate, $aDate);
                 });
                 break;
 
             case 'date_asc':
-                usort($pluginsToSort, function($a, $b) {
+                usort($pluginsToSort, function ($a, $b) {
                     $aDate = $a['created_at'] ?? '1970-01-01';
                     $bDate = $b['created_at'] ?? '1970-01-01';
+
                     return strcmp($aDate, $bDate);
                 });
                 break;
@@ -106,7 +121,7 @@ new class extends Component {
         abort_unless(auth()->user() !== null, 403);
         $this->validate();
 
-        \App\Models\Plugin::create([
+        App\Models\Plugin::create([
             'uuid' => Str::uuid(),
             'user_id' => auth()->id(),
             'name' => $this->name,
@@ -130,7 +145,6 @@ new class extends Component {
         $this->refreshPlugins();
     }
 
-
     public function importZip(PluginImportService $pluginImportService): void
     {
         abort_unless(auth()->user() !== null, 403);
@@ -146,11 +160,10 @@ new class extends Component {
             $this->reset(['zipFile']);
 
             Flux::modal('import-zip')->close();
-        } catch (\Exception $e) {
-            $this->addError('zipFile', 'Error installing plugin: ' . $e->getMessage());
+        } catch (Exception $e) {
+            $this->addError('zipFile', 'Error installing plugin: '.$e->getMessage());
         }
     }
-
 };
 ?>
 
@@ -245,7 +258,6 @@ new class extends Component {
                 <div class="mb-4">
                     <flux:heading size="sm">Limitations</flux:heading>
                     <ul class="list-disc pl-5 mt-2">
-                        <li><flux:text>Only full view will be imported; shared markup will be prepended</flux:text></li>
                         <li><flux:text>Some Liquid filters may be not supported or behave differently</flux:text></li>
                         <li><flux:text>API responses in formats other than JSON are not yet supported</flux:text></li>
 {{--                        <ul class="list-disc pl-5 mt-2">--}}
@@ -299,7 +311,6 @@ new class extends Component {
                     <flux:callout class="mb-4 mt-4" color="yellow">
                         <flux:heading size="sm">Limitations</flux:heading>
                         <ul class="list-disc pl-5 mt-2">
-                            <li><flux:text>Only full view will be imported; shared markup will be prepended</flux:text></li>
                             <li><flux:text>Requires <span class="font-mono">trmnl-liquid-cli</span> executable.</flux:text></li>
                             <li><flux:text>API responses in formats other than <span class="font-mono">JSON</span> are not yet fully supported.</flux:text></li>
                             <li><flux:text>There are limitations in payload size (Data Payload, Template).</flux:text></li>
@@ -388,7 +399,7 @@ new class extends Component {
                     wire:key="plugin-{{ $plugin['id'] ?? $plugin['name'] ?? $index }}"
                     x-data="{ pluginName: {{ json_encode(strtolower($plugin['name'] ?? '')) }} }"
                     x-show="searchTerm.length <= 1 || pluginName.includes(searchTerm.toLowerCase())"
-                    class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                    class="styled-container">
                     <a href="{{ ($plugin['detail_view_route']) ? route($plugin['detail_view_route']) : route('plugins.recipe', ['plugin' => $plugin['id']]) }}"
                        class="block h-full">
                         <div class="flex items-center space-x-4 px-10 py-8 h-full">

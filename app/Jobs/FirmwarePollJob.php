@@ -22,7 +22,9 @@ class FirmwarePollJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $response = Http::get('https://usetrmnl.com/api/firmware/latest')->json();
+            $firmwareEndpoint = config('services.trmnl.base_url').'/api/firmware/latest';
+
+            $response = Http::get($firmwareEndpoint)->json();
 
             if (! is_array($response) || ! isset($response['version']) || ! isset($response['url'])) {
                 Log::error('Invalid firmware response format received');

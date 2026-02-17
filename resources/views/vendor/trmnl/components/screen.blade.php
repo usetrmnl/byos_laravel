@@ -7,6 +7,13 @@
     'scaleLevel' => null,
 ])
 
+@php
+// HOTFIX Github Issue https://github.com/usetrmnl/byos_laravel/issues/190
+if ($colorDepth == '2bit'){
+    $deviceVariant = 'ogv2';
+}
+@endphp
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -18,12 +25,12 @@
               href="{{ config('trmnl-blade.framework_css_url') }}">
     @else
         <link rel="stylesheet"
-              href="https://usetrmnl.com/css/{{ config('trmnl-blade.framework_version', '1.2.0') }}/plugins.css">
+              href="{{ config('services.trmnl.base_url') }}/css/{{ config('trmnl-blade.framework_css_version') ?? config('trmnl-blade.framework_version', '2.1.0') }}/plugins.css">
     @endif
     @if (config('trmnl-blade.framework_js_url'))
         <script src="{{ config('trmnl-blade.framework_js_url') }}"></script>
     @else
-        <script src="https://usetrmnl.com/js/{{ config('trmnl-blade.framework_version', '1.2.0') }}/plugins.js"></script>
+        <script src="{{ config('services.trmnl.base_url') }}/js/{{ config('trmnl-blade.framework_js_version') ?? config('trmnl-blade.framework_version', '2.1.0') }}/plugins.js"></script>
     @endif
     <title>{{ $title ?? config('app.name') }}</title>
 </head>

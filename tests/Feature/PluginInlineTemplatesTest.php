@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Plugin;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -237,4 +238,35 @@ LIQUID
     // Should output JSON representation of grouped data
     $this->assertStringContainsString('"35":[{"name":"Ryan","age":35}]', $result);
     $this->assertStringContainsString('"29":[{"name":"Sara","age":29},{"name":"Jimbob","age":29}]', $result);
+});
+
+test('shared template receives trmnl context when', function (): void {
+    $user = User::factory()->create(['name' => 'Jane Smith']);
+
+    $plugin = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Departures',
+        'markup_language' => 'liquid',
+        'render_markup_shared' => <<<'LIQUID'
+{% template departures_view %}
+<div class="title_bar">
+  <span class="title">Departures</span>
+  <span class="instance">{{ trmnl.user.name }}</span>
+</div>
+{% endtemplate %}
+LIQUID
+        ,
+        'render_markup' => <<<'LIQUID'
+<div class="view">
+{% render "departures_view", station: "Hauptbahnhof" %}
+</div>
+LIQUID
+        ,
+        'data_payload' => [],
+    ]);
+
+    $result = $plugin->render('full');
+
+    $this->assertStringContainsString('Jane Smith', $result);
+    $this->assertStringContainsString('class="instance"', $result);
 });

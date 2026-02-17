@@ -1,8 +1,9 @@
 <?php
 
+use App\Jobs\FetchDeviceModelsJob;
 use App\Models\DeviceModel;
 use App\Models\DevicePalette;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
 new class extends Component
 {
@@ -65,6 +66,14 @@ new class extends Component
     public $editingDeviceModelId;
 
     public $viewingDeviceModelId;
+
+    public function updateFromApi(): void
+    {
+        FetchDeviceModelsJob::dispatchSync();
+        $this->deviceModels = DeviceModel::all();
+        $this->devicePalettes = DevicePalette::all();
+        session()->flash('message', 'Device models updated from API.');
+    }
 
     public function openDeviceModelModal(?string $deviceModelId = null, bool $viewOnly = false): void
     {
@@ -229,9 +238,17 @@ new class extends Component
                         </flux:menu>
                     </flux:dropdown>
                 </div>
-                <flux:modal.trigger name="device-model-modal">
-                    <flux:button wire:click="openDeviceModelModal()" icon="plus" variant="primary">Add Device Model</flux:button>
-                </flux:modal.trigger>
+                <flux:button.group>
+                    <flux:modal.trigger name="device-model-modal">
+                        <flux:button wire:click="openDeviceModelModal()" icon="plus" variant="primary">Add Device Model</flux:button>
+                    </flux:modal.trigger>
+                    <flux:dropdown>
+                        <flux:button icon="chevron-down" variant="primary"></flux:button>
+                        <flux:menu>
+                            <flux:menu.item icon="arrow-path" wire:click="updateFromApi">Update from Models API</flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
+                </flux:button.group>
             </div>
             @if (session()->has('message'))
                 <div class="mb-4">

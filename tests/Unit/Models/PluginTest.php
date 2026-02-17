@@ -72,6 +72,27 @@ test('updateDataPayload sends POST request with body when polling_verb is post',
            $request->body() === '{"query": "query { user { id name } }"}');
 });
 
+test('updateDataPayload sends POST request with body with correct content type when not JSON content', function (): void {
+    Http::fake([
+        'https://example.com/api' => Http::response(['success' => true], 200),
+    ]);
+
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://example.com/api',
+        'polling_verb' => 'post',
+        'polling_body' => '<query><user id="123" name="John Doe"/></query>',
+        'polling_header' => 'Content-Type: text/xml'
+    ]);
+
+    $plugin->updateDataPayload();
+
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://example.com/api' &&
+           $request->method() === 'POST' &&
+           $request->hasHeader('Content-Type', 'text/xml') &&
+           $request->body() === '<query><user id="123" name="John Doe"/></query>');
+});
+
 test('updateDataPayload handles multiple URLs with IDX_ prefixes', function (): void {
     $plugin = Plugin::factory()->create([
         'data_strategy' => 'polling',
@@ -97,6 +118,35 @@ test('updateDataPayload handles multiple URLs with IDX_ prefixes', function (): 
     expect($plugin->data_payload['IDX_0'])->toBe(['data' => 'test1']);
     expect($plugin->data_payload['IDX_1'])->toBe(['temp' => 25]);
     expect($plugin->data_payload['IDX_2'])->toBe(['headline' => 'test']);
+});
+
+test('updateDataPayload skips empty lines in polling_url and maintains sequential IDX keys', function (): void {
+    $plugin = Plugin::factory()->create([
+        'data_strategy' => 'polling',
+        // empty lines and extra spaces between the URL to generate empty entries
+        'polling_url' => "https://api1.example.com/data\n  \n\nhttps://api2.example.com/weather\n ",
+        'polling_verb' => 'get',
+    ]);
+
+    // Mock only the valid URLs
+    Http::fake([
+        'https://api1.example.com/data' => Http::response(['item' => 'first'], 200),
+        'https://api2.example.com/weather' => Http::response(['item' => 'second'], 200),
+    ]);
+
+    $plugin->updateDataPayload();
+
+    // payload should only have 2 items, and they should be indexed 0 and 1
+    expect($plugin->data_payload)->toHaveCount(2);
+    expect($plugin->data_payload)->toHaveKey('IDX_0');
+    expect($plugin->data_payload)->toHaveKey('IDX_1');
+
+    // data is correct
+    expect($plugin->data_payload['IDX_0'])->toBe(['item' => 'first']);
+    expect($plugin->data_payload['IDX_1'])->toBe(['item' => 'second']);
+
+    // no empty index exists
+    expect($plugin->data_payload)->not->toHaveKey('IDX_2');
 });
 
 test('updateDataPayload handles single URL without nesting', function (): void {
@@ -678,4 +728,254 @@ test('plugin render includes utc_offset and time_zone_iana in trmnl.user context
     expect($rendered)
         ->toContain('America/Chicago')
         ->and($rendered)->toMatch('/\|-?\d+/'); // Should contain a pipe followed by a number (offset in seconds)
+});
+
+/**
+ * Plugin security: XSS Payload Dataset
+ * [Input, Expected Result, Forbidden String]
+ */
+dataset('xss_vectors', [
+    'standard_script' => ['Safe <script>alert(1)</script>', 'Safe ', '<script>'],
+    'attribute_event_handlers' => ['<a onmouseover="alert(1)">Link</a>', '<a>Link</a>', 'onmouseover'],
+    'javascript_protocol' => ['<a href="javascript:alert(1)">Click</a>', '<a>Click</a>', 'javascript:'],
+    'iframe_injection' => ['Watch <iframe src="https://x.com"></iframe>', 'Watch ', '<iframe>'],
+    'img_onerror_fallback' => ['Photo <img src=x onerror=alert(1)>', 'Photo <img src="x" alt="x">', 'onerror'],
+]);
+
+test('plugin model sanitizes template fields on save', function (string $input, string $expected, string $forbidden): void {
+    $user = User::factory()->create();
+
+    // We test the Model logic directly. This triggers the static::saving hook.
+    $plugin = Plugin::create([
+        'user_id' => $user->id,
+        'name' => 'Security Test',
+        'data_stale_minutes' => 15,
+        'data_strategy' => 'static',
+        'polling_verb' => 'get',
+        'configuration_template' => [
+            'custom_fields' => [
+                [
+                    'keyname' => 'test_field',
+                    'description' => $input,
+                    'help_text' => $input,
+                ],
+            ],
+        ],
+    ]);
+
+    $field = $plugin->fresh()->configuration_template['custom_fields'][0];
+
+    // Assert the saved data is clean
+    expect($field['description'])->toBe($expected)
+        ->and($field['help_text'])->toBe($expected)
+        ->and($field['description'])->not->toContain($forbidden);
+})->with('xss_vectors');
+
+test('plugin model preserves multi_string csv format', function (): void {
+    $user = User::factory()->create();
+
+    $plugin = Plugin::create([
+        'user_id' => $user->id,
+        'name' => 'Multi-string Test',
+        'data_stale_minutes' => 15,
+        'data_strategy' => 'static',
+        'polling_verb' => 'get',
+        'configuration' => [
+            'tags' => 'laravel,pest,security',
+        ],
+    ]);
+
+    expect($plugin->fresh()->configuration['tags'])->toBe('laravel,pest,security');
+});
+
+test('plugin duplicate copies all attributes except id and uuid', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Original Plugin',
+        'data_stale_minutes' => 30,
+        'data_strategy' => 'polling',
+        'polling_url' => 'https://api.example.com/data',
+        'polling_verb' => 'get',
+        'polling_header' => 'Authorization: Bearer token123',
+        'polling_body' => '{"query": "test"}',
+        'render_markup' => '<div>Test markup</div>',
+        'markup_language' => 'blade',
+        'configuration' => ['api_key' => 'secret123'],
+        'configuration_template' => [
+            'custom_fields' => [
+                [
+                    'keyname' => 'api_key',
+                    'field_type' => 'string',
+                ],
+            ],
+        ],
+        'no_bleed' => true,
+        'dark_mode' => true,
+        'data_payload' => ['test' => 'data'],
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    // Refresh to ensure casts are applied
+    $original->refresh();
+    $duplicate->refresh();
+
+    expect($duplicate->id)->not->toBe($original->id)
+        ->and($duplicate->uuid)->not->toBe($original->uuid)
+        ->and($duplicate->name)->toBe('Original Plugin (Copy)')
+        ->and($duplicate->user_id)->toBe($original->user_id)
+        ->and($duplicate->data_stale_minutes)->toBe($original->data_stale_minutes)
+        ->and($duplicate->data_strategy)->toBe($original->data_strategy)
+        ->and($duplicate->polling_url)->toBe($original->polling_url)
+        ->and($duplicate->polling_verb)->toBe($original->polling_verb)
+        ->and($duplicate->polling_header)->toBe($original->polling_header)
+        ->and($duplicate->polling_body)->toBe($original->polling_body)
+        ->and($duplicate->render_markup)->toBe($original->render_markup)
+        ->and($duplicate->markup_language)->toBe($original->markup_language)
+        ->and($duplicate->configuration)->toBe($original->configuration)
+        ->and($duplicate->configuration_template)->toBe($original->configuration_template)
+        ->and($duplicate->no_bleed)->toBe($original->no_bleed)
+        ->and($duplicate->dark_mode)->toBe($original->dark_mode)
+        ->and($duplicate->data_payload)->toBe($original->data_payload)
+        ->and($duplicate->render_markup_view)->toBeNull();
+});
+
+test('plugin duplicate sets trmnlp_id to null to avoid unique constraint violation', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Plugin with trmnlp_id',
+        'trmnlp_id' => 'test-trmnlp-id-123',
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    // Refresh to ensure casts are applied
+    $original->refresh();
+    $duplicate->refresh();
+
+    expect($duplicate->trmnlp_id)->toBeNull()
+        ->and($original->trmnlp_id)->toBe('test-trmnlp-id-123')
+        ->and($duplicate->name)->toBe('Plugin with trmnlp_id (Copy)');
+});
+
+test('plugin duplicate copies render_markup_view file content to render_markup', function (): void {
+    $user = User::factory()->create();
+
+    // Create a test blade file
+    $testViewPath = resource_path('views/recipes/test-duplicate.blade.php');
+    $testContent = '<div class="test-view">Test Content</div>';
+
+    // Ensure directory exists
+    if (! is_dir(dirname($testViewPath))) {
+        mkdir(dirname($testViewPath), 0755, true);
+    }
+
+    file_put_contents($testViewPath, $testContent);
+
+    try {
+        $original = Plugin::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'View Plugin',
+            'render_markup' => null,
+            'render_markup_view' => 'recipes.test-duplicate',
+            'markup_language' => null,
+        ]);
+
+        $duplicate = $original->duplicate();
+
+        expect($duplicate->render_markup)->toBe($testContent)
+            ->and($duplicate->markup_language)->toBe('blade')
+            ->and($duplicate->render_markup_view)->toBeNull()
+            ->and($duplicate->name)->toBe('View Plugin (Copy)');
+    } finally {
+        // Clean up test file
+        if (file_exists($testViewPath)) {
+            unlink($testViewPath);
+        }
+    }
+});
+
+test('plugin duplicate handles liquid file extension', function (): void {
+    $user = User::factory()->create();
+
+    // Create a test liquid file
+    $testViewPath = resource_path('views/recipes/test-duplicate-liquid.liquid');
+    $testContent = '<div class="test-view">{{ data.message }}</div>';
+
+    // Ensure directory exists
+    if (! is_dir(dirname($testViewPath))) {
+        mkdir(dirname($testViewPath), 0755, true);
+    }
+
+    file_put_contents($testViewPath, $testContent);
+
+    try {
+        $original = Plugin::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'Liquid Plugin',
+            'render_markup' => null,
+            'render_markup_view' => 'recipes.test-duplicate-liquid',
+            'markup_language' => null,
+        ]);
+
+        $duplicate = $original->duplicate();
+
+        expect($duplicate->render_markup)->toBe($testContent)
+            ->and($duplicate->markup_language)->toBe('liquid')
+            ->and($duplicate->render_markup_view)->toBeNull();
+    } finally {
+        // Clean up test file
+        if (file_exists($testViewPath)) {
+            unlink($testViewPath);
+        }
+    }
+});
+
+test('plugin duplicate handles missing view file gracefully', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Missing View Plugin',
+        'render_markup' => null,
+        'render_markup_view' => 'recipes.nonexistent-view',
+        'markup_language' => null,
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    expect($duplicate->render_markup_view)->toBeNull()
+        ->and($duplicate->name)->toBe('Missing View Plugin (Copy)');
+});
+
+test('plugin duplicate uses provided user_id', function (): void {
+    $user1 = User::factory()->create();
+    $user2 = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user1->id,
+        'name' => 'Original Plugin',
+    ]);
+
+    $duplicate = $original->duplicate($user2->id);
+
+    expect($duplicate->user_id)->toBe($user2->id)
+        ->and($duplicate->user_id)->not->toBe($original->user_id);
+});
+
+test('plugin duplicate falls back to original user_id when no user_id provided', function (): void {
+    $user = User::factory()->create();
+
+    $original = Plugin::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Original Plugin',
+    ]);
+
+    $duplicate = $original->duplicate();
+
+    expect($duplicate->user_id)->toBe($original->user_id);
 });

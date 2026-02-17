@@ -2,6 +2,7 @@
 
 namespace App\Liquid\Filters;
 
+use App\Facades\QrCode;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Keepsuit\Liquid\Filters\FiltersProvider;
@@ -57,5 +58,32 @@ class StringMarkup extends FiltersProvider
     public function strip_html(string $html): string
     {
         return strip_tags($html);
+    }
+
+    /**
+     * Generate a QR code as SVG from the input text
+     *
+     * @param  string  $text  The text to encode in the QR code
+     * @param  int|null  $moduleSize  Optional module size (defaults to 11, which equals 319px)
+     * @param  string|null  $errorCorrection  Optional error correction level: 'l', 'm', 'q', 'h' (defaults to 'm')
+     * @return string The SVG QR code
+     */
+    public function qr_code(string $text, ?int $moduleSize = null, ?string $errorCorrection = null): string
+    {
+        // Default module_size is 11
+        // Size calculation: (21 modules for QR code + 4 modules margin on each side * 2) * module_size
+        // = (21 + 8) * module_size = 29 * module_size
+        $moduleSize ??= 11;
+        $size = 29 * $moduleSize;
+
+        $qrCode = QrCode::format('svg')
+            ->size($size);
+
+        // Set error correction level if provided
+        if ($errorCorrection !== null) {
+            $qrCode->errorCorrection($errorCorrection);
+        }
+
+        return $qrCode->generate($text);
     }
 }

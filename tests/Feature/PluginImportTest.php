@@ -52,8 +52,10 @@ it('imports plugin with shared.liquid file', function (): void {
     $pluginImportService = new PluginImportService();
     $plugin = $pluginImportService->importFromZip($zipFile, $user);
 
-    expect($plugin->render_markup)->toContain('{% comment %}Shared styles{% endcomment %}')
-        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">');
+    expect($plugin->render_markup_shared)->toBe('{% comment %}Shared styles{% endcomment %}')
+        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">')
+        ->and($plugin->getMarkupForSize('full'))->toContain('{% comment %}Shared styles{% endcomment %}')
+        ->and($plugin->getMarkupForSize('full'))->toContain('<div class="view view--{{ size }}">');
 });
 
 it('imports plugin with files in root directory', function (): void {
@@ -83,19 +85,34 @@ it('throws exception for invalid zip file', function (): void {
         ->toThrow(Exception::class, 'Could not open the ZIP file.');
 });
 
-it('throws exception for missing required files', function (): void {
+it('throws exception for missing settings.yml', function (): void {
     $user = User::factory()->create();
 
     $zipContent = createMockZipFile([
-        'src/settings.yml' => getValidSettingsYaml(),
-        // Missing full.liquid
+        'src/full.liquid' => getValidFullLiquid(),
+        // Missing settings.yml
     ]);
 
     $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
 
     $pluginImportService = new PluginImportService();
     expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
-        ->toThrow(Exception::class, 'Invalid ZIP structure. Required files settings.yml and full.liquid are missing.');
+        ->toThrow(Exception::class, 'Invalid ZIP structure. Required file settings.yml is missing.');
+});
+
+it('throws exception for missing template files', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        // Missing all template files
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
+
+    $pluginImportService = new PluginImportService();
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
+        ->toThrow(Exception::class, 'Invalid ZIP structure. At least one of the following files is required: full.liquid, full.blade.php, shared.liquid, or shared.blade.php.');
 });
 
 it('sets default values when settings are missing', function (): void {
@@ -187,8 +204,10 @@ it('imports plugin from monorepo with shared.liquid in subdirectory', function (
     $pluginImportService = new PluginImportService();
     $plugin = $pluginImportService->importFromZip($zipFile, $user);
 
-    expect($plugin->render_markup)->toContain('{% comment %}Monorepo shared styles{% endcomment %}')
-        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">');
+    expect($plugin->render_markup_shared)->toBe('{% comment %}Monorepo shared styles{% endcomment %}')
+        ->and($plugin->render_markup)->toContain('<div class="view view--{{ size }}">')
+        ->and($plugin->getMarkupForSize('full'))->toContain('{% comment %}Monorepo shared styles{% endcomment %}')
+        ->and($plugin->getMarkupForSize('full'))->toContain('<div class="view view--{{ size }}">');
 });
 
 it('imports plugin from URL with zip_entry_path parameter', function (): void {
@@ -337,8 +356,10 @@ it('imports specific plugin from monorepo zip with zip_entry_path parameter', fu
     expect($plugin)->toBeInstanceOf(Plugin::class)
         ->and($plugin->user_id)->toBe($user->id)
         ->and($plugin->name)->toBe('Example Plugin 2') // Should import example-plugin2, not example-plugin
-        ->and($plugin->render_markup)->toContain('{% comment %}Plugin 2 shared styles{% endcomment %}')
-        ->and($plugin->render_markup)->toContain('<div class="plugin2-content">Plugin 2 content</div>');
+        ->and($plugin->render_markup_shared)->toBe('{% comment %}Plugin 2 shared styles{% endcomment %}')
+        ->and($plugin->render_markup)->toContain('<div class="plugin2-content">Plugin 2 content</div>')
+        ->and($plugin->getMarkupForSize('full'))->toContain('{% comment %}Plugin 2 shared styles{% endcomment %}')
+        ->and($plugin->getMarkupForSize('full'))->toContain('<div class="plugin2-content">Plugin 2 content</div>');
 });
 
 it('sets icon_url when importing from URL with iconUrl parameter', function (): void {
@@ -425,6 +446,103 @@ YAML;
             ['false' => 'false'],
         ])
         ->and($displayIncidentField['default'])->toBe('true');
+});
+
+it('throws exception when multi_string default value contains a comma', function (): void {
+    $user = User::factory()->create();
+
+    // YAML with a comma in the 'default' field of a multi_string
+    $invalidYaml = <<<'YAML'
+name: Test Plugin
+refresh_interval: 30
+strategy: static
+polling_verb: get
+static_data: '{"test": "data"}'
+custom_fields:
+  - keyname: api_key
+    field_type: multi_string
+    default: default-api-key1,default-api-key2
+    label: API Key
+YAML;
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => $invalidYaml,
+        'src/full.liquid' => getValidFullLiquid(),
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('invalid-default.zip', $zipContent);
+    $pluginImportService = new PluginImportService();
+
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
+        ->toThrow(Exception::class, 'Validation Error: The default value for multistring fields like `api_key` cannot contain commas.');
+});
+
+it('throws exception when multi_string placeholder contains a comma', function (): void {
+    $user = User::factory()->create();
+
+    // YAML with a comma in the 'placeholder' field
+    $invalidYaml = <<<'YAML'
+name: Test Plugin
+refresh_interval: 30
+strategy: static
+polling_verb: get
+static_data: '{"test": "data"}'
+custom_fields:
+  - keyname: api_key
+    field_type: multi_string
+    default: default-api-key
+    label: API Key
+    placeholder: "value1, value2"
+YAML;
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => $invalidYaml,
+        'src/full.liquid' => getValidFullLiquid(),
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('invalid-placeholder.zip', $zipContent);
+    $pluginImportService = new PluginImportService();
+
+    expect(fn (): Plugin => $pluginImportService->importFromZip($zipFile, $user))
+        ->toThrow(Exception::class, 'Validation Error: The placeholder value for multistring fields like `api_key` cannot contain commas.');
+});
+
+it('imports plugin with only shared.liquid file', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        'src/shared.liquid' => '<div class="shared-content">{{ data.title }}</div>',
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
+
+    $pluginImportService = new PluginImportService();
+    $plugin = $pluginImportService->importFromZip($zipFile, $user);
+
+    expect($plugin)->toBeInstanceOf(Plugin::class)
+        ->and($plugin->markup_language)->toBe('liquid')
+        ->and($plugin->render_markup_shared)->toBe('<div class="shared-content">{{ data.title }}</div>')
+        ->and($plugin->render_markup)->toBeNull();
+});
+
+it('imports plugin with only shared.blade.php file', function (): void {
+    $user = User::factory()->create();
+
+    $zipContent = createMockZipFile([
+        'src/settings.yml' => getValidSettingsYaml(),
+        'src/shared.blade.php' => '<div class="shared-content">{{ $data["title"] }}</div>',
+    ]);
+
+    $zipFile = UploadedFile::fake()->createWithContent('test-plugin.zip', $zipContent);
+
+    $pluginImportService = new PluginImportService();
+    $plugin = $pluginImportService->importFromZip($zipFile, $user);
+
+    expect($plugin)->toBeInstanceOf(Plugin::class)
+        ->and($plugin->markup_language)->toBe('blade')
+        ->and($plugin->render_markup_shared)->toBe('<div class="shared-content">{{ $data["title"] }}</div>')
+        ->and($plugin->render_markup)->toBeNull();
 });
 
 // Helper methods

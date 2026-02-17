@@ -7,6 +7,7 @@ use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Plugin;
 use App\Models\User;
+use App\Services\ImageGenerationService;
 use Bnussbau\TrmnlPipeline\TrmnlPipeline;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -44,6 +45,7 @@ test('device can fetch display data with valid credentials', function (): void {
             'update_firmware' => false,
             'firmware_url' => null,
             'special_function' => 'sleep',
+            'maximum_compatibility' => false,
         ]);
 
     expect($device->fresh())
@@ -92,6 +94,27 @@ test('display endpoint omits image_url_timeout when not configured', function ()
 
     $response->assertOk()
         ->assertJsonMissing(['image_url_timeout']);
+});
+
+test('display endpoint includes maximum_compatibility value when true for device', function (): void {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+        'maximum_compatibility' => true,
+    ]);
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk()
+        ->assertJson([
+            'maximum_compatibility' => true,
+        ]);
 });
 
 test('new device is auto-assigned to user with auto-assign enabled', function (): void {
@@ -262,7 +285,7 @@ test('invalid device credentials return error', function (): void {
     ])->get('/api/display');
 
     $response->assertNotFound()
-        ->assertJson(['message' => 'MAC Address not registered or invalid access token']);
+        ->assertJson(['message' => 'MAC Address not registered (or not set), or invalid access token']);
 });
 
 test('log endpoint requires valid device credentials', function (): void {
@@ -702,6 +725,40 @@ test('display endpoint updates last_refreshed_at timestamp', function (): void {
         ->and($device->last_refreshed_at->diffInSeconds(now()))->toBeLessThan(2);
 });
 
+test('display endpoint accepts battery-percent header and updates device', function (): void {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:56',
+        'api_key' => 'test-api-key-battery',
+        'last_battery_voltage' => null,
+    ]);
+
+    $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'battery-percent' => '67',
+    ])->get('/api/display')->assertOk();
+
+    $device->refresh();
+    expect($device->battery_percent)->toEqual(67);
+});
+
+test('display endpoint accepts Percent-Charged header and updates device', function (): void {
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:57',
+        'api_key' => 'test-api-key-percent-charged',
+        'last_battery_voltage' => null,
+    ]);
+
+    $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'Percent-Charged' => '51',
+    ])->get('/api/display')->assertOk();
+
+    $device->refresh();
+    expect($device->battery_percent)->toEqual(51);
+});
+
 test('display endpoint updates last_refreshed_at timestamp for mirrored devices', function (): void {
     // Create source device
     $sourceDevice = Device::factory()->create([
@@ -953,4 +1010,233 @@ test('setup endpoint handles non-existent device model gracefully', function ():
     $device = Device::where('mac_address', '00:11:22:33:44:55')->first();
     expect($device)->not->toBeNull()
         ->and($device->device_model_id)->toBeNull();
+});
+
+test('setup endpoint matches MAC address case-insensitively', function (): void {
+    // Create device with lowercase MAC address
+    $device = Device::factory()->create([
+        'mac_address' => 'a1:b2:c3:d4:e5:f6',
+        'api_key' => 'test-api-key',
+        'friendly_id' => 'test-device',
+    ]);
+
+    // Request with uppercase MAC address should still match
+    $response = $this->withHeaders([
+        'id' => 'A1:B2:C3:D4:E5:F6',
+    ])->get('/api/setup');
+
+    $response->assertOk()
+        ->assertJson([
+            'status' => 200,
+            'api_key' => 'test-api-key',
+            'friendly_id' => 'test-device',
+            'message' => 'Welcome to TRMNL BYOS',
+        ]);
+});
+
+test('display endpoint matches MAC address case-insensitively', function (): void {
+    // Create device with lowercase MAC address
+    $device = Device::factory()->create([
+        'mac_address' => 'a1:b2:c3:d4:e5:f6',
+        'api_key' => 'test-api-key',
+        'current_screen_image' => 'test-image',
+    ]);
+
+    // Request with uppercase MAC address should still match
+    $response = $this->withHeaders([
+        'id' => 'A1:B2:C3:D4:E5:F6',
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk()
+        ->assertJson([
+            'status' => '0',
+            'filename' => 'test-image.bmp',
+        ]);
+});
+
+test('screens endpoint matches MAC address case-insensitively', function (): void {
+    Queue::fake();
+
+    // Create device with uppercase MAC address
+    $device = Device::factory()->create([
+        'mac_address' => 'A1:B2:C3:D4:E5:F6',
+        'api_key' => 'test-api-key',
+    ]);
+
+    // Request with lowercase MAC address should still match
+    $response = $this->withHeaders([
+        'id' => 'a1:b2:c3:d4:e5:f6',
+        'access-token' => $device->api_key,
+    ])->post('/api/screens', [
+        'image' => [
+            'content' => '<div>Test content</div>',
+        ],
+    ]);
+
+    $response->assertOk();
+    Queue::assertPushed(GenerateScreenJob::class);
+});
+
+test('display endpoint handles plugin rendering errors gracefully', function (): void {
+    TrmnlPipeline::fake();
+
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+        'proxy_cloud' => false,
+    ]);
+
+    // Create a plugin with Blade markup that will cause an exception when accessing data[0]
+    // when data is not an array or doesn't have index 0
+    $plugin = Plugin::factory()->create([
+        'name' => 'Broken Recipe',
+        'data_strategy' => 'polling',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'markup_language' => 'blade', // Use Blade which will throw exception on invalid array access
+        'render_markup' => '<div>{{ $data[0]["invalid"] }}</div>', // This will fail if data[0] doesn't exist
+        'data_payload' => ['error' => 'Failed to fetch data'], // Not a list, so data[0] will fail
+        'data_payload_updated_at' => now()->subMinutes(2), // Make it stale
+        'current_image' => null,
+    ]);
+
+    $playlist = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => 'test_playlist',
+        'is_active' => true,
+        'weekdays' => null,
+        'active_from' => null,
+        'active_until' => null,
+    ]);
+
+    PlaylistItem::factory()->create([
+        'playlist_id' => $playlist->id,
+        'plugin_id' => $plugin->id,
+        'order' => 1,
+        'is_active' => true,
+        'last_displayed_at' => null,
+    ]);
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk();
+
+    // Verify error screen was generated and set on device
+    $device->refresh();
+    expect($device->current_screen_image)->not->toBeNull();
+
+    // Verify the error image exists
+    $errorImagePath = Storage::disk('public')->path("images/generated/{$device->current_screen_image}.png");
+    // The TrmnlPipeline is faked, so we just verify the UUID was set
+    expect($device->current_screen_image)->toBeString();
+});
+
+test('display endpoint handles mashup rendering errors gracefully', function (): void {
+    TrmnlPipeline::fake();
+
+    $device = Device::factory()->create([
+        'mac_address' => '00:11:22:33:44:55',
+        'api_key' => 'test-api-key',
+        'proxy_cloud' => false,
+    ]);
+
+    // Create plugins for mashup, one with invalid markup
+    $plugin1 = Plugin::factory()->create([
+        'name' => 'Working Plugin',
+        'data_strategy' => 'polling',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'render_markup_view' => 'trmnl',
+        'data_payload_updated_at' => now()->subMinutes(2),
+        'current_image' => null,
+    ]);
+
+    $plugin2 = Plugin::factory()->create([
+        'name' => 'Broken Plugin',
+        'data_strategy' => 'polling',
+        'polling_url' => null,
+        'data_stale_minutes' => 1,
+        'markup_language' => 'blade', // Use Blade which will throw exception on invalid array access
+        'render_markup' => '<div>{{ $data[0]["invalid"] }}</div>', // This will fail
+        'data_payload' => ['error' => 'Failed to fetch data'],
+        'data_payload_updated_at' => now()->subMinutes(2),
+        'current_image' => null,
+    ]);
+
+    $playlist = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => 'test_playlist',
+        'is_active' => true,
+        'weekdays' => null,
+        'active_from' => null,
+        'active_until' => null,
+    ]);
+
+    // Create mashup playlist item
+    $playlistItem = PlaylistItem::createMashup(
+        $playlist,
+        '1Lx1R',
+        [$plugin1->id, $plugin2->id],
+        'Test Mashup',
+        1
+    );
+
+    $response = $this->withHeaders([
+        'id' => $device->mac_address,
+        'access-token' => $device->api_key,
+        'rssi' => -70,
+        'battery_voltage' => 3.8,
+        'fw-version' => '1.0.0',
+    ])->get('/api/display');
+
+    $response->assertOk();
+
+    // Verify error screen was generated and set on device
+    $device->refresh();
+    expect($device->current_screen_image)->not->toBeNull();
+
+    // Verify the error image UUID was set
+    expect($device->current_screen_image)->toBeString();
+});
+
+test('generateDefaultScreenImage creates error screen with plugin name', function (): void {
+    TrmnlPipeline::fake();
+    Storage::fake('public');
+    Storage::disk('public')->makeDirectory('/images/generated');
+
+    $device = Device::factory()->create();
+
+    $errorUuid = ImageGenerationService::generateDefaultScreenImage($device, 'error', 'Test Recipe Name');
+
+    expect($errorUuid)->not->toBeEmpty();
+
+    // Verify the error image path would be created
+    $errorPath = "images/generated/{$errorUuid}.png";
+    // Since TrmnlPipeline is faked, we just verify the UUID was generated
+    expect($errorUuid)->toBeString();
+});
+
+test('generateDefaultScreenImage throws exception for invalid error image type', function (): void {
+    $device = Device::factory()->create();
+
+    expect(fn (): string => ImageGenerationService::generateDefaultScreenImage($device, 'invalid-error-type'))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+test('getDeviceSpecificDefaultImage returns null for error type when no device-specific image exists', function (): void {
+    $device = new Device();
+    $device->deviceModel = null;
+
+    $result = ImageGenerationService::getDeviceSpecificDefaultImage($device, 'error');
+    expect($result)->toBeNull();
 });

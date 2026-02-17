@@ -1,31 +1,37 @@
 <?php
 
-use App\Models\Device;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public $devices;
+
     public $playlists;
 
     // Playlist form properties
     public $playlist_name;
+
     public $selected_weekdays = null;
+
     public $active_from;
+
     public $active_until;
+
     public $refresh_time = null;
 
     public function mount()
     {
         $this->devices = auth()->user()->devices()->with(['playlists.items.plugin'])->get();
+
         return view('livewire.playlists.index');
     }
 
     public function togglePlaylistActive(Playlist $playlist)
     {
         abort_unless(auth()->user()->devices->contains($playlist->device), 403);
-        $playlist->update(['is_active' => !$playlist->is_active]);
+        $playlist->update(['is_active' => ! $playlist->is_active]);
         $this->devices = auth()->user()->devices()->with(['playlists.items.plugin'])->get();
     }
 
@@ -64,7 +70,7 @@ new class extends Component {
     public function togglePlaylistItemActive(PlaylistItem $item)
     {
         abort_unless(auth()->user()->devices->contains($item->playlist->device), 403);
-        $item->update(['is_active' => !$item->is_active]);
+        $item->update(['is_active' => ! $item->is_active]);
         $this->devices = auth()->user()->devices()->with(['playlists.items.plugin'])->get();
     }
 
@@ -73,7 +79,7 @@ new class extends Component {
         abort_unless(auth()->user()->devices->contains($playlist->device), 403);
         $playlist->delete();
         $this->devices = auth()->user()->devices()->with(['playlists.items.plugin'])->get();
-        Flux::modal('delete-playlist-' . $playlist->id)->close();
+        Flux::modal('delete-playlist-'.$playlist->id)->close();
     }
 
     public function deletePlaylistItem(PlaylistItem $item)
@@ -81,7 +87,7 @@ new class extends Component {
         abort_unless(auth()->user()->devices->contains($item->playlist->device), 403);
         $item->delete();
         $this->devices = auth()->user()->devices()->with(['playlists.items.plugin'])->get();
-        Flux::modal('delete-playlist-item-' . $item->id)->close();
+        Flux::modal('delete-playlist-item-'.$item->id)->close();
     }
 
     public function editPlaylist(Playlist $playlist)
@@ -106,7 +112,7 @@ new class extends Component {
             $this->refresh_time = null;
         }
 
-        if (empty($this->selected_weekdays)){
+        if (empty($this->selected_weekdays)) {
             $this->selected_weekdays = null;
         }
 
@@ -120,7 +126,7 @@ new class extends Component {
 
         $this->devices = auth()->user()->devices()->with(['playlists.items.plugin'])->get();
         $this->reset(['playlist_name', 'selected_weekdays', 'active_from', 'active_until', 'refresh_time']);
-        Flux::modal('edit-playlist-' . $playlist->id)->close();
+        Flux::modal('edit-playlist-'.$playlist->id)->close();
     }
 
     public function preparePlaylistEdit(Playlist $playlist)
@@ -332,7 +338,7 @@ new class extends Component {
             @endforeach
 
             @if($devices->isEmpty() || $devices->every(fn($device) => $device->playlists->isEmpty()))
-                <div class="rounded-xl border bg-white dark:bg-stone-950 dark:border-stone-800 text-stone-800 shadow-xs">
+                <div class="styled-container">
                     <div class="px-10 py-8">
                         <h1 class="text-xl font-medium dark:text-zinc-200">No playlists found</h1>
                         <p class="text-sm dark:text-zinc-400 mt-2">Add playlists to your devices to see them here.</p>

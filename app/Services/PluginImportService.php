@@ -18,6 +18,34 @@ use ZipArchive;
 class PluginImportService
 {
     /**
+     * Validate YAML settings
+     *
+     * @param  array  $settings  The parsed YAML settings
+     *
+     * @throws Exception
+     */
+    private function validateYAML(array $settings): void
+    {
+        if (! isset($settings['custom_fields']) || ! is_array($settings['custom_fields'])) {
+            return;
+        }
+
+        foreach ($settings['custom_fields'] as $field) {
+            if (isset($field['field_type']) && $field['field_type'] === 'multi_string') {
+
+                if (isset($field['default']) && str_contains((string) $field['default'], ',')) {
+                    throw new Exception("Validation Error: The default value for multistring fields like `{$field['keyname']}` cannot contain commas.");
+                }
+
+                if (isset($field['placeholder']) && str_contains((string) $field['placeholder'], ',')) {
+                    throw new Exception("Validation Error: The placeholder value for multistring fields like `{$field['keyname']}` cannot contain commas.");
+                }
+
+            }
+        }
+    }
+
+    /**
      * Import a plugin from a ZIP file
      *
      * @param  UploadedFile  $zipFile  The uploaded ZIP file
@@ -47,32 +75,77 @@ class PluginImportService
             $zip->extractTo($tempDir);
             $zip->close();
 
-            // Find the required files (settings.yml and full.liquid/full.blade.php)
+            // Find the required files (settings.yml and full.liquid/full.blade.php/shared.liquid/shared.blade.php)
             $filePaths = $this->findRequiredFiles($tempDir, $zipEntryPath);
 
             // Validate that we found the required files
-            if (! $filePaths['settingsYamlPath'] || ! $filePaths['fullLiquidPath']) {
-                throw new Exception('Invalid ZIP structure. Required files settings.yml and full.liquid are missing.'); // full.blade.php
+            if (! $filePaths['settingsYamlPath']) {
+                throw new Exception('Invalid ZIP structure. Required file settings.yml is missing.');
+            }
+
+            // Validate that we have at least one template file
+            if (! $filePaths['fullLiquidPath'] && ! $filePaths['sharedLiquidPath'] && ! $filePaths['sharedBladePath']) {
+                throw new Exception('Invalid ZIP structure. At least one of the following files is required: full.liquid, full.blade.php, shared.liquid, or shared.blade.php.');
             }
 
             // Parse settings.yml
             $settingsYaml = File::get($filePaths['settingsYamlPath']);
             $settings = Yaml::parse($settingsYaml);
+            $this->validateYAML($settings);
 
-            // Read full.liquid content
-            $fullLiquid = File::get($filePaths['fullLiquidPath']);
+            // Determine markup language from the first available file
+            $markupLanguage = 'blade';
+            $firstTemplatePath = $filePaths['fullLiquidPath']
+                ?? ($filePaths['halfHorizontalLiquidPath'] ?? null)
+                ?? ($filePaths['halfVerticalLiquidPath'] ?? null)
+                ?? ($filePaths['quadrantLiquidPath'] ?? null)
+                ?? ($filePaths['sharedLiquidPath'] ?? null)
+                ?? ($filePaths['sharedBladePath'] ?? null);
 
-            // Prepend shared.liquid content if available
-            if ($filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
-                $sharedLiquid = File::get($filePaths['sharedLiquidPath']);
-                $fullLiquid = $sharedLiquid."\n".$fullLiquid;
+            if ($firstTemplatePath && pathinfo((string) $firstTemplatePath, PATHINFO_EXTENSION) === 'liquid') {
+                $markupLanguage = 'liquid';
             }
 
-            // Check if the file ends with .liquid to set markup language
-            $markupLanguage = 'blade';
-            if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
-                $markupLanguage = 'liquid';
-                $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+            // Read full markup (don't prepend shared - it will be prepended at render time)
+            $fullLiquid = null;
+            if (isset($filePaths['fullLiquidPath']) && $filePaths['fullLiquidPath']) {
+                $fullLiquid = File::get($filePaths['fullLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+                }
+            }
+
+            // Read shared markup separately
+            $sharedMarkup = null;
+            if (isset($filePaths['sharedLiquidPath']) && $filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
+                $sharedMarkup = File::get($filePaths['sharedLiquidPath']);
+            } elseif (isset($filePaths['sharedBladePath']) && $filePaths['sharedBladePath'] && File::exists($filePaths['sharedBladePath'])) {
+                $sharedMarkup = File::get($filePaths['sharedBladePath']);
+            }
+
+            // Read layout-specific markups
+            $halfHorizontalMarkup = null;
+            if (isset($filePaths['halfHorizontalLiquidPath']) && $filePaths['halfHorizontalLiquidPath'] && File::exists($filePaths['halfHorizontalLiquidPath'])) {
+                $halfHorizontalMarkup = File::get($filePaths['halfHorizontalLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $halfHorizontalMarkup = '<div class="view view--{{ size }}">'."\n".$halfHorizontalMarkup."\n".'</div>';
+                }
+            }
+
+            $halfVerticalMarkup = null;
+            if (isset($filePaths['halfVerticalLiquidPath']) && $filePaths['halfVerticalLiquidPath'] && File::exists($filePaths['halfVerticalLiquidPath'])) {
+                $halfVerticalMarkup = File::get($filePaths['halfVerticalLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $halfVerticalMarkup = '<div class="view view--{{ size }}">'."\n".$halfVerticalMarkup."\n".'</div>';
+                }
+            }
+
+            $quadrantMarkup = null;
+            if (isset($filePaths['quadrantLiquidPath']) && $filePaths['quadrantLiquidPath'] && File::exists($filePaths['quadrantLiquidPath'])) {
+                $quadrantMarkup = File::get($filePaths['quadrantLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $quadrantMarkup = '<div class="view view--{{ size }}">'."\n".$quadrantMarkup."\n".'</div>';
+                }
             }
 
             // Ensure custom_fields is properly formatted
@@ -108,7 +181,11 @@ class PluginImportService
                         : null,
                     'polling_body' => $settings['polling_body'] ?? null,
                     'markup_language' => $markupLanguage,
-                    'render_markup' => $fullLiquid,
+                    'render_markup' => $fullLiquid ?? null,
+                    'render_markup_half_horizontal' => $halfHorizontalMarkup,
+                    'render_markup_half_vertical' => $halfVerticalMarkup,
+                    'render_markup_quadrant' => $quadrantMarkup,
+                    'render_markup_shared' => $sharedMarkup,
                     'configuration_template' => $configurationTemplate,
                     'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
                 ]);
@@ -144,11 +221,12 @@ class PluginImportService
      * @param  string|null  $zipEntryPath  Optional path to specific plugin in monorepo
      * @param  string|null  $preferredRenderer  Optional preferred renderer (e.g., 'trmnl-liquid')
      * @param  string|null  $iconUrl  Optional icon URL to set on the plugin
+     * @param  bool  $allowDuplicate  If true, generate a new UUID for trmnlp_id if a plugin with the same trmnlp_id already exists
      * @return Plugin The created plugin instance
      *
      * @throws Exception If the ZIP file is invalid or required files are missing
      */
-    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null, $preferredRenderer = null, ?string $iconUrl = null): Plugin
+    public function importFromUrl(string $zipUrl, User $user, ?string $zipEntryPath = null, $preferredRenderer = null, ?string $iconUrl = null, bool $allowDuplicate = false): Plugin
     {
         // Download the ZIP file
         $response = Http::timeout(60)->get($zipUrl);
@@ -176,32 +254,77 @@ class PluginImportService
             $zip->extractTo($tempDir);
             $zip->close();
 
-            // Find the required files (settings.yml and full.liquid/full.blade.php)
+            // Find the required files (settings.yml and full.liquid/full.blade.php/shared.liquid/shared.blade.php)
             $filePaths = $this->findRequiredFiles($tempDir, $zipEntryPath);
 
             // Validate that we found the required files
-            if (! $filePaths['settingsYamlPath'] || ! $filePaths['fullLiquidPath']) {
-                throw new Exception('Invalid ZIP structure. Required files settings.yml and full.liquid/full.blade.php are missing.');
+            if (! $filePaths['settingsYamlPath']) {
+                throw new Exception('Invalid ZIP structure. Required file settings.yml is missing.');
+            }
+
+            // Validate that we have at least one template file
+            if (! $filePaths['fullLiquidPath'] && ! $filePaths['sharedLiquidPath'] && ! $filePaths['sharedBladePath']) {
+                throw new Exception('Invalid ZIP structure. At least one of the following files is required: full.liquid, full.blade.php, shared.liquid, or shared.blade.php.');
             }
 
             // Parse settings.yml
             $settingsYaml = File::get($filePaths['settingsYamlPath']);
             $settings = Yaml::parse($settingsYaml);
+            $this->validateYAML($settings);
 
-            // Read full.liquid content
-            $fullLiquid = File::get($filePaths['fullLiquidPath']);
+            // Determine markup language from the first available file
+            $markupLanguage = 'blade';
+            $firstTemplatePath = $filePaths['fullLiquidPath']
+                ?? ($filePaths['halfHorizontalLiquidPath'] ?? null)
+                ?? ($filePaths['halfVerticalLiquidPath'] ?? null)
+                ?? ($filePaths['quadrantLiquidPath'] ?? null)
+                ?? ($filePaths['sharedLiquidPath'] ?? null)
+                ?? ($filePaths['sharedBladePath'] ?? null);
 
-            // Prepend shared.liquid content if available
-            if ($filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
-                $sharedLiquid = File::get($filePaths['sharedLiquidPath']);
-                $fullLiquid = $sharedLiquid."\n".$fullLiquid;
+            if ($firstTemplatePath && pathinfo((string) $firstTemplatePath, PATHINFO_EXTENSION) === 'liquid') {
+                $markupLanguage = 'liquid';
             }
 
-            // Check if the file ends with .liquid to set markup language
-            $markupLanguage = 'blade';
-            if (pathinfo((string) $filePaths['fullLiquidPath'], PATHINFO_EXTENSION) === 'liquid') {
-                $markupLanguage = 'liquid';
-                $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+            // Read full markup (don't prepend shared - it will be prepended at render time)
+            $fullLiquid = null;
+            if (isset($filePaths['fullLiquidPath']) && $filePaths['fullLiquidPath']) {
+                $fullLiquid = File::get($filePaths['fullLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $fullLiquid = '<div class="view view--{{ size }}">'."\n".$fullLiquid."\n".'</div>';
+                }
+            }
+
+            // Read shared markup separately
+            $sharedMarkup = null;
+            if (isset($filePaths['sharedLiquidPath']) && $filePaths['sharedLiquidPath'] && File::exists($filePaths['sharedLiquidPath'])) {
+                $sharedMarkup = File::get($filePaths['sharedLiquidPath']);
+            } elseif (isset($filePaths['sharedBladePath']) && $filePaths['sharedBladePath'] && File::exists($filePaths['sharedBladePath'])) {
+                $sharedMarkup = File::get($filePaths['sharedBladePath']);
+            }
+
+            // Read layout-specific markups
+            $halfHorizontalMarkup = null;
+            if (isset($filePaths['halfHorizontalLiquidPath']) && $filePaths['halfHorizontalLiquidPath'] && File::exists($filePaths['halfHorizontalLiquidPath'])) {
+                $halfHorizontalMarkup = File::get($filePaths['halfHorizontalLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $halfHorizontalMarkup = '<div class="view view--{{ size }}">'."\n".$halfHorizontalMarkup."\n".'</div>';
+                }
+            }
+
+            $halfVerticalMarkup = null;
+            if (isset($filePaths['halfVerticalLiquidPath']) && $filePaths['halfVerticalLiquidPath'] && File::exists($filePaths['halfVerticalLiquidPath'])) {
+                $halfVerticalMarkup = File::get($filePaths['halfVerticalLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $halfVerticalMarkup = '<div class="view view--{{ size }}">'."\n".$halfVerticalMarkup."\n".'</div>';
+                }
+            }
+
+            $quadrantMarkup = null;
+            if (isset($filePaths['quadrantLiquidPath']) && $filePaths['quadrantLiquidPath'] && File::exists($filePaths['quadrantLiquidPath'])) {
+                $quadrantMarkup = File::get($filePaths['quadrantLiquidPath']);
+                if ($markupLanguage === 'liquid') {
+                    $quadrantMarkup = '<div class="view view--{{ size }}">'."\n".$quadrantMarkup."\n".'</div>';
+                }
             }
 
             // Ensure custom_fields is properly formatted
@@ -217,17 +340,26 @@ class PluginImportService
                 'custom_fields' => $settings['custom_fields'],
             ];
 
-            $plugin_updated = isset($settings['id'])
+            // Determine the trmnlp_id to use
+            $trmnlpId = $settings['id'] ?? Uuid::v7();
+
+            // If allowDuplicate is true and a plugin with this trmnlp_id already exists, generate a new UUID
+            if ($allowDuplicate && isset($settings['id']) && Plugin::where('user_id', $user->id)->where('trmnlp_id', $settings['id'])->exists()) {
+                $trmnlpId = Uuid::v7();
+            }
+
+            $plugin_updated = ! $allowDuplicate && isset($settings['id'])
                             && Plugin::where('user_id', $user->id)->where('trmnlp_id', $settings['id'])->exists();
+
             // Create a new plugin
             $plugin = Plugin::updateOrCreate(
                 [
-                    'user_id' => $user->id, 'trmnlp_id' => $settings['id'] ?? Uuid::v7(),
+                    'user_id' => $user->id, 'trmnlp_id' => $trmnlpId,
                 ],
                 [
                     'user_id' => $user->id,
                     'name' => $settings['name'] ?? 'Imported Plugin',
-                    'trmnlp_id' => $settings['id'] ?? Uuid::v7(),
+                    'trmnlp_id' => $trmnlpId,
                     'data_stale_minutes' => $settings['refresh_interval'] ?? 15,
                     'data_strategy' => $settings['strategy'] ?? 'static',
                     'polling_url' => $settings['polling_url'] ?? null,
@@ -237,7 +369,11 @@ class PluginImportService
                         : null,
                     'polling_body' => $settings['polling_body'] ?? null,
                     'markup_language' => $markupLanguage,
-                    'render_markup' => $fullLiquid,
+                    'render_markup' => $fullLiquid ?? null,
+                    'render_markup_half_horizontal' => $halfHorizontalMarkup,
+                    'render_markup_half_vertical' => $halfVerticalMarkup,
+                    'render_markup_quadrant' => $quadrantMarkup,
+                    'render_markup_shared' => $sharedMarkup,
                     'configuration_template' => $configurationTemplate,
                     'data_payload' => json_decode($settings['static_data'] ?? '{}', true),
                     'preferred_renderer' => $preferredRenderer,
@@ -272,6 +408,10 @@ class PluginImportService
         $settingsYamlPath = null;
         $fullLiquidPath = null;
         $sharedLiquidPath = null;
+        $sharedBladePath = null;
+        $halfHorizontalLiquidPath = null;
+        $halfVerticalLiquidPath = null;
+        $quadrantLiquidPath = null;
 
         // If zipEntryPath is specified, look for files in that specific directory first
         if ($zipEntryPath) {
@@ -289,6 +429,27 @@ class PluginImportService
 
                     if (File::exists($targetDir.'/shared.liquid')) {
                         $sharedLiquidPath = $targetDir.'/shared.liquid';
+                    } elseif (File::exists($targetDir.'/shared.blade.php')) {
+                        $sharedBladePath = $targetDir.'/shared.blade.php';
+                    }
+
+                    // Check for layout-specific files
+                    if (File::exists($targetDir.'/half_horizontal.liquid')) {
+                        $halfHorizontalLiquidPath = $targetDir.'/half_horizontal.liquid';
+                    } elseif (File::exists($targetDir.'/half_horizontal.blade.php')) {
+                        $halfHorizontalLiquidPath = $targetDir.'/half_horizontal.blade.php';
+                    }
+
+                    if (File::exists($targetDir.'/half_vertical.liquid')) {
+                        $halfVerticalLiquidPath = $targetDir.'/half_vertical.liquid';
+                    } elseif (File::exists($targetDir.'/half_vertical.blade.php')) {
+                        $halfVerticalLiquidPath = $targetDir.'/half_vertical.blade.php';
+                    }
+
+                    if (File::exists($targetDir.'/quadrant.liquid')) {
+                        $quadrantLiquidPath = $targetDir.'/quadrant.liquid';
+                    } elseif (File::exists($targetDir.'/quadrant.blade.php')) {
+                        $quadrantLiquidPath = $targetDir.'/quadrant.blade.php';
                     }
                 }
 
@@ -304,15 +465,37 @@ class PluginImportService
 
                     if (File::exists($targetDir.'/src/shared.liquid')) {
                         $sharedLiquidPath = $targetDir.'/src/shared.liquid';
+                    } elseif (File::exists($targetDir.'/src/shared.blade.php')) {
+                        $sharedBladePath = $targetDir.'/src/shared.blade.php';
+                    }
+
+                    // Check for layout-specific files in src
+                    if (File::exists($targetDir.'/src/half_horizontal.liquid')) {
+                        $halfHorizontalLiquidPath = $targetDir.'/src/half_horizontal.liquid';
+                    } elseif (File::exists($targetDir.'/src/half_horizontal.blade.php')) {
+                        $halfHorizontalLiquidPath = $targetDir.'/src/half_horizontal.blade.php';
+                    }
+
+                    if (File::exists($targetDir.'/src/half_vertical.liquid')) {
+                        $halfVerticalLiquidPath = $targetDir.'/src/half_vertical.liquid';
+                    } elseif (File::exists($targetDir.'/src/half_vertical.blade.php')) {
+                        $halfVerticalLiquidPath = $targetDir.'/src/half_vertical.blade.php';
+                    }
+
+                    if (File::exists($targetDir.'/src/quadrant.liquid')) {
+                        $quadrantLiquidPath = $targetDir.'/src/quadrant.liquid';
+                    } elseif (File::exists($targetDir.'/src/quadrant.blade.php')) {
+                        $quadrantLiquidPath = $targetDir.'/src/quadrant.blade.php';
                     }
                 }
 
                 // If we found the required files in the target directory, return them
-                if ($settingsYamlPath && $fullLiquidPath) {
+                if ($settingsYamlPath && ($fullLiquidPath || $sharedLiquidPath || $sharedBladePath)) {
                     return [
                         'settingsYamlPath' => $settingsYamlPath,
                         'fullLiquidPath' => $fullLiquidPath,
                         'sharedLiquidPath' => $sharedLiquidPath,
+                        'sharedBladePath' => $sharedBladePath,
                     ];
                 }
             }
@@ -329,9 +512,30 @@ class PluginImportService
                 $fullLiquidPath = $tempDir.'/src/full.blade.php';
             }
 
-            // Check for shared.liquid in the same directory
+            // Check for shared.liquid or shared.blade.php in the same directory
             if (File::exists($tempDir.'/src/shared.liquid')) {
                 $sharedLiquidPath = $tempDir.'/src/shared.liquid';
+            } elseif (File::exists($tempDir.'/src/shared.blade.php')) {
+                $sharedBladePath = $tempDir.'/src/shared.blade.php';
+            }
+
+            // Check for layout-specific files
+            if (File::exists($tempDir.'/src/half_horizontal.liquid')) {
+                $halfHorizontalLiquidPath = $tempDir.'/src/half_horizontal.liquid';
+            } elseif (File::exists($tempDir.'/src/half_horizontal.blade.php')) {
+                $halfHorizontalLiquidPath = $tempDir.'/src/half_horizontal.blade.php';
+            }
+
+            if (File::exists($tempDir.'/src/half_vertical.liquid')) {
+                $halfVerticalLiquidPath = $tempDir.'/src/half_vertical.liquid';
+            } elseif (File::exists($tempDir.'/src/half_vertical.blade.php')) {
+                $halfVerticalLiquidPath = $tempDir.'/src/half_vertical.blade.php';
+            }
+
+            if (File::exists($tempDir.'/src/quadrant.liquid')) {
+                $quadrantLiquidPath = $tempDir.'/src/quadrant.liquid';
+            } elseif (File::exists($tempDir.'/src/quadrant.blade.php')) {
+                $quadrantLiquidPath = $tempDir.'/src/quadrant.blade.php';
             }
         } else {
             // Search for the files in the extracted directory structure
@@ -348,20 +552,30 @@ class PluginImportService
                     $fullLiquidPath = $filepath;
                 } elseif ($filename === 'shared.liquid') {
                     $sharedLiquidPath = $filepath;
+                } elseif ($filename === 'shared.blade.php') {
+                    $sharedBladePath = $filepath;
+                } elseif ($filename === 'half_horizontal.liquid' || $filename === 'half_horizontal.blade.php') {
+                    $halfHorizontalLiquidPath = $filepath;
+                } elseif ($filename === 'half_vertical.liquid' || $filename === 'half_vertical.blade.php') {
+                    $halfVerticalLiquidPath = $filepath;
+                } elseif ($filename === 'quadrant.liquid' || $filename === 'quadrant.blade.php') {
+                    $quadrantLiquidPath = $filepath;
                 }
             }
 
-            // Check if shared.liquid exists in the same directory as full.liquid
-            if ($settingsYamlPath && $fullLiquidPath && ! $sharedLiquidPath) {
+            // Check if shared.liquid or shared.blade.php exists in the same directory as full.liquid
+            if ($settingsYamlPath && $fullLiquidPath && ! $sharedLiquidPath && ! $sharedBladePath) {
                 $fullLiquidDir = dirname((string) $fullLiquidPath);
                 if (File::exists($fullLiquidDir.'/shared.liquid')) {
                     $sharedLiquidPath = $fullLiquidDir.'/shared.liquid';
+                } elseif (File::exists($fullLiquidDir.'/shared.blade.php')) {
+                    $sharedBladePath = $fullLiquidDir.'/shared.blade.php';
                 }
             }
 
             // If we found the files but they're not in the src folder,
             // check if they're in the root of the ZIP or in a subfolder
-            if ($settingsYamlPath && $fullLiquidPath) {
+            if ($settingsYamlPath && ($fullLiquidPath || $sharedLiquidPath || $sharedBladePath)) {
                 // If the files are in the root of the ZIP, create a src folder and move them there
                 $srcDir = dirname((string) $settingsYamlPath);
 
@@ -372,17 +586,44 @@ class PluginImportService
 
                     // Copy the files to the src directory
                     File::copy($settingsYamlPath, $newSrcDir.'/settings.yml');
-                    File::copy($fullLiquidPath, $newSrcDir.'/full.liquid');
 
-                    // Copy shared.liquid if it exists
+                    // Copy full.liquid or full.blade.php if it exists
+                    if ($fullLiquidPath) {
+                        $extension = pathinfo((string) $fullLiquidPath, PATHINFO_EXTENSION);
+                        File::copy($fullLiquidPath, $newSrcDir.'/full.'.$extension);
+                        $fullLiquidPath = $newSrcDir.'/full.'.$extension;
+                    }
+
+                    // Copy shared.liquid or shared.blade.php if it exists
                     if ($sharedLiquidPath) {
                         File::copy($sharedLiquidPath, $newSrcDir.'/shared.liquid');
                         $sharedLiquidPath = $newSrcDir.'/shared.liquid';
+                    } elseif ($sharedBladePath) {
+                        File::copy($sharedBladePath, $newSrcDir.'/shared.blade.php');
+                        $sharedBladePath = $newSrcDir.'/shared.blade.php';
+                    }
+
+                    // Copy layout-specific files if they exist
+                    if ($halfHorizontalLiquidPath) {
+                        $extension = pathinfo((string) $halfHorizontalLiquidPath, PATHINFO_EXTENSION);
+                        File::copy($halfHorizontalLiquidPath, $newSrcDir.'/half_horizontal.'.$extension);
+                        $halfHorizontalLiquidPath = $newSrcDir.'/half_horizontal.'.$extension;
+                    }
+
+                    if ($halfVerticalLiquidPath) {
+                        $extension = pathinfo((string) $halfVerticalLiquidPath, PATHINFO_EXTENSION);
+                        File::copy($halfVerticalLiquidPath, $newSrcDir.'/half_vertical.'.$extension);
+                        $halfVerticalLiquidPath = $newSrcDir.'/half_vertical.'.$extension;
+                    }
+
+                    if ($quadrantLiquidPath) {
+                        $extension = pathinfo((string) $quadrantLiquidPath, PATHINFO_EXTENSION);
+                        File::copy($quadrantLiquidPath, $newSrcDir.'/quadrant.'.$extension);
+                        $quadrantLiquidPath = $newSrcDir.'/quadrant.'.$extension;
                     }
 
                     // Update the paths
                     $settingsYamlPath = $newSrcDir.'/settings.yml';
-                    $fullLiquidPath = $newSrcDir.'/full.liquid';
                 }
             }
         }
@@ -391,6 +632,10 @@ class PluginImportService
             'settingsYamlPath' => $settingsYamlPath,
             'fullLiquidPath' => $fullLiquidPath,
             'sharedLiquidPath' => $sharedLiquidPath,
+            'sharedBladePath' => $sharedBladePath,
+            'halfHorizontalLiquidPath' => $halfHorizontalLiquidPath,
+            'halfVerticalLiquidPath' => $halfVerticalLiquidPath,
+            'quadrantLiquidPath' => $quadrantLiquidPath,
         ];
     }
 

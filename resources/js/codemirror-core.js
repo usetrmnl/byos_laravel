@@ -1,13 +1,15 @@
 import { EditorView, lineNumbers, keymap } from '@codemirror/view';
 import { ViewPlugin } from '@codemirror/view';
-import { indentWithTab } from '@codemirror/commands';
+import { indentWithTab, selectAll } from '@codemirror/commands';
 import { foldGutter, foldKeymap } from '@codemirror/language';
 import { history, historyKeymap } from '@codemirror/commands';
+import { searchKeymap } from '@codemirror/search';
 import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
 import { css } from '@codemirror/lang-css';
 import { liquid } from '@codemirror/lang-liquid';
+import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { githubLight } from '@fsegurai/codemirror-theme-github-light';
 
@@ -19,6 +21,8 @@ const LANGUAGE_MAP = {
     'css': css,
     'liquid': liquid,
     'html': html,
+    'yaml': yaml,
+    'yml': yaml,
 };
 
 // Theme support mapping
@@ -154,7 +158,16 @@ export function createCodeMirror(element, options = {}) {
             createResizePlugin(),
             ...(Array.isArray(languageSupport) ? languageSupport : [languageSupport]),
             ...themeSupport,
-            keymap.of([indentWithTab, ...foldKeymap, ...historyKeymap]),
+            keymap.of([
+                indentWithTab,
+                ...foldKeymap,
+                ...historyKeymap,
+                ...searchKeymap,
+                {
+                    key: 'Mod-a',
+                    run: selectAll,
+                },
+            ]),
             EditorView.theme({
                 '&': {
                     fontSize: '14px',

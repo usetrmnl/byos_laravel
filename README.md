@@ -3,7 +3,7 @@
 [![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
 
 TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
-It allows you to manage TRMNL devices, generate screens using **native plugins** (Screens API, Markup), **recipes** (100+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), ~500 from the [TRMNL catalog](https://usetrmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 30k downloads and 130+ stars, it’s the most popular community-driven BYOS.
+It allows you to manage TRMNL devices, generate screens using **native plugins** (Screens API, Markup), **recipes** (130+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), 700+ from the [TRMNL catalog](https://trmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 50k downloads and 200+ stars, it’s the most popular community-driven BYOS.
 
 ![Screenshot](README_byos-screenshot.png)
 ![Screenshot](README_byos-screenshot-dark.png)
@@ -15,9 +15,9 @@ It allows you to manage TRMNL devices, generate screens using **native plugins**
 * 📡 Device Information – Display battery status, WiFi strength, firmware version, and more.
 * 🔍 Auto-Join – Automatically detects and adds devices from your local network.
 * 🖥️ Screen Generation – Supports Plugins (including Mashups), Recipes, API, Markup, or updates via Code.
-  * Support for TRMNL [Design Framework](https://usetrmnl.com/framework)
+  * Support for TRMNL [Design Framework](https://trmnl.com/framework)
   * Compatible open-source recipes are available in the [community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/)
-  * Import from the [TRMNL community recipe catalog](https://usetrmnl.com/recipes)
+  * Import from the [TRMNL community recipe catalog](https://trmnl.com/recipes)
   * Supported Devices
     * TRMNL OG (1-bit & 2-bit)
     * SeeedStudio TRMNL 7,5" (OG) DIY Kit
@@ -43,7 +43,7 @@ It allows you to manage TRMNL devices, generate screens using **native plugins**
 ### Support ❤️
 This repo is maintained voluntarily by [@bnussbau](https://github.com/bnussbau).
 
-Support the development of this package by purchasing a TRMNL device through the referral link: https://usetrmnl.com/?ref=laravel-trmnl. At checkout, use the code `laravel-trmnl` to receive a $15 discount on your purchase.
+Support the development of this package by purchasing a TRMNL device through the referral link: https://trmnl.com/?ref=laravel-trmnl. At checkout, use the code `laravel-trmnl` to receive a $15 discount on your purchase.
 
 or
 
@@ -122,6 +122,7 @@ php artisan db:seed --class=ExampleRecipesSeeder
 | `REGISTRATION_ENABLED`        | Allow user registration via Webinterface                                                                                                    | 1                 |
 | `SSL_MODE`                    | SSL Mode, if not using a Reverse Proxy ([docs](https://serversideup.net/open-source/docker-php/docs/customizing-the-image/configuring-ssl)) | `off`             |
 | `FORCE_HTTPS`                 | If your server handles SSL termination, enforce HTTPS.                                                                                      | 0                 |
+| `TRUSTED_PROXIES`             | If your server handles SSL termination, allow mixed mode. e.g. `"172.0.0.0/8"` or `*`                                                       | null              |
 | `PHP_OPCACHE_ENABLE`          | Enable PHP Opcache                                                                                                                          | 0                 |
 | `TRMNL_IMAGE_URL_TIMEOUT`     | How long TRMNL waits for a response on the display endpoint. (sec)                                                                          | 30                |
 | `APP_TIMEZONE`                | Default timezone, which will be used by the PHP date functions                                                                              | UTC               |

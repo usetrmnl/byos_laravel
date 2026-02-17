@@ -324,6 +324,30 @@ it('resetIfNotCacheable preserves image for standard devices', function (): void
     expect($plugin->current_image)->toBe('test-uuid');
 });
 
+it('cache is reset when plugin markup changes', function (): void {
+    // Create a plugin with cached image
+    $plugin = App\Models\Plugin::factory()->create([
+        'current_image' => 'cached-uuid',
+        'render_markup' => '<div>Original markup</div>',
+    ]);
+
+    // Create devices with standard dimensions (cacheable)
+    Device::factory()->count(2)->create([
+        'width' => 800,
+        'height' => 480,
+        'rotate' => 0,
+    ]);
+
+    // Update the plugin markup
+    $plugin->update([
+        'render_markup' => '<div>Updated markup</div>',
+    ]);
+
+    // Assert cache was reset when markup changed
+    $plugin->refresh();
+    expect($plugin->current_image)->toBeNull();
+});
+
 it('determines correct image format from device model', function (): void {
     // Test BMP format detection
     $bmpModel = DeviceModel::factory()->create([

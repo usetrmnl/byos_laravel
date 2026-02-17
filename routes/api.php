@@ -18,18 +18,16 @@ use Illuminate\Support\Str;
 Route::get('/display', function (Request $request) {
     $mac_address = $request->header('id');
     $access_token = $request->header('access-token');
-    $device = Device::where('mac_address', $mac_address)
-        ->where('api_key', $access_token)
-        ->first();
+    $device = Device::where('api_key', $access_token)->first();
 
     if (! $device) {
         // Check if there's a user with assign_new_devices enabled
         $auto_assign_user = User::where('assign_new_devices', true)->first();
 
-        if ($auto_assign_user) {
+        if ($auto_assign_user && $mac_address) {
             // Create a new device and assign it to this user
             $device = Device::create([
-                'mac_address' => $mac_address,
+                'mac_address' => mb_strtoupper($mac_address ?? ''),
                 'api_key' => $access_token,
                 'user_id' => $auto_assign_user->id,
                 'name' => "{$auto_assign_user->name}'s TRMNL",
@@ -39,7 +37,7 @@ Route::get('/display', function (Request $request) {
             ]);
         } else {
             return response()->json([
-                'message' => 'MAC Address not registered or invalid access token',
+                'message' => 'MAC Address not registered (or not set), or invalid access token',
             ], 404);
         }
     }
@@ -51,8 +49,9 @@ Route::get('/display', function (Request $request) {
         'last_refreshed_at' => now(),
     ]);
 
-    if ($request->hasHeader('battery-percent')) {
-        $batteryPercent = (int) $request->header('battery-percent');
+    $batteryPercent = $request->header('battery-percent') ?? $request->header('percent-charged');
+    if ($batteryPercent !== null) {
+        $batteryPercent = (int) $batteryPercent;
         $batteryVoltage = $device->calculateVoltageFromPercent($batteryPercent);
         $device->update([
             'last_battery_voltage' => $batteryVoltage,
@@ -95,9 +94,16 @@ Route::get('/display', function (Request $request) {
                     // Check and update stale data if needed
                     if ($plugin->isDataStale() || $plugin->current_image === null) {
                         $plugin->updateDataPayload();
-                        $markup = $plugin->render(device: $device);
+                        try {
+                            $markup = $plugin->render(device: $device);
 
-                        GenerateScreenJob::dispatchSync($device->id, $plugin->id, $markup);
+                            GenerateScreenJob::dispatchSync($device->id, $plugin->id, $markup);
+                        } catch (Exception $e) {
+                            Log::error("Failed to render plugin {$plugin->id} ({$plugin->name}): ".$e->getMessage());
+                            // Generate error display
+                            $errorImageUuid = ImageGenerationService::generateDefaultScreenImage($device, 'error', $plugin->name);
+                            $device->update(['current_screen_image' => $errorImageUuid]);
+                        }
                     }
 
                     $plugin->refresh();
@@ -120,8 +126,17 @@ Route::get('/display', function (Request $request) {
                         }
                     }
 
-                    $markup = $playlistItem->render(device: $device);
-                    GenerateScreenJob::dispatchSync($device->id, null, $markup);
+                    try {
+                        $markup = $playlistItem->render(device: $device);
+                        GenerateScreenJob::dispatchSync($device->id, null, $markup);
+                    } catch (Exception $e) {
+                        Log::error("Failed to render mashup playlist item {$playlistItem->id}: ".$e->getMessage());
+                        // For mashups, show error for the first plugin or a generic error
+                        $firstPlugin = $plugins->first();
+                        $pluginName = $firstPlugin ? $firstPlugin->name : 'Recipe';
+                        $errorImageUuid = ImageGenerationService::generateDefaultScreenImage($device, 'error', $pluginName);
+                        $device->update(['current_screen_image' => $errorImageUuid]);
+                    }
 
                     $device->refresh();
 
@@ -180,6 +195,7 @@ Route::get('/display', function (Request $request) {
         'update_firmware' => $device->update_firmware,
         'firmware_url' => $device->firmware_url,
         'special_function' => $device->special_function ?? 'sleep',
+        'maximum_compatibility' => $device->maximum_compatibility,
     ];
 
     if (config('services.trmnl.image_url_timeout')) {
@@ -204,7 +220,7 @@ Route::get('/setup', function (Request $request) {
         ], 404);
     }
 
-    $device = Device::where('mac_address', $mac_address)->first();
+    $device = Device::where('mac_address', mb_strtoupper($mac_address))->first();
 
     if (! $device) {
         // Check if there's a user with assign_new_devices enabled
@@ -219,7 +235,7 @@ Route::get('/setup', function (Request $request) {
 
             // Create a new device and assign it to this user
             $device = Device::create([
-                'mac_address' => $mac_address,
+                'mac_address' => mb_strtoupper($mac_address),
                 'api_key' => Str::random(22),
                 'user_id' => $auto_assign_user->id,
                 'name' => "{$auto_assign_user->name}'s TRMNL",
@@ -345,7 +361,7 @@ Route::post('/display/update', function (Request $request) {
 Route::post('/screens', function (Request $request) {
     $mac_address = $request->header('id');
     $access_token = $request->header('access-token');
-    $device = Device::where('mac_address', $mac_address)
+    $device = Device::where('mac_address', mb_strtoupper($mac_address ?? ''))
         ->where('api_key', $access_token)
         ->first();
 
@@ -533,6 +549,91 @@ Route::post('custom_plugins/{plugin_uuid}', function (string $plugin_uuid) {
     return response()->json(['message' => 'Data updated successfully']);
 })->name('api.custom_plugins.webhook');
 
+Route::post('plugin_settings/{uuid}/image', function (Request $request, string $uuid) {
+    $plugin = Plugin::where('uuid', $uuid)->firstOrFail();
+
+    // Check if plugin is image_webhook type
+    if ($plugin->plugin_type !== 'image_webhook') {
+        return response()->json(['error' => 'Plugin is not an image webhook plugin'], 400);
+    }
+
+    // Accept image from either multipart form or raw binary
+    $image = null;
+    $extension = null;
+
+    if ($request->hasFile('image')) {
+        $file = $request->file('image');
+        $extension = mb_strtolower($file->getClientOriginalExtension());
+        $image = $file->get();
+    } elseif ($request->has('image')) {
+        // Base64 encoded image
+        $imageData = $request->input('image');
+        if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $matches)) {
+            $extension = mb_strtolower($matches[1]);
+            $image = base64_decode(mb_substr($imageData, mb_strpos($imageData, ',') + 1));
+        } else {
+            return response()->json(['error' => 'Invalid image format. Expected base64 data URI.'], 400);
+        }
+    } else {
+        // Try raw binary
+        $image = $request->getContent();
+        $contentType = $request->header('Content-Type', '');
+        $trimmedContent = mb_trim($image);
+
+        // Check if content is empty or just empty JSON
+        if (empty($image) || $trimmedContent === '' || $trimmedContent === '{}') {
+            return response()->json(['error' => 'No image data provided'], 400);
+        }
+
+        // If it's a JSON request without image field, return error
+        if (str_contains($contentType, 'application/json')) {
+            return response()->json(['error' => 'No image data provided'], 400);
+        }
+
+        // Detect image type from content
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_buffer($finfo, $image);
+        finfo_close($finfo);
+
+        $extension = match ($mimeType) {
+            'image/png' => 'png',
+            'image/bmp' => 'bmp',
+            default => null,
+        };
+
+        if (! $extension) {
+            return response()->json(['error' => 'Unsupported image format. Expected PNG or BMP.'], 400);
+        }
+    }
+
+    // Validate extension
+    $allowedExtensions = ['png', 'bmp'];
+    if (! in_array($extension, $allowedExtensions)) {
+        return response()->json(['error' => 'Unsupported image format. Expected PNG or BMP.'], 400);
+    }
+
+    // Generate a new UUID for each image upload to prevent device caching
+    $imageUuid = Str::uuid()->toString();
+    $filename = $imageUuid.'.'.$extension;
+    $path = 'images/generated/'.$filename;
+
+    // Save image to storage
+    Storage::disk('public')->put($path, $image);
+
+    // Update plugin's current_image field with the new UUID
+    $plugin->update([
+        'current_image' => $imageUuid,
+    ]);
+
+    // Clean up old images
+    ImageGenerationService::cleanupFolder();
+
+    return response()->json([
+        'message' => 'Image uploaded successfully',
+        'image_url' => url('storage/'.$path),
+    ]);
+})->name('api.plugin_settings.image');
+
 Route::get('plugin_settings/{trmnlp_id}/archive', function (Request $request, string $trmnlp_id) {
     if (! $trmnlp_id || mb_trim($trmnlp_id) === '') {
         return response()->json([
@@ -577,3 +678,90 @@ Route::post('plugin_settings/{trmnlp_id}/archive', function (Request $request, s
         ],
     ]);
 })->middleware('auth:sanctum');
+
+Route::get('/display/{uuid}/alias', function (Request $request, string $uuid) {
+    $plugin = Plugin::where('uuid', $uuid)->firstOrFail();
+
+    // Check if alias is active
+    if (! $plugin->alias) {
+        return response()->json([
+            'message' => 'Alias is not active for this plugin',
+        ], 403);
+    }
+
+    // Get device model name from query parameter, default to 'og_png'
+    $deviceModelName = $request->query('device-model', 'og_png');
+    $deviceModel = DeviceModel::where('name', $deviceModelName)->first();
+
+    if (! $deviceModel) {
+        return response()->json([
+            'message' => "Device model '{$deviceModelName}' not found",
+        ], 404);
+    }
+
+    // Check if we can use cached image (only for og_png and if data is not stale)
+    $useCache = $deviceModelName === 'og_png' && ! $plugin->isDataStale() && $plugin->current_image !== null;
+
+    if ($useCache) {
+        // Return cached image
+        $imageUuid = $plugin->current_image;
+        $fileExtension = $deviceModel->mime_type === 'image/bmp' ? 'bmp' : 'png';
+        $imagePath = 'images/generated/'.$imageUuid.'.'.$fileExtension;
+
+        // Check if image exists, otherwise fall back to generation
+        if (Storage::disk('public')->exists($imagePath)) {
+            return response()->file(Storage::disk('public')->path($imagePath), [
+                'Content-Type' => $deviceModel->mime_type,
+            ]);
+        }
+    }
+
+    // Generate new image
+    try {
+        // Update data if needed
+        if ($plugin->isDataStale()) {
+            $plugin->updateDataPayload();
+            $plugin->refresh();
+        }
+
+        // Load device model with palette relationship
+        $deviceModel->load('palette');
+
+        // Create a virtual device for rendering (Plugin::render needs a Device object)
+        $virtualDevice = new Device();
+        $virtualDevice->setRelation('deviceModel', $deviceModel);
+        $virtualDevice->setRelation('user', $plugin->user);
+        $virtualDevice->setRelation('palette', $deviceModel->palette);
+
+        // Render the plugin markup
+        $markup = $plugin->render(device: $virtualDevice);
+
+        // Generate image using the new method that doesn't require a device
+        $imageUuid = ImageGenerationService::generateImageFromModel(
+            markup: $markup,
+            deviceModel: $deviceModel,
+            user: $plugin->user,
+            palette: $deviceModel->palette
+        );
+
+        // Update plugin cache if using og_png
+        if ($deviceModelName === 'og_png') {
+            $plugin->update(['current_image' => $imageUuid]);
+        }
+
+        // Return the generated image
+        $fileExtension = $deviceModel->mime_type === 'image/bmp' ? 'bmp' : 'png';
+        $imagePath = Storage::disk('public')->path('images/generated/'.$imageUuid.'.'.$fileExtension);
+
+        return response()->file($imagePath, [
+            'Content-Type' => $deviceModel->mime_type,
+        ]);
+    } catch (Exception $e) {
+        Log::error("Failed to generate alias image for plugin {$plugin->id} ({$plugin->name}): ".$e->getMessage());
+
+        return response()->json([
+            'message' => 'Failed to generate image',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+})->name('api.display.alias');

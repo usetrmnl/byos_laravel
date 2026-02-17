@@ -2,14 +2,16 @@
 
 use App\Jobs\GenerateScreenJob;
 use Illuminate\Support\Collection;
-use Livewire\Volt\Component;
+use Livewire\Component;
 
-new class extends Component {
-
+new class extends Component
+{
     public string $blade_code = '';
+
     public bool $isLoading = false;
 
     public Collection $devices;
+
     public array $checked_devices;
 
     public function mount()
@@ -17,17 +19,16 @@ new class extends Component {
         $this->devices = auth()->user()->devices->pluck('id', 'name');
     }
 
-
     public function submit()
     {
         $this->isLoading = true;
 
         $this->validate([
             'checked_devices' => 'required|array',
-            'blade_code' => 'required|string'
+            'blade_code' => 'required|string',
         ]);
 
-        //only devices that are owned by the user
+        // only devices that are owned by the user
         $this->checked_devices = array_intersect($this->checked_devices, auth()->user()->devices->pluck('id')->toArray());
 
         try {
@@ -35,7 +36,7 @@ new class extends Component {
             foreach ($this->checked_devices as $device) {
                 GenerateScreenJob::dispatchSync($device, null, $rendered);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addError('generate_screen', $e->getMessage());
         }
 
@@ -66,7 +67,7 @@ new class extends Component {
 
     public function renderHelloWorld(): string
     {
-        return <<<HTML
+        return <<<'HTML'
 <x-trmnl::screen>
     <x-trmnl::view>
         <x-trmnl::layout>
@@ -84,7 +85,7 @@ HTML;
 
     public function renderQuote(): string
     {
-        return <<<HTML
+        return <<<'HTML'
 <x-trmnl::screen>
     <x-trmnl::view>
         <x-trmnl::layout>
@@ -102,7 +103,7 @@ HTML;
 
     public function renderTrainMonitor()
     {
-        return <<<HTML
+        return <<<'HTML'
 <x-trmnl::screen>
     <x-trmnl::view>
         <x-trmnl::layout>
@@ -136,7 +137,7 @@ HTML;
 
     public function renderHomeAssistant()
     {
-        return <<<HTML
+        return <<<'HTML'
 <x-trmnl::screen>
     <x-trmnl::view>
         <x-trmnl::layout class="layout--col gap--space-between">
@@ -162,8 +163,6 @@ HTML;
 HTML;
 
     }
-
-
 };
 ?>
 

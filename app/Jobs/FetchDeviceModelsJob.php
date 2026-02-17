@@ -19,7 +19,7 @@ final class FetchDeviceModelsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private const API_URL = 'https://usetrmnl.com/api/models';
+    private const API_URL = '/api/models';
 
     private const PALETTES_API_URL = 'http://usetrmnl.com/api/palettes';
 
@@ -39,7 +39,7 @@ final class FetchDeviceModelsJob implements ShouldQueue
         try {
             $this->processPalettes();
 
-            $response = Http::timeout(30)->get(self::API_URL);
+            $response = Http::timeout(30)->get(config('services.trmnl.base_url').self::API_URL);
 
             if (! $response->successful()) {
                 Log::error('Failed to fetch device models from API', [
@@ -199,6 +199,7 @@ final class FetchDeviceModelsJob implements ShouldQueue
             'offset_x' => $modelData['offset_x'] ?? 0,
             'offset_y' => $modelData['offset_y'] ?? 0,
             'published_at' => $modelData['published_at'] ?? null,
+            'kind' => $modelData['kind'] ?? null,
             'source' => 'api',
         ];
 
