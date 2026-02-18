@@ -41,6 +41,9 @@ new class extends Component
 
     public $css_name;
 
+    /** @var array<int, array{key: string, value: string}> */
+    public array $css_variables = [];
+
     protected $rules = [
         'name' => 'required|string|max:255|unique:device_models,name',
         'label' => 'required|string|max:255',
@@ -105,10 +108,11 @@ new class extends Component
             $this->published_at = $deviceModel->published_at?->format('Y-m-d\TH:i');
             $this->palette_id = $deviceModel->palette_id;
             $this->css_name = $deviceModel->css_name;
+            $this->css_variables = collect($deviceModel->css_variables ?? [])->map(fn (string $value, string $key): array => ['key' => $key, 'value' => $value])->values()->all();
         } else {
             $this->editingDeviceModelId = null;
             $this->viewingDeviceModelId = null;
-            $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'css_name']);
+            $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'css_name', 'css_variables']);
             $this->mime_type = 'image/png';
             $this->scale_factor = 1.0;
             $this->rotation = 0;
@@ -135,6 +139,9 @@ new class extends Component
             'published_at' => 'nullable|date',
             'palette_id' => 'nullable|exists:device_palettes,id',
             'css_name' => 'nullable|string|max:255',
+            'css_variables' => 'nullable|array',
+            'css_variables.*.key' => 'nullable|string|max:255',
+            'css_variables.*.value' => 'nullable|string|max:500',
         ];
 
         if ($this->editingDeviceModelId) {
@@ -163,6 +170,7 @@ new class extends Component
                 'published_at' => $this->published_at,
                 'palette_id' => $this->palette_id ?: null,
                 'css_name' => $this->css_name ?: null,
+                'css_variables' => $this->normalizeCssVariables(),
             ]);
             $message = 'Device model updated successfully.';
         } else {
@@ -182,12 +190,13 @@ new class extends Component
                 'published_at' => $this->published_at,
                 'palette_id' => $this->palette_id ?: null,
                 'css_name' => $this->css_name ?: null,
+                'css_variables' => $this->normalizeCssVariables(),
                 'source' => 'manual',
             ]);
             $message = 'Device model created successfully.';
         }
 
-        $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'css_name', 'editingDeviceModelId', 'viewingDeviceModelId']);
+        $this->reset(['name', 'label', 'description', 'width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'mime_type', 'offset_x', 'offset_y', 'published_at', 'palette_id', 'css_name', 'css_variables', 'editingDeviceModelId', 'viewingDeviceModelId']);
         Flux::modal('device-model-modal')->close();
 
         $this->deviceModels = DeviceModel::all();
@@ -224,8 +233,36 @@ new class extends Component
         $this->published_at = $deviceModel->published_at?->format('Y-m-d\TH:i');
         $this->palette_id = $deviceModel->palette_id;
         $this->css_name = $deviceModel->css_name;
+        $this->css_variables = collect($deviceModel->css_variables ?? [])->map(fn (string $value, string $key): array => ['key' => $key, 'value' => $value])->values()->all();
 
         $this->js('Flux.modal("device-model-modal").show()');
+    }
+
+    public function addCssVariable(): void
+    {
+        $this->css_variables = array_merge($this->css_variables, [['key' => '', 'value' => '']]);
+    }
+
+    public function removeCssVariable(int $index): void
+    {
+        $vars = $this->css_variables;
+        array_splice($vars, $index, 1);
+        $this->css_variables = array_values($vars);
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    private function normalizeCssVariables(): ?array
+    {
+        $pairs = collect($this->css_variables)
+            ->filter(fn (array $p): bool => trim($p['key'] ?? '') !== '');
+
+        if ($pairs->isEmpty()) {
+            return null;
+        }
+
+        return $pairs->mapWithKeys(fn (array $p): array => [$p['key'] => $p['value'] ?? ''])->all();
     }
 }
 
@@ -354,6 +391,35 @@ new class extends Component
                         <div class="mb-4">
                             <flux:input label="CSS Model Identifier" wire:model="css_name" id="css_name" class="block mt-1 w-full" type="text"
                                         name="css_name" :disabled="(bool) $viewingDeviceModelId"/>
+                        </div>
+
+                        <div class="mb-4">
+                            <flux:heading size="sm" class="mb-2">CSS Variables</flux:heading>
+                            @if ($viewingDeviceModelId)
+                                @if (count($css_variables) > 0)
+                                    <dl class="space-y-1.5 text-sm">
+                                        @foreach ($css_variables as $var)
+                                            <div class="flex gap-2">
+                                                <dt class="font-medium text-zinc-600 dark:text-zinc-400 min-w-[120px]">{{ $var['key'] }}</dt>
+                                                <dd class="text-zinc-800 dark:text-zinc-200">{{ $var['value'] }}</dd>
+                                            </div>
+                                        @endforeach
+                                    </dl>
+                                @else
+                                    <p class="text-sm text-zinc-500 dark:text-zinc-400">No CSS variables</p>
+                                @endif
+                            @else
+                                <div class="space-y-3">
+                                    @foreach ($css_variables as $index => $var)
+                                        <div class="flex gap-2 items-start" wire:key="css-var-{{ $index }}">
+                                            <flux:input wire:model="css_variables.{{ $index }}.key" placeholder="e.g. --screen-w" class="flex-1 min-w-0" type="text"/>
+                                            <flux:input wire:model="css_variables.{{ $index }}.value" placeholder="e.g. 800px" class="flex-1 min-w-0" type="text"/>
+                                            <flux:button type="button" wire:click="removeCssVariable({{ $index }})" icon="trash" variant="ghost" iconVariant="outline"/>
+                                        </div>
+                                    @endforeach
+                                    <flux:button type="button" wire:click="addCssVariable" variant="ghost" icon="plus" size="sm">Add variable</flux:button>
+                                </div>
+                            @endif
                         </div>
 
                         @if (!$viewingDeviceModelId)
