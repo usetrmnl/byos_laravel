@@ -121,11 +121,16 @@ php artisan db:seed --class=ExampleRecipesSeeder
 | `TRMNL_PROXY_REFRESH_MINUTES` | How often should the server fetch new images from native service                                                                            | 15                |
 | `REGISTRATION_ENABLED`        | Allow user registration via Webinterface                                                                                                    | 1                 |
 | `SSL_MODE`                    | SSL Mode, if not using a Reverse Proxy ([docs](https://serversideup.net/open-source/docker-php/docs/customizing-the-image/configuring-ssl)) | `off`             |
-| `FORCE_HTTPS`                 | If your server handles SSL termination, enforce HTTPS.                                                                                      | 0                 |
+| `FORCE_HTTPS`                 | If your server handles SSL termination, enforce HTTPS. Alternative: `TRUSTED_PROXIES`.                                                      | 0                 |
 | `TRUSTED_PROXIES`             | If your server handles SSL termination, allow mixed mode. e.g. `"172.0.0.0/8"` or `*`                                                       | null              |
 | `PHP_OPCACHE_ENABLE`          | Enable PHP Opcache                                                                                                                          | 0                 |
 | `TRMNL_IMAGE_URL_TIMEOUT`     | How long TRMNL waits for a response on the display endpoint. (sec)                                                                          | 30                |
-| `APP_TIMEZONE`                | Default timezone, which will be used by the PHP date functions                                                                              | UTC               |
+| `APP_TIMEZONE`                | Default timezone, which will be used by the PHP date functions. UTC is recommended.                                                         | UTC               |
+
+##### Experimental Environment Variables
+| Environment Variable             | Description                                                                    | Default |
+|----------------------------------|--------------------------------------------------------------------------------|---------|
+| `PUPPETEER_WINDOW_SIZE_STRATEGY` | Set to `v2` to size the browser window to match the device’s screen dimensions | `null`  |
 
 #### Login
 
