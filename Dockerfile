@@ -1,7 +1,7 @@
 ########################
 # Base Image
 ########################
-FROM bnussbau/serversideup-php:8.4-fpm-nginx-alpine-imagick-chromium@sha256:52ac545fdb57b2ab7568b1c7fc0a98cb1a69a275d8884249778a80914272fa48 AS base
+FROM bnussbau/serversideup-php:8.4-fpm-nginx-alpine-imagick-chromium@sha256:ed705a4060d50143ddc538c1288afff217eaf76ad5791f7556a97943854cf745 AS base
 
 LABEL org.opencontainers.image.source=https://github.com/usetrmnl/byos_laravel
 LABEL org.opencontainers.image.description="TRMNL BYOS Laravel"
