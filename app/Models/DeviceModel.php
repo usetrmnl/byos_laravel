@@ -87,24 +87,28 @@ final class DeviceModel extends Model
      */
     protected function cssVariables(): Attribute
     {
-        return Attribute::get(function (mixed $value, array $attributes): array {
-            $vars = is_array($value) ? $value : (is_string($value) ? (json_decode($value, true) ?? []) : []);
+        /** @var Attribute<array<string, string>, array<string, string>> */
+        return Attribute::get(
+            /** @return array<string, string> */
+            function (mixed $value, array $attributes): array {
+                $vars = is_array($value) ? $value : (is_string($value) ? (json_decode($value, true) ?? []) : []);
 
-            if (config('app.puppeteer_window_size_strategy') !== 'v2') {
+                if (config('app.puppeteer_window_size_strategy') !== 'v2') {
+                    return $vars;
+                }
+
+                $width = $attributes['width'] ?? null;
+                $height = $attributes['height'] ?? null;
+
+                if (empty($vars['--screen-w']) && $width !== null && $width !== '') {
+                    $vars['--screen-w'] = is_numeric($width) ? (int) $width.'px' : (string) $width;
+                }
+                if (empty($vars['--screen-h']) && $height !== null && $height !== '') {
+                    $vars['--screen-h'] = is_numeric($height) ? (int) $height.'px' : (string) $height;
+                }
+
+                /** @var array<string, string> $vars */
                 return $vars;
-            }
-
-            $width = $attributes['width'] ?? null;
-            $height = $attributes['height'] ?? null;
-
-            if (empty($vars['--screen-w']) && $width !== null && $width !== '') {
-                $vars['--screen-w'] = is_numeric($width) ? (int) $width.'px' : (string) $width;
-            }
-            if (empty($vars['--screen-h']) && $height !== null && $height !== '') {
-                $vars['--screen-h'] = is_numeric($height) ? (int) $height.'px' : (string) $height;
-            }
-
-            return $vars;
-        });
+            });
     }
 }
