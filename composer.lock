@@ -62,16 +62,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.369.36",
+            "version": "3.369.38",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "2a69e7df5e03be9e08f9f73fb6a8cc9dd63b59c0"
+                "reference": "6b39dcc5284fae1a1f7e5d4fd64878092a56594b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/2a69e7df5e03be9e08f9f73fb6a8cc9dd63b59c0",
-                "reference": "2a69e7df5e03be9e08f9f73fb6a8cc9dd63b59c0",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/6b39dcc5284fae1a1f7e5d4fd64878092a56594b",
+                "reference": "6b39dcc5284fae1a1f7e5d4fd64878092a56594b",
                 "shasum": ""
             },
             "require": {
@@ -153,9 +153,9 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.369.36"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.369.38"
             },
-            "time": "2026-02-17T19:45:01+00:00"
+            "time": "2026-02-19T19:06:55+00:00"
         },
         {
             "name": "bacon/bacon-qr-code",
@@ -5177,16 +5177,16 @@
         },
         {
             "name": "spatie/browsershot",
-            "version": "5.2.2",
+            "version": "5.2.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/browsershot.git",
-                "reference": "c07bbd63f4cb698a0b163995a5851ecf33a16f90"
+                "reference": "d2e4ac7c69162999940172a674bf83ddc5ac59ea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/browsershot/zipball/c07bbd63f4cb698a0b163995a5851ecf33a16f90",
-                "reference": "c07bbd63f4cb698a0b163995a5851ecf33a16f90",
+                "url": "https://api.github.com/repos/spatie/browsershot/zipball/d2e4ac7c69162999940172a674bf83ddc5ac59ea",
+                "reference": "d2e4ac7c69162999940172a674bf83ddc5ac59ea",
                 "shasum": ""
             },
             "require": {
@@ -5233,7 +5233,7 @@
                 "webpage"
             ],
             "support": {
-                "source": "https://github.com/spatie/browsershot/tree/5.2.2"
+                "source": "https://github.com/spatie/browsershot/tree/5.2.3"
             },
             "funding": [
                 {
@@ -5241,7 +5241,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-10T15:34:05+00:00"
+            "time": "2026-02-18T16:10:58+00:00"
         },
         {
             "name": "spatie/laravel-package-tools",
@@ -9068,16 +9068,16 @@
         },
         {
             "name": "laravel/boost",
-            "version": "v2.1.6",
+            "version": "v2.1.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/boost.git",
-                "reference": "b8923e6131e5b705da299891284d327562445618"
+                "reference": "a475ecb520c94357201c70039e984bce6c67c917"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/boost/zipball/b8923e6131e5b705da299891284d327562445618",
-                "reference": "b8923e6131e5b705da299891284d327562445618",
+                "url": "https://api.github.com/repos/laravel/boost/zipball/a475ecb520c94357201c70039e984bce6c67c917",
+                "reference": "a475ecb520c94357201c70039e984bce6c67c917",
                 "shasum": ""
             },
             "require": {
@@ -9130,7 +9130,7 @@
                 "issues": "https://github.com/laravel/boost/issues",
                 "source": "https://github.com/laravel/boost"
             },
-            "time": "2026-02-16T23:53:14+00:00"
+            "time": "2026-02-20T08:12:25+00:00"
         },
         {
             "name": "laravel/mcp",
@@ -10935,16 +10935,16 @@
         },
         {
             "name": "rector/rector",
-            "version": "2.3.6",
+            "version": "2.3.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rectorphp/rector.git",
-                "reference": "ca9ebb81d280cd362ea39474dabd42679e32ca6b"
+                "reference": "9c46ad17f57963932c9788fd1b0f1d07ff450370"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rectorphp/rector/zipball/ca9ebb81d280cd362ea39474dabd42679e32ca6b",
-                "reference": "ca9ebb81d280cd362ea39474dabd42679e32ca6b",
+                "url": "https://api.github.com/repos/rectorphp/rector/zipball/9c46ad17f57963932c9788fd1b0f1d07ff450370",
+                "reference": "9c46ad17f57963932c9788fd1b0f1d07ff450370",
                 "shasum": ""
             },
             "require": {
@@ -10983,7 +10983,7 @@
             ],
             "support": {
                 "issues": "https://github.com/rectorphp/rector/issues",
-                "source": "https://github.com/rectorphp/rector/tree/2.3.6"
+                "source": "https://github.com/rectorphp/rector/tree/2.3.7"
             },
             "funding": [
                 {
@@ -10991,7 +10991,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-06T14:25:06+00:00"
+            "time": "2026-02-19T14:44:16+00:00"
         },
         {
             "name": "sebastian/cli-parser",
@@ -12053,16 +12053,16 @@
         },
         {
             "name": "webmozart/assert",
-            "version": "2.1.4",
+            "version": "2.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/webmozarts/assert.git",
-                "reference": "b39f1870fc7c3e9e4a26106df5053354b9260a33"
+                "reference": "79155f94852fa27e2f73b459f6503f5e87e2c188"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/webmozarts/assert/zipball/b39f1870fc7c3e9e4a26106df5053354b9260a33",
-                "reference": "b39f1870fc7c3e9e4a26106df5053354b9260a33",
+                "url": "https://api.github.com/repos/webmozarts/assert/zipball/79155f94852fa27e2f73b459f6503f5e87e2c188",
+                "reference": "79155f94852fa27e2f73b459f6503f5e87e2c188",
                 "shasum": ""
             },
             "require": {
@@ -12109,9 +12109,9 @@
             ],
             "support": {
                 "issues": "https://github.com/webmozarts/assert/issues",
-                "source": "https://github.com/webmozarts/assert/tree/2.1.4"
+                "source": "https://github.com/webmozarts/assert/tree/2.1.5"
             },
-            "time": "2026-02-17T12:17:51+00:00"
+            "time": "2026-02-18T14:09:36+00:00"
         }
     ],
     "aliases": [],
