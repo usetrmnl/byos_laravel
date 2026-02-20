@@ -528,7 +528,7 @@ class ImageGenerationService
             'deviceOrientation' => $deviceOrientation,
             'colorDepth' => $colorDepth,
             'scaleLevel' => $scaleLevel,
-            'cssVariables' => $device->deviceModel?->css_variables,
+            'cssVariables' => $device->deviceModel?->css_variables ?? [],
         ];
 
         // Add plugin name for error screens
