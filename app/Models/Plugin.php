@@ -738,8 +738,8 @@ class Plugin extends Model
             }
         }
 
-        // Append " (Copy)" to the name
-        $attributes['name'] = $this->name.' (Copy)';
+        // Append "_copy" to the name
+        $attributes['name'] = $this->name.'_copy';
 
         // Set user_id - use provided userId or fall back to original plugin's user_id
         $attributes['user_id'] = $userId ?? $this->user_id;

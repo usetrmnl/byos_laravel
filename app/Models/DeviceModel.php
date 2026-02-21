@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property-read array<string, string> $css_variables
+ * @property-read string|null $css_name
  * @property-read DevicePalette|null $palette
  */
 final class DeviceModel extends Model
@@ -72,6 +73,19 @@ final class DeviceModel extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Returns css_name for v2 (per-device sizing); for v1 returns 'og' to preserve legacy single-variant behaviour.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function cssName(): Attribute
+    {
+        /** @var Attribute<string|null, string|null> */
+        return Attribute::get(
+            fn (mixed $value): ?string => config('app.puppeteer_window_size_strategy') === 'v2' ? ($value !== null ? (string) $value : null) : 'og'
+        );
     }
 
     public function palette(): BelongsTo

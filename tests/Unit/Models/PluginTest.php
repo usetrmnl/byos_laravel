@@ -824,7 +824,7 @@ test('plugin duplicate copies all attributes except id and uuid', function (): v
 
     expect($duplicate->id)->not->toBe($original->id)
         ->and($duplicate->uuid)->not->toBe($original->uuid)
-        ->and($duplicate->name)->toBe('Original Plugin (Copy)')
+        ->and($duplicate->name)->toBe('Original Plugin_copy')
         ->and($duplicate->user_id)->toBe($original->user_id)
         ->and($duplicate->data_stale_minutes)->toBe($original->data_stale_minutes)
         ->and($duplicate->data_strategy)->toBe($original->data_strategy)
@@ -859,7 +859,7 @@ test('plugin duplicate sets trmnlp_id to null to avoid unique constraint violati
 
     expect($duplicate->trmnlp_id)->toBeNull()
         ->and($original->trmnlp_id)->toBe('test-trmnlp-id-123')
-        ->and($duplicate->name)->toBe('Plugin with trmnlp_id (Copy)');
+        ->and($duplicate->name)->toBe('Plugin with trmnlp_id_copy');
 });
 
 test('plugin duplicate copies render_markup_view file content to render_markup', function (): void {
@@ -890,7 +890,7 @@ test('plugin duplicate copies render_markup_view file content to render_markup',
         expect($duplicate->render_markup)->toBe($testContent)
             ->and($duplicate->markup_language)->toBe('blade')
             ->and($duplicate->render_markup_view)->toBeNull()
-            ->and($duplicate->name)->toBe('View Plugin (Copy)');
+            ->and($duplicate->name)->toBe('View Plugin_copy');
     } finally {
         // Clean up test file
         if (file_exists($testViewPath)) {
@@ -949,7 +949,7 @@ test('plugin duplicate handles missing view file gracefully', function (): void 
     $duplicate = $original->duplicate();
 
     expect($duplicate->render_markup_view)->toBeNull()
-        ->and($duplicate->name)->toBe('Missing View Plugin (Copy)');
+        ->and($duplicate->name)->toBe('Missing View Plugin_copy');
 });
 
 test('plugin duplicate uses provided user_id', function (): void {
