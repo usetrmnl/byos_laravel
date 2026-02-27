@@ -2,6 +2,8 @@
 
 use App\Jobs\GenerateScreenJob;
 use App\Models\Device;
+use App\Models\DeviceModel;
+use App\Models\Plugin;
 use Bnussbau\TrmnlPipeline\TrmnlPipeline;
 use Illuminate\Support\Facades\Storage;
 
@@ -57,4 +59,27 @@ test('it preserves gitignore file during cleanup', function (): void {
     $job->handle();
 
     Storage::disk('public')->assertExists('/images/generated/.gitignore');
+});
+
+test('it saves current_image_metadata for recipe plugins', function (): void {
+    $deviceModel = DeviceModel::factory()->create([
+        'width' => 800,
+        'height' => 480,
+        'rotation' => 0,
+        'mime_type' => 'image/png',
+        'palette_id' => null,
+    ]);
+    $device = Device::factory()->create(['device_model_id' => $deviceModel->id]);
+    $plugin = Plugin::factory()->create(['plugin_type' => 'recipe']);
+
+    $job = new GenerateScreenJob($device->id, $plugin->id, '<div>Test</div>');
+    $job->handle();
+
+    $plugin->refresh();
+    expect($plugin->current_image)->not->toBeNull();
+    expect($plugin->current_image_metadata)->toBeArray();
+    expect($plugin->current_image_metadata)->toHaveKeys(['width', 'height', 'rotation', 'palette_id', 'mime_type']);
+    expect($plugin->current_image_metadata['width'])->toBe(800);
+    expect($plugin->current_image_metadata['height'])->toBe(480);
+    expect($plugin->current_image_metadata['mime_type'])->toBe('image/png');
 });

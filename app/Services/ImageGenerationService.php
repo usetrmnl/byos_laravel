@@ -331,36 +331,88 @@ class ImageGenerationService
         }
     }
 
-    public static function resetIfNotCacheable(?Plugin $plugin): void
+    /**
+     * Ensure plugin image cache is valid for the current context. No-op for image_webhook.
+     * When deviceOrModel is provided (recipe only), clears cache if stored metadata does not match.
+     */
+    public static function resetIfNotCacheable(?Plugin $plugin, Device|DeviceModel|null $deviceOrModel = null): void
     {
-        if ($plugin?->id) {
-            // Image webhook plugins have finalized images that shouldn't be reset
-            if ($plugin->plugin_type === 'image_webhook') {
-                return;
-            }
-            // Check if any devices have custom dimensions or use non-standard DeviceModels
-            $hasCustomDimensions = Device::query()
-                ->where(function ($query): void {
-                    $query->where('width', '!=', 800)
-                        ->orWhere('height', '!=', 480)
-                        ->orWhere('rotate', '!=', 0);
-                })
-                ->orWhereHas('deviceModel', function ($query): void {
-                    // Only allow caching if all device models have standard dimensions (800x480, rotation=0)
-                    $query->where(function ($subQuery): void {
-                        $subQuery->where('width', '!=', 800)
-                            ->orWhere('height', '!=', 480)
-                            ->orWhere('rotation', '!=', 0);
-                    });
-                })
-                ->exists();
+        if (! $plugin?->id || $plugin->plugin_type === 'image_webhook') {
+            return;
+        }
+        if ($deviceOrModel === null || $plugin->plugin_type !== 'recipe') {
+            return;
+        }
+        if ($plugin->current_image === null) {
+            return;
+        }
+        if (self::imageMetadataMatches($plugin->current_image_metadata, $deviceOrModel)) {
+            return;
+        }
+        $plugin->update([
+            'current_image' => null,
+            'current_image_metadata' => null,
+        ]);
+        Log::debug("Plugin {$plugin->id}: cleared image cache due to metadata mismatch");
+    }
 
-            if ($hasCustomDimensions) {
-                // TODO cache image per device
-                $plugin->update(['current_image' => null]);
-                Log::debug('Skip cache as devices with custom dimensions or non-standard DeviceModels exist');
+    /**
+     * Build canonical image metadata from a Device for cache comparison.
+     *
+     * @return array{width: int, height: int, rotation: int, palette_id: int|null, mime_type: string}
+     */
+    public static function buildImageMetadataFromDevice(Device $device): array
+    {
+        $device->loadMissing(['deviceModel', 'deviceModel.palette']);
+        $settings = self::getImageSettings($device);
+        $paletteId = $device->palette_id ?? $device->deviceModel?->palette_id;
+
+        return [
+            'width' => $settings['width'],
+            'height' => $settings['height'],
+            'rotation' => $settings['rotation'] ?? 0,
+            'palette_id' => $paletteId,
+            'mime_type' => $settings['mime_type'],
+        ];
+    }
+
+    /**
+     * Build canonical image metadata from a DeviceModel for cache comparison.
+     *
+     * @return array{width: int, height: int, rotation: int, palette_id: int|null, mime_type: string}
+     */
+    public static function buildImageMetadataFromDeviceModel(DeviceModel $model): array
+    {
+        return [
+            'width' => $model->width,
+            'height' => $model->height,
+            'rotation' => $model->rotation ?? 0,
+            'palette_id' => $model->palette_id,
+            'mime_type' => $model->mime_type,
+        ];
+    }
+
+    /**
+     * Check if stored metadata matches the current device or device model.
+     * Returns false if stored is null or empty so cache is regenerated and metadata is stored.
+     */
+    public static function imageMetadataMatches(?array $stored, Device|DeviceModel $deviceOrModel): bool
+    {
+        if ($stored === null || $stored === []) {
+            return false;
+        }
+
+        $current = $deviceOrModel instanceof Device
+            ? self::buildImageMetadataFromDevice($deviceOrModel)
+            : self::buildImageMetadataFromDeviceModel($deviceOrModel);
+
+        foreach (['width', 'height', 'rotation', 'palette_id', 'mime_type'] as $key) {
+            if (($stored[$key] ?? null) !== ($current[$key] ?? null)) {
+                return false;
             }
         }
+
+        return true;
     }
 
     /**

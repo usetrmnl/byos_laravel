@@ -88,8 +88,8 @@ Route::get('/display', function (Request $request) {
                     $refreshTimeOverride = $playlistItem->playlist()->first()->refresh_time;
                     $plugin = $playlistItem->plugin;
 
-                    // Reset cache if Devices with different dimensions exist
-                    ImageGenerationService::resetIfNotCacheable($plugin);
+                    ImageGenerationService::resetIfNotCacheable($plugin, $device);
+                    $plugin->refresh();
 
                     // Check and update stale data if needed
                     if ($plugin->isDataStale() || $plugin->current_image === null) {
@@ -699,6 +699,9 @@ Route::get('/display/{uuid}/alias', function (Request $request, string $uuid) {
         ], 404);
     }
 
+    ImageGenerationService::resetIfNotCacheable($plugin, $deviceModel);
+    $plugin->refresh();
+
     // Check if we can use cached image (only for og_png and if data is not stale)
     $useCache = $deviceModelName === 'og_png' && ! $plugin->isDataStale() && $plugin->current_image !== null;
 
@@ -744,9 +747,13 @@ Route::get('/display/{uuid}/alias', function (Request $request, string $uuid) {
             palette: $deviceModel->palette
         );
 
-        // Update plugin cache if using og_png
+        // Update plugin cache if using og_png (recipes only get metadata for cache comparison)
         if ($deviceModelName === 'og_png') {
-            $plugin->update(['current_image' => $imageUuid]);
+            $update = ['current_image' => $imageUuid];
+            if ($plugin->plugin_type === 'recipe') {
+                $update['current_image_metadata'] = ImageGenerationService::buildImageMetadataFromDeviceModel($deviceModel);
+            }
+            $plugin->update($update);
         }
 
         // Return the generated image

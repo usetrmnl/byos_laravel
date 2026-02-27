@@ -49,6 +49,7 @@ class Plugin extends Model
         'preferred_renderer' => 'string',
         'plugin_type' => 'string',
         'alias' => 'boolean',
+        'current_image_metadata' => 'array',
     ];
 
     protected static function boot()
@@ -71,6 +72,7 @@ class Plugin extends Model
                 'render_markup_shared',
             ])) {
                 $model->current_image = null;
+                $model->current_image_metadata = null;
             }
         });
 

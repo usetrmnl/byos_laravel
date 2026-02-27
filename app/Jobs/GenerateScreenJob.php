@@ -34,8 +34,13 @@ class GenerateScreenJob implements ShouldQueue
         Device::find($this->deviceId)->update(['current_screen_image' => $newImageUuid]);
 
         if ($this->pluginId) {
-            // cache current image
-            Plugin::find($this->pluginId)->update(['current_image' => $newImageUuid]);
+            $plugin = Plugin::find($this->pluginId);
+            $update = ['current_image' => $newImageUuid];
+            if ($plugin->plugin_type === 'recipe') {
+                $device = Device::with(['deviceModel', 'deviceModel.palette'])->find($this->deviceId);
+                $update['current_image_metadata'] = ImageGenerationService::buildImageMetadataFromDevice($device);
+            }
+            $plugin->update($update);
         }
 
         ImageGenerationService::cleanupFolder();

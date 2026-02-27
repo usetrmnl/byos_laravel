@@ -176,37 +176,15 @@ it('cleanup_folder identifies active images correctly', function (): void {
     expect($activeImageUuids)->not->toContain(null);
 });
 
-it('reset_if_not_cacheable detects device models', function (): void {
-    // Create a plugin
-    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid']);
+it('reset_if_not_cacheable does not reset recipe cache when other devices exist', function (): void {
+    // Cache validity is now determined at use-time via metadata
+    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid', 'plugin_type' => 'recipe']);
+    Device::factory()->create(['device_model_id' => DeviceModel::factory()->create()->id]);
 
-    // Create a device with DeviceModel
-    Device::factory()->create([
-        'device_model_id' => DeviceModel::factory()->create()->id,
-    ]);
-
-    // Test that the method detects DeviceModels and resets cache
     ImageGenerationService::resetIfNotCacheable($plugin);
 
     $plugin->refresh();
-    expect($plugin->current_image)->toBeNull();
-});
-
-it('reset_if_not_cacheable detects custom dimensions', function (): void {
-    // Create a plugin
-    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid']);
-
-    // Create a device with custom dimensions
-    Device::factory()->create([
-        'width' => 1024, // Different from default 800
-        'height' => 768, // Different from default 480
-    ]);
-
-    // Test that the method detects custom dimensions and resets cache
-    ImageGenerationService::resetIfNotCacheable($plugin);
-
-    $plugin->refresh();
-    expect($plugin->current_image)->toBeNull();
+    expect($plugin->current_image)->toBe('test-uuid');
 });
 
 it('reset_if_not_cacheable preserves cache for standard devices', function (): void {
@@ -258,26 +236,21 @@ it('reset_if_not_cacheable preserves cache for og_png and og_plus device models'
     expect($plugin->current_image)->toBe('test-uuid');
 });
 
-it('reset_if_not_cacheable resets cache for non-standard device models', function (): void {
-    // Create a plugin
-    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid']);
-
-    // Create a non-standard device model (e.g., kindle)
+it('reset_if_not_cacheable does not reset cache for non-standard device models', function (): void {
+    // Cache is now validated at use-time via metadata comparison
+    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid', 'plugin_type' => 'recipe']);
     $kindleModel = DeviceModel::factory()->create([
         'name' => 'test_amazon_kindle_2024',
         'width' => 1400,
         'height' => 840,
         'rotation' => 90,
     ]);
-
-    // Create a device with the non-standard device model
     Device::factory()->create(['device_model_id' => $kindleModel->id]);
 
-    // Test that the method resets cache for non-standard device models
     ImageGenerationService::resetIfNotCacheable($plugin);
 
     $plugin->refresh();
-    expect($plugin->current_image)->toBeNull();
+    expect($plugin->current_image)->toBe('test-uuid');
 });
 
 it('reset_if_not_cacheable handles null plugin', function (): void {
