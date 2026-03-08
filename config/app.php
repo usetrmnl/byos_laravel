@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'LaraPaper'),
 
     /*
     |--------------------------------------------------------------------------
@@ -127,6 +127,8 @@ return [
         'enabled' => env('REGISTRATION_ENABLED', true),
     ],
 
+    'pixel_logo_enabled' => env('PIXELLOGO_ENABLED', true),
+
     'force_https' => env('FORCE_HTTPS', false),
     'puppeteer_docker' => env('PUPPETEER_DOCKER', false),
     'puppeteer_mode' => env('PUPPETEER_MODE', 'local'),
@@ -154,5 +156,5 @@ return [
 
     'catalog_url' => env('CATALOG_URL', 'https://raw.githubusercontent.com/bnussbau/trmnl-recipe-catalog/refs/heads/main/catalog.yaml'),
 
-    'github_repo' => env('GITHUB_REPO', 'usetrmnl/byos_laravel'),
+    'github_repo' => env('GITHUB_REPO', 'usetrmnl/larapaper'),
 ];

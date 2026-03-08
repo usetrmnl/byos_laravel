@@ -3,8 +3,8 @@
 ########################
 FROM bnussbau/serversideup-php:8.4-fpm-nginx-alpine-imagick-chromium@sha256:ed705a4060d50143ddc538c1288afff217eaf76ad5791f7556a97943854cf745 AS base
 
-LABEL org.opencontainers.image.source=https://github.com/usetrmnl/byos_laravel
-LABEL org.opencontainers.image.description="TRMNL BYOS Laravel"
+LABEL org.opencontainers.image.source=https://github.com/usetrmnl/larapaper
+LABEL org.opencontainers.image.description="LaraPaper"
 LABEL org.opencontainers.image.licenses=MIT
 
 ARG APP_VERSION

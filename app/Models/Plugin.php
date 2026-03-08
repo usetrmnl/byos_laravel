@@ -224,7 +224,7 @@ class Plugin extends Model
         if ($this->data_strategy !== 'polling' || ! $this->polling_url) {
             return;
         }
-        $headers = ['User-Agent' => 'usetrmnl/byos_laravel', 'Accept' => 'application/json'];
+        $headers = ['User-Agent' => 'usetrmnl/larapaper', 'Accept' => 'application/json'];
 
         // resolve headers
         if ($this->polling_header) {

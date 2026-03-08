@@ -1,6 +1,6 @@
 services:
     app:
-        image: ghcr.io/usetrmnl/byos_laravel:latest
+        image: ghcr.io/usetrmnl/larapaper:latest
         ports:
             - "4567:8080"
         environment:

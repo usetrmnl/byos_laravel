@@ -1,8 +1,8 @@
-## TRMNL BYOS (PHP/Laravel)
+## LaraPaper (PHP/Laravel)
 
-[![tests](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/byos_laravel/actions/workflows/test.yml)
+[![tests](https://github.com/usetrmnl/larapaper/actions/workflows/test.yml/badge.svg)](https://github.com/usetrmnl/larapaper/actions/workflows/test.yml)
 
-TRMNL BYOS Laravel is a self-hostable implementation of a TRMNL server, built with Laravel.
+LaraPaper is a self-hostable implementation of a TRMNL server (BYOS), built with Laravel.
 It allows you to manage TRMNL devices, generate screens using **native plugins** (Screens API, Markup), **recipes** (130+ from the [OSS community catalog](https://bnussbau.github.io/trmnl-recipe-catalog/), 700+ from the [TRMNL catalog](https://trmnl.com/recipes), or your own), or the **API**, and can also act as a **proxy** for the native cloud service (Core). With over 50k downloads and 200+ stars, it’s the most popular community-driven BYOS.
 
 ![Screenshot](README_byos-screenshot.png)
@@ -26,7 +26,7 @@ It allows you to manage TRMNL devices, generate screens using **native plugins**
     * Custom ESP32 with TRMNL firmware
     * E-Reader Devices
       * KOReader ([trmnl-koreader](https://github.com/usetrmnl/trmnl-koreader))
-      * Kindle ([trmnl-kindle](https://github.com/usetrmnl/byos_laravel/pull/27))
+      * Kindle ([trmnl-kindle](https://github.com/usetrmnl/larapaper/pull/27))
       * Nook ([trmnl-nook](https://github.com/usetrmnl/trmnl-nook))
       * Kobo ([trmnl-kobo](https://github.com/usetrmnl/trmnl-kobo))
     * Android Devices with [trmnl-android](https://github.com/usetrmnl/trmnl-android)
@@ -61,7 +61,7 @@ Docker Compose file located at: [docker/prod/docker-compose.yml](docker/prod/doc
 
 ##### Backup Database
 ```sh
-docker ps #find container id of byos_laravel container
+docker ps #find container id of larapaper container
 docker cp {{CONTAINER_ID}}:/var/www/html/database/storage/database.sqlite database_backup.sqlite
 ```
 
@@ -73,11 +73,11 @@ docker compose up -d
 ```
 
 #### VPS
-If you’re using a VPS (e.g., Hetzner) and prefer an alternative to native Docker, you can install Dokploy and deploy BYOS Laravel using the integrated [Template](https://templates.dokploy.com/?q=trmnl+byos+laravel).
+If you’re using a VPS (e.g., Hetzner) and prefer an alternative to native Docker, you can install Dokploy and deploy LaraPaper using the integrated [Template](https://templates.dokploy.com/?q=trmnl+byos+laravel).
 It’s a quick way to get started without having to manually manage Docker setup.
 
 #### PikaPods
-You can vote for TRMNL BYOS Laravel to be included as PikaPods Template here: [feedback.pikapods.com](https://feedback.pikapods.com/posts/842/add-app-trmnl-byos-laravel)
+You can vote for LaraPaper to be included as PikaPods Template here: [feedback.pikapods.com](https://feedback.pikapods.com/posts/842/add-app-trmnl-byos-laravel)
 
 #### Umbrel
 Umbrel is supported through a community store, [see](http://github.com/bnussbau/umbrel-store).
@@ -173,13 +173,13 @@ See this YouTube guide: [https://www.youtube.com/watch?v=3xehPW-PCOM](https://ww
 ### ☁️ Activate fresh TRMNL Device with Cloud Proxy
 
 1) Setup the TRMNL as in the official docs with the cloud service (connect one of the plugins to later verify it works)
-2) Setup Laravel BYOS, create a user and login
-3) In Laravel BYOS in the header bar, activate the toggle "Permit Auto-Join"
+2) Setup LaraPaper, create a user and login
+3) In LaraPaper in the header bar, activate the toggle "Permit Auto-Join"
 4) Press and hold the button on the back of your TRMNL for 5 seconds to reactivate the captive portal (or reflash).
-5) Go through the setup process again, in the screen where you provide the Wi-Fi credentials there is also option to set the Server URL. Use the local address of your Laravel BYOS
+5) Go through the setup process again, in the screen where you provide the Wi-Fi credentials there is also option to set the Server URL. Use the local address of LaraPaper.
 6) The device should automatically appear in the device list; you can deactivate the "Permit Auto-Join" toggle again.
 7) In the devices list, activate the toggle "☁️ Proxy" for your device. (Make sure that the queue worker is active. In the docker image it should be running automatically.)
-8) As long as no Laravel BYOS plugin is scheduled, the device will show your cloud plugins.
+8) As long as no LaraPaper plugin is scheduled, the device will show your cloud plugins.
 
 ###### Troubleshooting
 

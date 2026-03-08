@@ -25,6 +25,6 @@
                 <x-trmnl::title>Sleep Mode</x-trmnl::title>
             </x-trmnl::richtext>
         </x-trmnl::layout>
-        <x-trmnl::title-bar title="byos_laravel"/>
+        <x-trmnl::title-bar title="LaraPaper"/>
     </x-trmnl::view>
 </x-trmnl::screen>

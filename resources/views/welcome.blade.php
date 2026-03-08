@@ -1,6 +1,6 @@
 <x-layouts::auth.card>
     <div class="flex flex-col gap-6">
-        <x-auth-header title="TRMNL BYOS Laravel" description="Server is up and running."/>
+        <x-auth-header title="LaraPaper" description="Server is up and running."/>
     </div>
     <header class="w-full lg:max-w-4xl max-w-[335px] text-sm mt-6 not-has-[nav]:hidden">
         @if (Route::has('login'))
@@ -33,7 +33,7 @@
     </header>
     @auth
         @if(config('app.version'))
-            <flux:text class="text-xs">Version: <a href="https://github.com/usetrmnl/byos_laravel/releases/tag/{{ config('app.version') }}"
+            <flux:text class="text-xs">Version: <a href="https://github.com/{{ config('app.github_repo') }}/releases/tag/{{ config('app.version') }}"
                                                    target="_blank">{{ config('app.version') }}</a>
             </flux:text>
         @endif
