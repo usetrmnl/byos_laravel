@@ -575,10 +575,45 @@ class Plugin extends Model
                     $renderedContent = $template->render($liquidContext);
                 }
             } else {
+                // Get timezone from user or fall back to app timezone
+                $timezone = $this->user->timezone ?? config('app.timezone');
+
+                // Calculate UTC offset in seconds
+                $utcOffset = (string) Carbon::now($timezone)->getOffset();
+
                 $renderedContent = Blade::render($markup, [
                     'size' => $size,
                     'data' => $this->data_payload,
                     'config' => $this->configuration ?? [],
+                    'trmnl' => [
+                        'system' => [
+                            'timestamp_utc' => now()->utc()->timestamp,
+                        ],
+                        'user' => [
+                            'utc_offset' => $utcOffset,
+                            'name' => $this->user->name ?? 'Unknown User',
+                            'locale' => 'en',
+                            'time_zone_iana' => $timezone,
+                        ],
+                        'device' => [
+                            'friendly_id' => $device?->friendly_id,
+                            'percent_charged' => $device?->battery_percent,
+                            'wifi_strength' => $device?->wifi_strength,
+                            'height' => $device?->height,
+                            'width' => $device?->width,
+                        ],
+                        'plugin_settings' => [
+                            'instance_name' => $this->name,
+                            'strategy' => $this->data_strategy,
+                            'dark_mode' => $this->dark_mode ? 'yes' : 'no',
+                            'no_screen_padding' => $this->no_bleed ? 'yes' : 'no',
+                            'polling_headers' => $this->polling_header,
+                            'polling_url' => $this->polling_url,
+                            'custom_fields_values' => [
+                                ...(is_array($this->configuration) ? $this->configuration : []),
+                            ],
+                        ],
+                    ],
                 ]);
             }
 
