@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             $device = Device::factory()->create([
                 'mac_address' => '00:00:00:00:00:00',
                 'api_key' => 'test-api-key',
-                'provisioned' => false,
+                'proxy_cloud' => false,
             ]);
 
             Playlist::factory()->create([
