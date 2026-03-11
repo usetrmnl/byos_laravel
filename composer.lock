@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a1b56974da6a4f33fe847dba0549a6e0",
+    "content-hash": "c13d003eb08beac106e67bfbeff85dd9",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3926,32 +3926,32 @@
         },
         {
             "name": "om/icalparser",
-            "version": "v3.2.1",
+            "version": "v4.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/OzzyCzech/icalparser.git",
-                "reference": "bc7a82b12455ae9b62ce8e7f2d0273e86c931ecc"
+                "reference": "3e60e2edf0bdfed6c81b69dccf0b7f2852cd87a6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/OzzyCzech/icalparser/zipball/bc7a82b12455ae9b62ce8e7f2d0273e86c931ecc",
-                "reference": "bc7a82b12455ae9b62ce8e7f2d0273e86c931ecc",
+                "url": "https://api.github.com/repos/OzzyCzech/icalparser/zipball/3e60e2edf0bdfed6c81b69dccf0b7f2852cd87a6",
+                "reference": "3e60e2edf0bdfed6c81b69dccf0b7f2852cd87a6",
                 "shasum": ""
             },
             "require": {
-                "php": ">=8.1.0"
+                "php": "^8.4"
             },
             "require-dev": {
-                "nette/tester": "^2.5.7"
+                "nette/tester": "^2.6.0"
             },
             "suggest": {
                 "ext-dom": "for timezone tool"
             },
             "type": "library",
             "autoload": {
-                "classmap": [
-                    "src/"
-                ]
+                "psr-4": {
+                    "om\\": "src/"
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
@@ -3971,9 +3971,9 @@
             ],
             "support": {
                 "issues": "https://github.com/OzzyCzech/icalparser/issues",
-                "source": "https://github.com/OzzyCzech/icalparser/tree/v3.2.1"
+                "source": "https://github.com/OzzyCzech/icalparser/tree/v4.0.0"
             },
-            "time": "2025-12-15T06:25:09+00:00"
+            "time": "2026-01-29T16:45:33+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
@@ -12123,7 +12123,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.2",
+        "php": "^8.4",
         "ext-imagick": "*",
         "ext-simplexml": "*",
         "ext-zip": "*"
