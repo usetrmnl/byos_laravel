@@ -264,7 +264,7 @@ new class extends Component
 {{--                            <li><flux:text><code>date: "%N"</code> is unsupported. Use <code>date: "u"</code> instead </flux:text></li>--}}
 {{--                        </ul>--}}
                     </ul>
-                    <flux:text class="mt-1">Please report <a href="https://github.com/usetrmnl/byos_laravel/issues/new" target="_blank" class="underline">issues on GitHub</a>. Include your example zip file.</flux:text></li>
+                    <flux:text class="mt-1">Please report <a href="https://github.com/usetrmnl/larapaper/issues/new" target="_blank" class="underline">issues on GitHub</a>. Include your example zip file.</flux:text></li>
                 </div>
 
                 <form wire:submit="importZip">
@@ -315,7 +315,7 @@ new class extends Component
                             <li><flux:text>API responses in formats other than <span class="font-mono">JSON</span> are not yet fully supported.</flux:text></li>
                             <li><flux:text>There are limitations in payload size (Data Payload, Template).</flux:text></li>
                         </ul>
-                        <flux:text class="mt-1">Please report issues, aside from the known limitations, on <a href="https://github.com/usetrmnl/byos_laravel/issues/new" target="_blank" class="underline">GitHub</a>. Include the recipe URL.</flux:text></li>
+                        <flux:text class="mt-1">Please report issues, aside from the known limitations, on <a href="https://github.com/usetrmnl/larapaper/issues/new" target="_blank" class="underline">GitHub</a>. Include the recipe URL.</flux:text></li>
                     </flux:callout>
                 </div>
                 <livewire:catalog.trmnl />

@@ -12,8 +12,10 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 final class FetchDeviceModelsJob implements ShouldQueue
 {
@@ -209,10 +211,39 @@ final class FetchDeviceModelsJob implements ShouldQueue
             $attributes['palette_id'] = $firstPaletteId;
         }
 
+        $attributes['css_name'] = $this->parseCssNameFromApi($modelData['css'] ?? null);
+        $attributes['css_variables'] = $this->parseCssVariablesFromApi($modelData['css'] ?? null);
+
         DeviceModel::updateOrCreate(
             ['name' => $name],
             $attributes
         );
+    }
+
+    /**
+     * Extract css_name from API css payload (strip "screen--" prefix from classes.device).
+     */
+    private function parseCssNameFromApi(mixed $css): ?string
+    {
+        $deviceClass = is_array($css) ? Arr::get($css, 'classes.device') : null;
+
+        return (is_string($deviceClass) ? Str::after($deviceClass, 'screen--') : null) ?: null;
+    }
+
+    /**
+     * Extract css_variables from API css payload (convert [[key, value], ...] to associative array).
+     */
+    private function parseCssVariablesFromApi(mixed $css): ?array
+    {
+        $pairs = is_array($css) ? Arr::get($css, 'variables', []) : [];
+        if (! is_array($pairs)) {
+            return null;
+        }
+
+        $validPairs = Arr::where($pairs, fn (mixed $pair): bool => is_array($pair) && isset($pair[0], $pair[1]));
+        $variables = Arr::pluck($validPairs, 1, 0);
+
+        return $variables !== [] ? $variables : null;
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Models\DeviceModel;
 use App\Services\ImageGenerationService;
 use Bnussbau\TrmnlPipeline\TrmnlPipeline;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -20,6 +21,10 @@ beforeEach(function (): void {
 
 afterEach(function (): void {
     TrmnlPipeline::restore();
+});
+
+it('plugins table has current_image_metadata column', function (): void {
+    expect(Schema::hasColumn('plugins', 'current_image_metadata'))->toBeTrue();
 });
 
 it('generates image for device without device model', function (): void {
@@ -270,39 +275,15 @@ it('cleanupFolder preserves .gitignore', function (): void {
     Storage::disk('public')->assertExists('/images/generated/.gitignore');
 });
 
-it('resetIfNotCacheable resets when device models exist', function (): void {
-    // Create a plugin
-    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid']);
+it('resetIfNotCacheable does not reset recipe cache based on other devices', function (): void {
+    // Cache validity is now determined at use-time via current_image_metadata
+    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid', 'plugin_type' => 'recipe']);
 
-    // Create a device with DeviceModel (should trigger cache reset)
-    Device::factory()->create([
-        'device_model_id' => DeviceModel::factory()->create()->id,
-    ]);
-
-    // Run reset check
+    Device::factory()->create(['device_model_id' => DeviceModel::factory()->create()->id]);
     ImageGenerationService::resetIfNotCacheable($plugin);
 
-    // Assert plugin image was reset
     $plugin->refresh();
-    expect($plugin->current_image)->toBeNull();
-});
-
-it('resetIfNotCacheable resets when custom dimensions exist', function (): void {
-    // Create a plugin
-    $plugin = App\Models\Plugin::factory()->create(['current_image' => 'test-uuid']);
-
-    // Create a device with custom dimensions (should trigger cache reset)
-    Device::factory()->create([
-        'width' => 1024, // Different from default 800
-        'height' => 768, // Different from default 480
-    ]);
-
-    // Run reset check
-    ImageGenerationService::resetIfNotCacheable($plugin);
-
-    // Assert plugin image was reset
-    $plugin->refresh();
-    expect($plugin->current_image)->toBeNull();
+    expect($plugin->current_image)->toBe('test-uuid');
 });
 
 it('resetIfNotCacheable preserves image for standard devices', function (): void {
@@ -325,27 +306,122 @@ it('resetIfNotCacheable preserves image for standard devices', function (): void
 });
 
 it('cache is reset when plugin markup changes', function (): void {
-    // Create a plugin with cached image
+    // Create a plugin with cached image and metadata
     $plugin = App\Models\Plugin::factory()->create([
         'current_image' => 'cached-uuid',
+        'current_image_metadata' => ['width' => 800, 'height' => 480, 'rotation' => 0, 'palette_id' => null, 'mime_type' => 'image/png'],
         'render_markup' => '<div>Original markup</div>',
     ]);
 
-    // Create devices with standard dimensions (cacheable)
-    Device::factory()->count(2)->create([
-        'width' => 800,
-        'height' => 480,
-        'rotate' => 0,
-    ]);
+    $plugin->update(['render_markup' => '<div>Updated markup</div>']);
 
-    // Update the plugin markup
-    $plugin->update([
-        'render_markup' => '<div>Updated markup</div>',
-    ]);
-
-    // Assert cache was reset when markup changed
     $plugin->refresh();
     expect($plugin->current_image)->toBeNull();
+    expect($plugin->current_image_metadata)->toBeNull();
+});
+
+it('buildImageMetadataFromDevice returns canonical metadata shape', function (): void {
+    $deviceModel = DeviceModel::factory()->create([
+        'width' => 800,
+        'height' => 480,
+        'rotation' => 0,
+        'mime_type' => 'image/png',
+        'palette_id' => null,
+    ]);
+    $device = Device::factory()->create(['device_model_id' => $deviceModel->id]);
+
+    $meta = ImageGenerationService::buildImageMetadataFromDevice($device);
+
+    expect($meta)->toHaveKeys(['width', 'height', 'rotation', 'palette_id', 'mime_type']);
+    expect($meta['width'])->toBe(800);
+    expect($meta['height'])->toBe(480);
+    expect($meta['rotation'])->toBe(0);
+    expect($meta['mime_type'])->toBe('image/png');
+});
+
+it('buildImageMetadataFromDeviceModel returns canonical metadata shape', function (): void {
+    $model = DeviceModel::factory()->create([
+        'width' => 1024,
+        'height' => 768,
+        'rotation' => 90,
+        'mime_type' => 'image/bmp',
+        'palette_id' => null,
+    ]);
+
+    $meta = ImageGenerationService::buildImageMetadataFromDeviceModel($model);
+
+    expect($meta)->toHaveKeys(['width', 'height', 'rotation', 'palette_id', 'mime_type']);
+    expect($meta['width'])->toBe(1024);
+    expect($meta['height'])->toBe(768);
+    expect($meta['rotation'])->toBe(90);
+    expect($meta['mime_type'])->toBe('image/bmp');
+});
+
+it('imageMetadataMatches returns false when stored is null or empty', function (): void {
+    $device = Device::factory()->create(['width' => 800, 'height' => 480, 'rotate' => 0]);
+
+    expect(ImageGenerationService::imageMetadataMatches(null, $device))->toBeFalse();
+    expect(ImageGenerationService::imageMetadataMatches([], $device))->toBeFalse();
+});
+
+it('imageMetadataMatches returns true when metadata matches device', function (): void {
+    $deviceModel = DeviceModel::factory()->create([
+        'width' => 800,
+        'height' => 480,
+        'rotation' => 0,
+        'mime_type' => 'image/png',
+        'palette_id' => null,
+    ]);
+    $device = Device::factory()->create(['device_model_id' => $deviceModel->id]);
+    $stored = ImageGenerationService::buildImageMetadataFromDevice($device);
+
+    expect(ImageGenerationService::imageMetadataMatches($stored, $device))->toBeTrue();
+});
+
+it('imageMetadataMatches returns false when metadata differs', function (): void {
+    $device = Device::factory()->create(['width' => 800, 'height' => 480, 'rotate' => 0]);
+    $stored = ['width' => 800, 'height' => 480, 'rotation' => 0, 'palette_id' => null, 'mime_type' => 'image/png'];
+
+    $device->update(['width' => 1024]);
+    $device->refresh();
+
+    expect(ImageGenerationService::imageMetadataMatches($stored, $device))->toBeFalse();
+});
+
+it('resetIfNotCacheable clears recipe cache when metadata does not match', function (): void {
+    $plugin = App\Models\Plugin::factory()->create([
+        'plugin_type' => 'recipe',
+        'current_image' => 'cached-uuid',
+        'current_image_metadata' => ['width' => 800, 'height' => 480, 'rotation' => 0, 'palette_id' => null, 'mime_type' => 'image/png'],
+    ]);
+    $device = Device::factory()->create(['width' => 1024, 'height' => 768, 'rotate' => 0]);
+
+    ImageGenerationService::resetIfNotCacheable($plugin, $device);
+
+    $plugin->refresh();
+    expect($plugin->current_image)->toBeNull();
+    expect($plugin->current_image_metadata)->toBeNull();
+});
+
+it('resetIfNotCacheable preserves cache when metadata matches', function (): void {
+    $deviceModel = DeviceModel::factory()->create([
+        'width' => 800,
+        'height' => 480,
+        'rotation' => 0,
+        'mime_type' => 'image/png',
+    ]);
+    $device = Device::factory()->create(['device_model_id' => $deviceModel->id]);
+    $meta = ImageGenerationService::buildImageMetadataFromDevice($device);
+    $plugin = App\Models\Plugin::factory()->create([
+        'plugin_type' => 'recipe',
+        'current_image' => 'cached-uuid',
+        'current_image_metadata' => $meta,
+    ]);
+
+    ImageGenerationService::resetIfNotCacheable($plugin, $device);
+
+    $plugin->refresh();
+    expect($plugin->current_image)->toBe('cached-uuid');
 });
 
 it('determines correct image format from device model', function (): void {

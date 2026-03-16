@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Device;
+use App\Models\Playlist;
 use App\Models\Plugin;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -23,9 +24,19 @@ class DatabaseSeeder extends Seeder
                 'password' => bcrypt('admin@example.com'),
             ]);
 
-            Device::factory(1)->create([
+            $device = Device::factory()->create([
                 'mac_address' => '00:00:00:00:00:00',
                 'api_key' => 'test-api-key',
+                'proxy_cloud' => false,
+            ]);
+
+            Playlist::factory()->create([
+                'device_id' => $device->id,
+                'name' => 'Default',
+                'is_active' => true,
+                'active_from' => null,
+                'active_until' => null,
+                'weekdays' => null
             ]);
 
             // Device::factory(5)->create();

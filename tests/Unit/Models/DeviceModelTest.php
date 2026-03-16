@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\DeviceModel;
+use Illuminate\Support\Facades\Config;
 
 test('device model has required attributes', function (): void {
     $deviceModel = DeviceModel::factory()->create([
@@ -116,4 +117,28 @@ test('device model factory creates valid data', function (): void {
     expect($deviceModel->rotation)->toBeInt();
     expect($deviceModel->offset_x)->toBeInt();
     expect($deviceModel->offset_y)->toBeInt();
+});
+
+test('css_name returns og when puppeteer_window_size_strategy is v1', function (): void {
+    Config::set('app.puppeteer_window_size_strategy', 'v1');
+
+    $deviceModel = DeviceModel::factory()->create(['css_name' => 'my_device']);
+
+    expect($deviceModel->css_name)->toBe('og');
+});
+
+test('css_name returns db value when puppeteer_window_size_strategy is v2', function (): void {
+    Config::set('app.puppeteer_window_size_strategy', 'v2');
+
+    $deviceModel = DeviceModel::factory()->create(['css_name' => 'my_device']);
+
+    expect($deviceModel->css_name)->toBe('my_device');
+});
+
+test('css_name returns null when puppeteer_window_size_strategy is v2 and db value is null', function (): void {
+    Config::set('app.puppeteer_window_size_strategy', 'v2');
+
+    $deviceModel = DeviceModel::factory()->create(['css_name' => null]);
+
+    expect($deviceModel->css_name)->toBeNull();
 });

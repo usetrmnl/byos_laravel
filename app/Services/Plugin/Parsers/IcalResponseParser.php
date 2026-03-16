@@ -25,7 +25,12 @@ class IcalResponseParser implements ResponseParser
         }
 
         try {
-            $this->parser->parseString($body);
+            // Workaround for om/icalparser v4.0.0 bug where it fails if ORGANIZER or ATTENDEE has no parameters.
+            // When ORGANIZER or ATTENDEE has no parameters (no semicolon after the key),
+            // IcalParser::parseRow returns an empty string for $middle instead of an array,
+            // which causes a type error in a foreach loop in IcalParser::parseString.
+            $normalizedBody = preg_replace('/^(ORGANIZER|ATTENDEE):/m', '$1;CN=Unknown:', $body);
+            $this->parser->parseString($normalizedBody);
 
             $events = $this->parser->getEvents()->sorted()->getArrayCopy();
             $windowStart = now()->subDays(7);

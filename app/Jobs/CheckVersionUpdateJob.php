@@ -156,7 +156,7 @@ class CheckVersionUpdateJob
 
     private function extractLatestVersion(array $response, bool $enablePrereleases): array
     {
-        if (! $enablePrereleases || ! is_array($response) || ! isset($response[0])) {
+        if (! $enablePrereleases || ! isset($response[0])) {
             return [
                 Arr::get($response, 'tag_name'),
                 $response,

@@ -1,9 +1,10 @@
 services:
     app:
-        image: ghcr.io/usetrmnl/byos_laravel:latest
+        image: ghcr.io/usetrmnl/larapaper:latest
         ports:
             - "4567:8080"
         environment:
+            # Generate the APP_KEY with `echo "base64:$(openssl rand -base64 32)"`
             #- APP_KEY=
             - PHP_OPCACHE_ENABLE=1
             - TRMNL_PROXY_REFRESH_MINUTES=15

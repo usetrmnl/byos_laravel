@@ -49,6 +49,7 @@ class Plugin extends Model
         'preferred_renderer' => 'string',
         'plugin_type' => 'string',
         'alias' => 'boolean',
+        'current_image_metadata' => 'array',
     ];
 
     protected static function boot()
@@ -71,6 +72,7 @@ class Plugin extends Model
                 'render_markup_shared',
             ])) {
                 $model->current_image = null;
+                $model->current_image_metadata = null;
             }
         });
 
@@ -222,7 +224,7 @@ class Plugin extends Model
         if ($this->data_strategy !== 'polling' || ! $this->polling_url) {
             return;
         }
-        $headers = ['User-Agent' => 'usetrmnl/byos_laravel', 'Accept' => 'application/json'];
+        $headers = ['User-Agent' => 'usetrmnl/larapaper', 'Accept' => 'application/json'];
 
         // resolve headers
         if ($this->polling_header) {
@@ -573,10 +575,45 @@ class Plugin extends Model
                     $renderedContent = $template->render($liquidContext);
                 }
             } else {
+                // Get timezone from user or fall back to app timezone
+                $timezone = $this->user->timezone ?? config('app.timezone');
+
+                // Calculate UTC offset in seconds
+                $utcOffset = (string) Carbon::now($timezone)->getOffset();
+
                 $renderedContent = Blade::render($markup, [
                     'size' => $size,
                     'data' => $this->data_payload,
                     'config' => $this->configuration ?? [],
+                    'trmnl' => [
+                        'system' => [
+                            'timestamp_utc' => now()->utc()->timestamp,
+                        ],
+                        'user' => [
+                            'utc_offset' => $utcOffset,
+                            'name' => $this->user->name ?? 'Unknown User',
+                            'locale' => 'en',
+                            'time_zone_iana' => $timezone,
+                        ],
+                        'device' => [
+                            'friendly_id' => $device?->friendly_id,
+                            'percent_charged' => $device?->battery_percent,
+                            'wifi_strength' => $device?->wifi_strength,
+                            'height' => $device?->height,
+                            'width' => $device?->width,
+                        ],
+                        'plugin_settings' => [
+                            'instance_name' => $this->name,
+                            'strategy' => $this->data_strategy,
+                            'dark_mode' => $this->dark_mode ? 'yes' : 'no',
+                            'no_screen_padding' => $this->no_bleed ? 'yes' : 'no',
+                            'polling_headers' => $this->polling_header,
+                            'polling_url' => $this->polling_url,
+                            'custom_fields_values' => [
+                                ...(is_array($this->configuration) ? $this->configuration : []),
+                            ],
+                        ],
+                    ],
                 ]);
             }
 
@@ -584,10 +621,11 @@ class Plugin extends Model
                 if ($size === 'full') {
                     return view('trmnl-layouts.single', [
                         'colorDepth' => $device?->colorDepth(),
-                        'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                        'deviceVariant' => $device?->deviceModel?->css_name ?? $device?->deviceVariant() ?? 'og',
                         'noBleed' => $this->no_bleed,
                         'darkMode' => $this->dark_mode,
                         'scaleLevel' => $device?->scaleLevel(),
+                        'cssVariables' => $device?->deviceModel?->css_variables,
                         'slot' => $renderedContent,
                     ])->render();
                 }
@@ -595,9 +633,10 @@ class Plugin extends Model
                 return view('trmnl-layouts.mashup', [
                     'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
                     'colorDepth' => $device?->colorDepth(),
-                    'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                    'deviceVariant' => $device?->deviceModel?->css_name ?? $device?->deviceVariant() ?? 'og',
                     'darkMode' => $this->dark_mode,
                     'scaleLevel' => $device?->scaleLevel(),
+                    'cssVariables' => $device?->deviceModel?->css_variables,
                     'slot' => $renderedContent,
                 ])->render();
 
@@ -617,10 +656,11 @@ class Plugin extends Model
                 if ($size === 'full') {
                     return view('trmnl-layouts.single', [
                         'colorDepth' => $device?->colorDepth(),
-                        'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                        'deviceVariant' => $device?->deviceModel?->css_name ?? $device?->deviceVariant() ?? 'og',
                         'noBleed' => $this->no_bleed,
                         'darkMode' => $this->dark_mode,
                         'scaleLevel' => $device?->scaleLevel(),
+                        'cssVariables' => $device?->deviceModel?->css_variables,
                         'slot' => $renderedView,
                     ])->render();
                 }
@@ -628,9 +668,10 @@ class Plugin extends Model
                 return view('trmnl-layouts.mashup', [
                     'mashupLayout' => $this->getPreviewMashupLayoutForSize($size),
                     'colorDepth' => $device?->colorDepth(),
-                    'deviceVariant' => $device?->deviceVariant() ?? 'og',
+                    'deviceVariant' => $device?->deviceModel?->css_name ?? $device?->deviceVariant() ?? 'og',
                     'darkMode' => $this->dark_mode,
                     'scaleLevel' => $device?->scaleLevel(),
+                    'cssVariables' => $device?->deviceModel?->css_variables,
                     'slot' => $renderedView,
                 ])->render();
             }
@@ -734,8 +775,8 @@ class Plugin extends Model
             }
         }
 
-        // Append " (Copy)" to the name
-        $attributes['name'] = $this->name.' (Copy)';
+        // Append "_copy" to the name
+        $attributes['name'] = $this->name.'_copy';
 
         // Set user_id - use provided userId or fall back to original plugin's user_id
         $attributes['user_id'] = $userId ?? $this->user_id;
