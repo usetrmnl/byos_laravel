@@ -1,3 +1,9 @@
+---
+title: Local Development
+navigation:
+  label: Local Development
+---
+
 ## Local Development
 
 #### Requirements

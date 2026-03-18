@@ -1,0 +1,36 @@
+name: Docs (GitHub Pages)
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "github-pages-docs"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and deploy Hyde docs
+        id: hyde
+        uses: hydephp/action@v2.0.0
+        with:
+          deploy-to: "pages"
+          directory: "docs"
+          env: |
+            SITE_NAME=LaraPaper
+            SITE_URL=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
