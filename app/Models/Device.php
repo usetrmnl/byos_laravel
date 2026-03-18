@@ -231,6 +231,30 @@ class Device extends Model
         return $this->hasMany(DeviceLog::class);
     }
 
+    public function sensors(): HasMany
+    {
+        return $this->hasMany(DeviceSensor::class);
+    }
+
+    /**
+     * Build a simple context array for sensor data, suitable for Blade and Liquid.
+     *
+     * @return array{
+     *     latest: array<string, array<string, mixed>>,
+     *     all: array<int, array<string, mixed>>
+     * }
+     */
+    public function sensorContext(): array
+    {
+        /** @var \App\Services\DeviceSensorService $service */
+        $service = app(\App\Services\DeviceSensorService::class);
+
+        return [
+            'latest' => $service->latestPerKind($this),
+            'all' => $service->recentHistory($this),
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -527,6 +527,7 @@ class Plugin extends Model
                             'height' => $device?->height,
                             'width' => $device?->width,
                         ],
+                        'sensors' => $device ? $device->sensorContext() : ['latest' => [], 'all' => []],
                         'plugin_settings' => [
                             'instance_name' => $this->name,
                             'strategy' => $this->data_strategy,
@@ -602,6 +603,7 @@ class Plugin extends Model
                             'height' => $device?->height,
                             'width' => $device?->width,
                         ],
+                        'sensors' => $device ? $device->sensorContext() : ['latest' => [], 'all' => []],
                         'plugin_settings' => [
                             'instance_name' => $this->name,
                             'strategy' => $this->data_strategy,

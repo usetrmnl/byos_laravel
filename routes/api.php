@@ -6,6 +6,7 @@ use App\Models\DeviceLog;
 use App\Models\DeviceModel;
 use App\Models\Plugin;
 use App\Models\User;
+use App\Services\DeviceSensorService;
 use App\Services\ImageGenerationService;
 use App\Services\PluginImportService;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-Route::get('/display', function (Request $request) {
+Route::get('/display', function (Request $request, DeviceSensorService $sensorService) {
     $mac_address = $request->header('id');
     $access_token = $request->header('access-token');
     $device = Device::where('api_key', $access_token)->first();
@@ -56,6 +57,18 @@ Route::get('/display', function (Request $request) {
         $device->update([
             'last_battery_voltage' => $batteryVoltage,
         ]);
+    }
+
+    $sensorHeader = $request->server('HTTP_SENSORS') ?? $request->header('http_sensors');
+    if ($sensorHeader) {
+        try {
+            $sensorService->ingestFromHeader($device, $sensorHeader);
+        } catch (Exception $e) {
+            Log::warning('Failed to ingest device sensor header', [
+                'device_id' => $device->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     if ($device->isPauseActive()) {
