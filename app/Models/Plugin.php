@@ -80,6 +80,12 @@ class Plugin extends Model
         static::saving(function ($model): void {
             $model->sanitizeTemplate();
         });
+
+        static::deleting(function (Plugin $model): void {
+            PlaylistItem::query()
+                ->whereJsonContains('mashup->plugin_ids', $model->id)
+                ->delete();
+        });
     }
 
     public const CUSTOM_FIELDS_KEY = 'custom_fields';

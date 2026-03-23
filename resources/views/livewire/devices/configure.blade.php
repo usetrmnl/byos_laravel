@@ -769,12 +769,12 @@ new class extends Component
                                                     <div class="font-medium">{{ $item->getMashupName() }}</div>
                                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">
                                                         <flux:icon name="mashup-{{ $item->getMashupLayoutType() }}" class="inline-block pb-1" variant="mini" />
-                                                        {{ collect($item->getMashupPluginIds())->map(fn($id) => App\Models\Plugin::find($id)->name)->join(' | ') }}
+                                                        {{ collect($item->getMashupPluginIds())->map(fn($id) => App\Models\Plugin::find($id)?->name ?? 'Missing plugin')->join(' | ') }}
                                                     </div>
                                                 </div>
                                             </div>
                                         @else
-                                            <div class="font-medium">{{ $item->plugin->name }}</div>
+                                            <div class="font-medium">{{ $item->plugin?->name ?? 'Missing plugin' }}</div>
                                         @endif
                                     </td>
                                     <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
@@ -799,7 +799,7 @@ new class extends Component
 
                                         <flux:modal name="delete-playlist-item-{{ $item->id }}" class="min-w-[22rem] space-y-6">
                                             <div>
-                                                <flux:heading size="lg">Delete {{ $item->plugin->name }}?</flux:heading>
+                                                <flux:heading size="lg">Delete {{ $item->plugin?->name ?? 'missing item' }}?</flux:heading>
                                                 <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">This will remove this item from the playlist.</p>
                                             </div>
 

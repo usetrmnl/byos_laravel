@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Playlist;
+use App\Models\PlaylistItem;
 use App\Models\Plugin;
 use App\Models\User;
 use Carbon\Carbon;
@@ -82,7 +84,7 @@ test('updateDataPayload sends POST request with body with correct content type w
         'polling_url' => 'https://example.com/api',
         'polling_verb' => 'post',
         'polling_body' => '<query><user id="123" name="John Doe"/></query>',
-        'polling_header' => 'Content-Type: text/xml'
+        'polling_header' => 'Content-Type: text/xml',
     ]);
 
     $plugin->updateDataPayload();
@@ -978,4 +980,35 @@ test('plugin duplicate falls back to original user_id when no user_id provided',
     $duplicate = $original->duplicate();
 
     expect($duplicate->user_id)->toBe($original->user_id);
+});
+
+test('deleting plugin cascades direct playlist items', function (): void {
+    $plugin = Plugin::factory()->create();
+    $playlistItem = PlaylistItem::factory()->create([
+        'plugin_id' => $plugin->id,
+    ]);
+
+    $plugin->delete();
+
+    expect(PlaylistItem::query()->find($playlistItem->id))->toBeNull();
+});
+
+test('deleting plugin cascades mashup playlist items containing plugin id', function (): void {
+    $playlist = Playlist::factory()->create();
+    $mainPlugin = Plugin::factory()->create();
+    $secondaryPlugin = Plugin::factory()->create();
+
+    $mashupItem = PlaylistItem::factory()->create([
+        'playlist_id' => $playlist->id,
+        'plugin_id' => $mainPlugin->id,
+        'mashup' => [
+            'mashup_layout' => '1Lx1R',
+            'mashup_name' => 'Cascade Test Mashup',
+            'plugin_ids' => [$mainPlugin->id, $secondaryPlugin->id],
+        ],
+    ]);
+
+    $secondaryPlugin->delete();
+
+    expect(PlaylistItem::query()->find($mashupItem->id))->toBeNull();
 });
