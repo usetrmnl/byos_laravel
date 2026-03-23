@@ -213,12 +213,12 @@ new class extends Component
                                                                     <div class="font-medium">{{ $item->getMashupName() }}</div>
                                                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">
                                                                         <flux:icon name="mashup-{{ $item->getMashupLayoutType() }}" class="inline-block pb-1" variant="mini" />
-                                                                        {{ collect($item->getMashupPluginIds())->map(fn($id) => App\Models\Plugin::find($id)->name)->join(' | ') }}
+                                                                        {{ collect($item->getMashupPluginIds())->map(fn($id) => App\Models\Plugin::find($id)?->name ?? '(deleted)')->join(' | ') }}
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         @else
-                                                            <div class="font-medium">{{ $item->plugin->name }}</div>
+                                                            <div class="font-medium">{{ $item->plugin?->name ?? '(deleted plugin)' }}</div>
                                                         @endif
                                                     </td>
                                                     <td class="py-3 px-3 first:pl-0 last:pr-0 text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-300">
@@ -247,7 +247,7 @@ new class extends Component
                                                                     @if($item->isMashup())
                                                                         Delete {{ $item->getMashupName() }}?
                                                                     @else
-                                                                        Delete {{ $item->plugin->name }}?
+                                                                        Delete {{ $item->plugin?->name ?? 'plugin' }}?
                                                                     @endif
                                                                 </flux:heading>
                                                                 <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
