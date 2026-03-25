@@ -9,6 +9,10 @@ use Livewire\Component;
 
 new class extends Component
 {
+    private const DEFAULT_SLEEP_MODE_FROM = '22:00';
+
+    private const DEFAULT_SLEEP_MODE_TO = '06:00';
+
     public $device;
 
     public $name;
@@ -105,9 +109,30 @@ new class extends Component
         $this->is_mirror = $device->mirror_device_id !== null;
         $this->mirror_device_id = $device->mirror_device_id;
 
+        $this->applyDefaultSleepModeTimes();
+
         return view('livewire.devices.configure', [
             'image' => ($current_image_uuid) ? url($current_image_path) : null,
         ]);
+    }
+
+    public function updatedSleepModeEnabled(bool $enabled): void
+    {
+        if (! $enabled) {
+            return;
+        }
+
+        $this->applyDefaultSleepModeTimes();
+    }
+
+    private function applyDefaultSleepModeTimes(): void
+    {
+        if (! $this->sleep_mode_enabled) {
+            return;
+        }
+
+        $this->sleep_mode_from ??= self::DEFAULT_SLEEP_MODE_FROM;
+        $this->sleep_mode_to ??= self::DEFAULT_SLEEP_MODE_TO;
     }
 
     public function deleteDevice(App\Models\Device $device)
@@ -154,9 +179,12 @@ new class extends Component
             'mirror_device_id' => 'required_if:is_mirror,true',
             'maximum_compatibility' => 'boolean',
             'sleep_mode_enabled' => 'boolean',
-            'sleep_mode_from' => 'nullable|date_format:H:i',
-            'sleep_mode_to' => 'nullable|date_format:H:i',
+            'sleep_mode_from' => 'nullable|required_if:sleep_mode_enabled,true|date_format:H:i',
+            'sleep_mode_to' => 'nullable|required_if:sleep_mode_enabled,true|date_format:H:i',
             'special_function' => 'nullable|string',
+        ], [
+            'sleep_mode_from.required_if' => 'A sleep mode start time is required when sleep mode is enabled.',
+            'sleep_mode_to.required_if' => 'A sleep mode end time is required when sleep mode is enabled.',
         ]);
 
         if ($this->is_mirror) {
@@ -493,8 +521,8 @@ new class extends Component
                         </div>
                         @if($sleep_mode_enabled)
                             <div class="flex gap-4 mb-4">
-                                <flux:input type="time" label="From" wire:model="sleep_mode_from"/>
-                                <flux:input type="time" label="To" wire:model="sleep_mode_to" />
+                                <flux:input type="time" label="From" wire:model.fill="sleep_mode_from"/>
+                                <flux:input type="time" label="To" wire:model.fill="sleep_mode_to" />
                             </div>
                         @endif
 
