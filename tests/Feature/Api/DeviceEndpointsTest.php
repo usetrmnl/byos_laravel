@@ -907,6 +907,25 @@ test('device not in sleep mode returns normal image', function (): void {
     Carbon\Carbon::setTestNow(); // Clear test time
 });
 
+test('display status update requires sleep mode times when sleep mode is enabled', function (): void {
+    $user = User::factory()->create();
+    $device = Device::factory()->create([
+        'user_id' => $user->id,
+        'sleep_mode_enabled' => false,
+    ]);
+
+    Sanctum::actingAs($user);
+
+    $response = $this->postJson('/api/display/status', [
+        'device_id' => $device->id,
+        'sleep_mode_enabled' => true,
+        'sleep_mode_to' => '06:00',
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['sleep_mode_from']);
+});
+
 test('device returns sleep.png and correct refresh time when paused', function (): void {
     $device = Device::factory()->create([
         'mac_address' => '00:11:22:33:44:55',

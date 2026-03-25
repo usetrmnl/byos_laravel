@@ -438,8 +438,8 @@ Route::post('/display/status', function (Request $request) {
         'name' => 'string|max:255',
         'default_refresh_interval' => 'integer|min:1',
         'sleep_mode_enabled' => 'boolean',
-        'sleep_mode_from' => 'nullable|date_format:H:i',
-        'sleep_mode_to' => 'nullable|date_format:H:i',
+        'sleep_mode_from' => 'nullable|required_if:sleep_mode_enabled,true|date_format:H:i',
+        'sleep_mode_to' => 'nullable|required_if:sleep_mode_enabled,true|date_format:H:i',
         'pause_until' => 'nullable|date|after:now',
     ]);
 

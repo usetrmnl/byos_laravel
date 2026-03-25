@@ -56,3 +56,47 @@ test('configure edit modal shows mirror checkbox and allows unchecking mirror', 
     $mirrorDevice->refresh();
     expect($mirrorDevice->mirror_device_id)->toBeNull();
 });
+
+test('configure update requires sleep mode times when sleep mode is enabled', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    $device = Device::factory()->create([
+        'user_id' => $user->id,
+        'width' => 800,
+        'height' => 480,
+        'rotate' => 0,
+        'image_format' => 'png',
+        'sleep_mode_enabled' => true,
+        'sleep_mode_from' => '22:00',
+        'sleep_mode_to' => '06:00',
+    ]);
+
+    Livewire::test('devices.configure', ['device' => $device])
+        ->set('sleep_mode_enabled', true)
+        ->set('sleep_mode_from', null)
+        ->set('sleep_mode_to', '06:00')
+        ->call('updateDevice')
+        ->assertHasErrors(['sleep_mode_from' => ['required_if']]);
+});
+
+test('enabling sleep mode applies default times when none are set', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    $device = Device::factory()->create([
+        'user_id' => $user->id,
+        'width' => 800,
+        'height' => 480,
+        'rotate' => 0,
+        'image_format' => 'png',
+        'sleep_mode_enabled' => false,
+        'sleep_mode_from' => null,
+        'sleep_mode_to' => null,
+    ]);
+
+    Livewire::test('devices.configure', ['device' => $device])
+        ->set('sleep_mode_enabled', true)
+        ->assertSet('sleep_mode_from', '22:00')
+        ->assertSet('sleep_mode_to', '06:00');
+});
