@@ -88,7 +88,7 @@ new class extends Component
         Flux::modal('create-device')->close();
 
         $this->devices = auth()->user()->devices;
-        session()->flash('message', 'Device created successfully.');
+        Flux::toast(variant: 'success', text: 'Device created successfully.');
     }
 
     public function toggleProxyCloud(Device $device): void
@@ -114,7 +114,7 @@ new class extends Component
         $this->reset('pause_duration');
         Flux::modal('pause-device-'.$deviceId)->close();
         $this->devices = auth()->user()->devices;
-        session()->flash('message', 'Device paused until '.$pauseUntil->format('H:i'));
+        Flux::toast(variant: 'success', text: 'Device paused until '.$pauseUntil->format('H:i'));
     }
 }
 
@@ -139,17 +139,6 @@ new class extends Component
                     <flux:button icon="plus" variant="primary">Add Device</flux:button>
                 </flux:modal.trigger>
             </div>
-            @if (session()->has('message'))
-                <div class="mb-4">
-                    <flux:callout variant="success" icon="check-circle" heading=" {{ session('message') }}">
-                        <x-slot name="controls">
-                            <flux:button icon="x-mark" variant="ghost"
-                                         x-on:click="$el.closest('[data-flux-callout]').remove()"/>
-                        </x-slot>
-                    </flux:callout>
-                </div>
-            @endif
-
             <flux:modal name="create-device" class="md:w-96">
                 <div class="space-y-6">
                     <div>

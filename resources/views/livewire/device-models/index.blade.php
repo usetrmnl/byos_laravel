@@ -77,7 +77,7 @@ new class extends Component
         FetchDeviceModelsJob::dispatchSync();
         $this->deviceModels = DeviceModel::all();
         $this->devicePalettes = DevicePalette::all();
-        session()->flash('message', 'Device models updated from API.');
+        Flux::toast(variant: 'success', text: 'Device models updated from API.');
     }
 
     public function openDeviceModelModal(?string $deviceModelId = null, bool $viewOnly = false): void
@@ -200,7 +200,7 @@ new class extends Component
         Flux::modal('device-model-modal')->close();
 
         $this->deviceModels = DeviceModel::all();
-        session()->flash('message', $message);
+        Flux::toast(variant: 'success', text: $message);
     }
 
     public function deleteDeviceModel(string $deviceModelId): void
@@ -209,7 +209,7 @@ new class extends Component
         $deviceModel->delete();
 
         $this->deviceModels = DeviceModel::all();
-        session()->flash('message', 'Device model deleted successfully.');
+        Flux::toast(variant: 'success', text: 'Device model deleted successfully.');
     }
 
     public function duplicateDeviceModel(string $deviceModelId): void
@@ -294,17 +294,6 @@ new class extends Component
                     </flux:dropdown>
                 </flux:button.group>
             </div>
-            @if (session()->has('message'))
-                <div class="mb-4">
-                    <flux:callout variant="success" icon="check-circle" heading=" {{ session('message') }}">
-                        <x-slot name="controls">
-                            <flux:button icon="x-mark" variant="ghost"
-                                         x-on:click="$el.closest('[data-flux-callout]').remove()"/>
-                        </x-slot>
-                    </flux:callout>
-                </div>
-            @endif
-
             <flux:modal name="device-model-modal" class="md:w-96">
                 <div class="space-y-6">
                     <div>
