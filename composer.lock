@@ -3981,16 +3981,16 @@
         },
         {
             "name": "om/icalparser",
-            "version": "v4.1.0",
+            "version": "v4.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/OzzyCzech/icalparser.git",
-                "reference": "899dd666de6efecc5587e1bfb1e8c16e902bf482"
+                "reference": "8c7bd202c52d9baf2f83c088ae090d3b9127b19e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/OzzyCzech/icalparser/zipball/899dd666de6efecc5587e1bfb1e8c16e902bf482",
-                "reference": "899dd666de6efecc5587e1bfb1e8c16e902bf482",
+                "url": "https://api.github.com/repos/OzzyCzech/icalparser/zipball/8c7bd202c52d9baf2f83c088ae090d3b9127b19e",
+                "reference": "8c7bd202c52d9baf2f83c088ae090d3b9127b19e",
                 "shasum": ""
             },
             "require": {
@@ -4026,9 +4026,9 @@
             ],
             "support": {
                 "issues": "https://github.com/OzzyCzech/icalparser/issues",
-                "source": "https://github.com/OzzyCzech/icalparser/tree/v4.1.0"
+                "source": "https://github.com/OzzyCzech/icalparser/tree/v4.1.1"
             },
-            "time": "2026-03-25T08:45:27+00:00"
+            "time": "2026-03-27T06:33:20+00:00"
         },
         {
             "name": "paragonie/constant_time_encoding",
