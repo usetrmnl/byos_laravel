@@ -175,3 +175,123 @@ test('playlist scheduling respects user timezone preference', function (): void 
     Carbon::setTestNow($berlinTime->utc());
     expect($playlist->isActiveNow())->toBeFalse();
 });
+
+/*
+|--------------------------------------------------------------------------
+| EU spring DST (Europe/Berlin) — sleep vs playlist scheduling
+|--------------------------------------------------------------------------
+|
+| Sleep windows use the device user’s IANA timezone (see `Device::isSleepModeActive()`), matching
+| `Playlist::isActiveNow()`.
+*/
+
+test('sleep mode ends by 07:00 Europe/Berlin local time before and after spring DST', function (): void {
+    $user = User::factory()->create(['timezone' => 'Europe/Berlin']);
+
+    $device = Device::factory()->create([
+        'user_id' => $user->id,
+        'sleep_mode_enabled' => true,
+        'sleep_mode_from' => '22:00',
+        'sleep_mode_to' => '07:00',
+    ]);
+
+    $dayPlaylist = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => 'Day',
+        'is_active' => true,
+        'active_from' => '07:00',
+        'active_until' => '22:00',
+        'weekdays' => null,
+    ]);
+
+    $plugin = Plugin::factory()->create(['name' => 'Day Plugin']);
+    PlaylistItem::factory()->create([
+        'playlist_id' => $dayPlaylist->id,
+        'plugin_id' => $plugin->id,
+        'order' => 1,
+        'is_active' => true,
+    ]);
+
+    $cases = [
+        'before spring DST (CET)' => Carbon::create(2026, 3, 28, 7, 0, 1, 'Europe/Berlin'),
+        'after spring DST (CEST)' => Carbon::create(2026, 3, 30, 7, 0, 1, 'Europe/Berlin'),
+    ];
+
+    foreach ($cases as $label => $berlinInstant) {
+        Carbon::setTestNow($berlinInstant->utc());
+
+        $device->refresh();
+        $dayPlaylist->refresh();
+
+        expect($berlinInstant->timezone('Europe/Berlin')->format('H:i'))
+            ->toBe('07:00')
+            ->and($dayPlaylist->isActiveNow())->toBeTrue("Day playlist should be active at 07:00 local ({$label})")
+            ->and($device->isSleepModeActive())->toBeFalse("Sleep should be off after 07:00 local ({$label})")
+            ->and($device->getSleepModeEndsInSeconds())->toBeNull("Sleep countdown should be cleared when not in sleep ({$label})");
+    }
+
+    Carbon::setTestNow();
+});
+
+test('at 12:01 Europe/Berlin the second playlist is active before and after spring DST', function (): void {
+    $user = User::factory()->create(['timezone' => 'Europe/Berlin']);
+
+    $device = Device::factory()->create(['user_id' => $user->id]);
+
+    $morningPlugin = Plugin::factory()->create(['name' => 'Morning']);
+    $afternoonPlugin = Plugin::factory()->create(['name' => 'Afternoon']);
+
+    $playlistMorning = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => '08:00–12:00',
+        'is_active' => true,
+        'active_from' => '08:00',
+        'active_until' => '12:00',
+        'weekdays' => null,
+    ]);
+
+    $playlistAfternoon = Playlist::factory()->create([
+        'device_id' => $device->id,
+        'name' => '12:01–16:00',
+        'is_active' => true,
+        'active_from' => '12:01',
+        'active_until' => '16:00',
+        'weekdays' => null,
+    ]);
+
+    PlaylistItem::factory()->create([
+        'playlist_id' => $playlistMorning->id,
+        'plugin_id' => $morningPlugin->id,
+        'order' => 1,
+        'is_active' => true,
+    ]);
+
+    PlaylistItem::factory()->create([
+        'playlist_id' => $playlistAfternoon->id,
+        'plugin_id' => $afternoonPlugin->id,
+        'order' => 1,
+        'is_active' => true,
+    ]);
+
+    $cases = [
+        'before spring DST (CET)' => Carbon::create(2026, 3, 28, 12, 1, 0, 'Europe/Berlin'),
+        'after spring DST (CEST)' => Carbon::create(2026, 3, 30, 12, 1, 0, 'Europe/Berlin'),
+    ];
+
+    foreach ($cases as $label => $berlinInstant) {
+        Carbon::setTestNow($berlinInstant->utc());
+
+        $device->refresh();
+        $playlistMorning->refresh();
+        $playlistAfternoon->refresh();
+
+        expect($playlistMorning->isActiveNow())->toBeFalse("Morning playlist should not be active at 12:01 ({$label})")
+            ->and($playlistAfternoon->isActiveNow())->toBeTrue("Afternoon playlist should be active at 12:01 ({$label})");
+
+        $next = $device->getNextPlaylistItem();
+        expect($next)->not->toBeNull()
+            ->and($next->plugin_id)->toBe($afternoonPlugin->id, "Rotation should pick afternoon plugin ({$label})");
+    }
+
+    Carbon::setTestNow();
+});

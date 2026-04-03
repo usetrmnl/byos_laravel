@@ -266,12 +266,18 @@ class Device extends Model
             return false;
         }
 
-        $now = $now instanceof DateTimeInterface ? Carbon::instance($now) : now();
+        $timezone = $this->user?->timezone ?? config('app.timezone');
+        $localNow = ($now instanceof DateTimeInterface ? Carbon::instance($now) : now())->timezone($timezone);
 
-        // Handle overnight ranges (e.g. 22:00 to 06:00)
-        return $this->sleep_mode_from < $this->sleep_mode_to
-            ? $now->between($this->sleep_mode_from, $this->sleep_mode_to)
-            : ($now->gte($this->sleep_mode_from) || $now->lte($this->sleep_mode_to));
+        $from = $localNow->copy()->setTimeFrom($this->sleep_mode_from);
+        $to = $localNow->copy()->setTimeFrom($this->sleep_mode_to);
+
+        // Handle overnight ranges (e.g. 22:00 to 07:00): same pattern as Playlist::isActiveNow()
+        if ($from > $to) {
+            return $localNow->gte($from) || $localNow->lte($to);
+        }
+
+        return $localNow->between($from, $to);
     }
 
     public function getSleepModeEndsInSeconds(?DateTimeInterface $now = null): ?int
@@ -280,28 +286,26 @@ class Device extends Model
             return null;
         }
 
-        $now = $now instanceof DateTimeInterface ? Carbon::instance($now) : now();
-        $from = $this->sleep_mode_from;
-        $to = $this->sleep_mode_to;
+        $timezone = $this->user?->timezone ?? config('app.timezone');
+        $nowCarbon = $now instanceof DateTimeInterface ? Carbon::instance($now) : now();
+        $localNow = $nowCarbon->copy()->timezone($timezone);
 
-        // Handle overnight ranges (e.g. 22:00 to 06:00)
+        $from = $localNow->copy()->setTimeFrom($this->sleep_mode_from);
+        $to = $localNow->copy()->setTimeFrom($this->sleep_mode_to);
+
         if ($from < $to) {
-            // Normal range, same day
-            return $now->between($from, $to) ? (int) $now->diffInSeconds($to, false) : null;
-        }
-        // Overnight range
-        if ($now->gte($from)) {
-            // After 'from', before midnight
-            return (int) $now->diffInSeconds($to->copy()->addDay(), false);
-        }
-        if ($now->lt($to)) {
-            // After midnight, before 'to'
-            return (int) $now->diffInSeconds($to, false);
+            return $localNow->between($from, $to) ? (int) $localNow->diffInSeconds($to, false) : null;
         }
 
-        // Not in sleep window
+        if ($localNow->gte($from)) {
+            return (int) $localNow->diffInSeconds($to->copy()->addDay(), false);
+        }
+
+        if ($localNow->lte($to)) {
+            return (int) $localNow->diffInSeconds($to, false);
+        }
+
         return null;
-
     }
 
     public function isPauseActive(): bool
