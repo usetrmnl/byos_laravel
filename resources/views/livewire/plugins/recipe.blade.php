@@ -5,6 +5,7 @@ use App\Models\DeviceModel;
 use App\Models\Plugin;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Keepsuit\Liquid\Exceptions\LiquidException;
 use Livewire\Attributes\Computed;
@@ -542,7 +543,21 @@ HTML;
 
     public function getDeviceModels()
     {
-        return DeviceModel::whereKind('trmnl')->orderBy('label')->get();
+        
+        return [
+            'trmnl' => [
+                'label' => 'TRMNL',
+                'models' => DeviceModel::whereKind('trmnl')->orderBy('label')->get(),
+            ],
+            'byod' => [
+                'label' => 'BYOD',
+                'models' => DeviceModel::whereKind('byod')->orderBy('label')->get(),
+            ],
+            'readers' => [
+                'label' => 'eReaders',
+                'models' => DeviceModel::whereKind('kindle')->orderBy('label')->get(),
+            ],
+        ];
     }
 
     public function updatedPreviewDeviceModelId(): void
@@ -781,8 +796,12 @@ HTML;
                 <flux:heading size="lg">Preview {{ $plugin->name }}</flux:heading>
                 <flux:field class="w-48">
                     <flux:select wire:model.live="preview_device_model_id">
-                        @foreach($this->getDeviceModels() as $model)
-                            <option value="{{ $model->id }}">{{ $model->label ?? $model->name }}</option>
+                        @foreach($this->getDeviceModels() as $group)
+                            <optgroup label="{{ $group['label'] }}">
+                                @foreach($group['models'] as $model)
+                                    <option value="{{ $model->id }}">{{ $model->label ?? $model->name }}</option>
+                                @endforeach
+                            </optgroup>
                         @endforeach
                     </flux:select>
                 </flux:field>
