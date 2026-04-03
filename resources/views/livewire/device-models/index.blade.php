@@ -346,7 +346,7 @@ new class extends Component
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <flux:input label="Scale Factor" wire:model="scale_factor" id="scale_factor"
                                         class="block mt-1 w-full" type="number"
-                                        name="scale_factor" step="0.1" :disabled="(bool) $viewingDeviceModelId"/>
+                                        name="scale_factor" step="0.01" :disabled="(bool) $viewingDeviceModelId"/>
                             <flux:input label="Rotation" wire:model="rotation" id="rotation" class="block mt-1 w-full"
                                         type="number"
                                         name="rotation" :disabled="(bool) $viewingDeviceModelId"/>
